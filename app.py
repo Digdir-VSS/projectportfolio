@@ -1,15 +1,5 @@
 from nicegui import ui
 
-
-# or
-# from azure.identity import InteractiveBrowserCredential
-
-# credential = InteractiveBrowserCredential()
-
-# or
-# from azure.identity import ClientSecretCredential
-# from azure.identity import DefaultAzureCredential
-# azure_credentials = DefaultAzureCredential()
 from msal import ConfidentialClientApplication
 from cachetools import TTLCache
 from sqlalchemy import create_engine
@@ -51,6 +41,8 @@ engine2 = create_engine(connection_string, connect_args={'timeout': 120})
 query = "select * from prosjekt_vurdering"
 df = pd.read_sql_query(query, engine2)
 print(df)
+
+AUTHORITY = f"https://login.microsoftonline.com/{os.environ.get('TENANT_NAME')}"
 REDIRECT_PATH = "/.auth/login/aad/callback"
 
 # URL to log the user out in Entra
@@ -58,7 +50,7 @@ ENTRA_LOGOUT_ENDPOINT = f"https://login.microsoftonline.com/{os.environ.get('TEN
 
 # MSAL app instance
 msal_app = ConfidentialClientApplication(
-    CLIENT_ID,
+    azure_client_id,
     authority=AUTHORITY,
     client_credential=CLIENT_SECRET,
 )
