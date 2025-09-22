@@ -12,6 +12,8 @@ import pandas as pd
 import uuid 
 from sqlalchemy.orm import Session
 from sqlalchemy import text, select
+from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy.sql import text
 
 from pages.login_page import register_login_pages
 from pages.utils import layout, validate_token
@@ -74,8 +76,17 @@ f"?driver={driver}"
 "&Encrypt=yes"
 "&TrustServerCertificate=no"
 )
-# engine2 = create_engine(connection_string, connect_args={'timeout': 120})
-# query = "select * from [dbo].[avdelinger_tabel]"
+
+
+engine2 = create_engine(connection_string, connect_args={'timeout': 120})
+# Session = scoped_session(sessionmaker(bind=engine2))
+
+# s = Session()
+# result = s.execute("INSERT INTO [dbo].[new_table] (age, name) VALUES (25, 'Test User')")
+with engine2.connect() as connection:
+    result = connection.execute(text("INSERT INTO [dbo].[new_table] (age, name) VALUES (25, 'Test User')"))
+    print(result.all())
+# query = "INSERT INTO [dbo].[new_table] (age, name) VALUES (25, 'Test User')"
 # df = pd.read_sql_query(query, engine2)
 # print(df)
 
