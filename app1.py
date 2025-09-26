@@ -1,25 +1,18 @@
 from nicegui import ui, app, Client
 from typing import Any
-
+from cachetools import TTLCache
 from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
-from dotenv import load_dotenv
 import os
+from dotenv import load_dotenv
 from msal import ConfidentialClientApplication
-from cachetools import TTLCache
-from sqlalchemy import create_engine
-import pandas as pd
-import uuid 
 from sqlalchemy.orm import Session
-from sqlalchemy import text, select
-from sqlalchemy.orm import sessionmaker, scoped_session
-from sqlalchemy.sql import text
 
+from utils.db_functions import diff_projects, apply_changes
+from utils.project_loader import get_project_data, ProjectData  # your Pydantic model
 from pages.login_page import register_login_pages
 from pages.utils import layout, validate_token
-from database_connection.create_connection import build_engine
-from database_connection.sql_models import PageAktivitetUI, PageLeveranseUI, PageOverordnetInfoUI
-
+import uuid
 load_dotenv()
 
 # Client ID and secret correspond to your Entra Application registration
@@ -50,46 +43,11 @@ msal_app = ConfidentialClientApplication(
     authority=AUTHORITY,
     client_credential=CLIENT_SECRET,
 )
-
-# resource_url = "https://database.windows.net/.default"
-# system_assigned_credentials = DefaultAzureCredential()
-# token_object = system_assigned_credentials.get_token(resource_url)
-# connection_string = f"Driver={{ODBC Driver 18 for SQL Server}};Server={os.getenv('SQL_ENDPOINT')},1433;Database={os.getenv('DATABASE')};Encrypt=Yes;TrustServerCertificate=No"
-# db_engine = build_engine(connection_string, token_object)
-
 # Cache for in-progress authorisation flows. Give the user 5 minutes to complete the flow
 AUTH_FLOW_STATES: TTLCache[str, dict[str, Any]] = TTLCache(maxsize=256, ttl=60 * 5)
 
 # Cache authenticated users for a maximum of 10 hours. TTL is in seconds
 USER_DATA: TTLCache[str, dict[str, Any]] = TTLCache(maxsize=256, ttl=60 * 60 * 10)
-
-
-# azure_client_id = os.getenv("AZURE_CLIENT_ID")
-# azure_client_secret = os.getenv("AZURE_CLIENT_SECRET")
-# server = os.getenv("SERVER")
-# database = os.getenv("DATABASE")
-# driver="ODBC Driver 18 for SQL Server"
-# connection_string = (f"mssql+pyodbc://{azure_client_id}:{azure_client_secret}@{server}:1433/{database}"
-# f"?driver={driver}"
-# "&authentication=ActiveDirectoryServicePrincipal"
-# "&timeout=120"
-# "&Encrypt=yes"
-# "&TrustServerCertificate=no"
-# )
-
-
-# engine2 = create_engine(connection_string, connect_args={'timeout': 120})
-# Session = scoped_session(sessionmaker(bind=engine2))
-
-# s = Session()
-# result = s.execute("INSERT INTO [dbo].[new_table] (age, name) VALUES (25, 'Test User')")
-# with engine2.connect() as connection:
-#     result = connection.execute(text("INSERT INTO [dbo].[new_table] (age, name) VALUES (25, 'Test User')"))
-#     print(result.all())
-# query = "INSERT INTO [dbo].[new_table] (age, name) VALUES (25, 'Test User')"
-# df = pd.read_sql_query(query, engine2)
-# print(df)
-
 register_login_pages(
     msal_app=msal_app,
     AUTH_FLOW_STATES=AUTH_FLOW_STATES,
@@ -107,6 +65,10 @@ def require_login() -> dict[str, Any] | None:
         return None
     return user
 
+
+
+# keep a global cache of loaded projects for comparison
+ORIGINAL_PROJECTS: dict[str, list[ProjectData]] = {}
 @ui.page("/")
 def index(client: Client):
     """
@@ -169,6 +131,51 @@ def leveranse():
         return 
     layout(active_step='leveranse', title='Om Digdirs leveranse')
     # digdir_leveranse("leveranse")
+
+
+
+
+@ui.page('/projects')
+def projects_page():
+    user = require_login()
+    if not user:
+        return
+    
+    email = user["claims"].get("preferred_username") or user["claims"].get("emails", [None])[0]
+    if not email:
+        ui.notify('No email claim found in login!')
+        return
+    
+    layout(active_step='oversikt', title='Prosjekter')
+    ui.label(f'Prosjekter for {email}')
+    
+    with Session(engine) as session:
+        projects = get_project_data(session, email)
+    
+    # store original copy for later diff
+    ORIGINAL_PROJECTS[email] = [p.model_copy(deep=True) for p in projects]
+    
+    # create a table with editable fields
+    table = ui.table(
+        columns=[{'name': f, 'label': f, 'field': f, 'editable': True} for f in projects[0].model_fields.keys()],
+        rows=[p.dict() for p in projects],
+        row_key='prosjekt_id'
+    ).classes('w-full')
+    
+    def save_changes():
+        # get edited rows back from table
+        edited = [ProjectData(**row) for row in table.rows]
+        diffs = diff_projects(ORIGINAL_PROJECTS[email], edited)
+        
+        if not diffs:
+            ui.notify('No changes detected')
+            return
+        
+        with Session(engine) as session:
+            apply_changes(session, diffs)
+            ui.notify('Changes saved to database!')
+    
+    ui.button('Save changes', on_click=save_changes)
 
 
 if __name__ in {"__main__", "__mp_main__"}:
