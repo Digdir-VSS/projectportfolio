@@ -535,5 +535,3 @@ def apply_changes(diffs, session):
 
     session.commit()
 
-if __name__ == "__main__":
-    print(field_to_table_col)
