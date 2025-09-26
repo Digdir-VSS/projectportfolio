@@ -42,7 +42,7 @@ def register_login_pages(msal_app, AUTH_FLOW_STATES, USER_DATA, ENTRA_LOGOUT_END
             ui.label("Error: Invalid ID token.")
             return
         USER_DATA[browser_id] = claims
-        print(USER_DATA.get(browser_id)["preferred_username"])
+        # print(USER_DATA.get(browser_id)["preferred_username"])
         ui.navigate.to("/")
 
     @ui.page("/logout")

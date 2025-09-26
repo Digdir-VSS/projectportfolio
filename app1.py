@@ -6,10 +6,10 @@ from azure.keyvault.secrets import SecretClient
 import os
 from dotenv import load_dotenv
 from msal import ConfidentialClientApplication
-from sqlalchemy.orm import Session
+from sqlmodel import Session
 
 from utils.db_functions import diff_projects, apply_changes
-from utils.project_loader import get_project_data, ProjectData  # your Pydantic model
+from utils.project_loader import get_project_data, ProjectData, engine  # your Pydantic model
 from pages.login_page import register_login_pages
 from pages.utils import layout, validate_token
 import uuid
@@ -99,7 +99,9 @@ def index(client: Client):
 
 @ui.page('/home')
 def main_page():
-    require_login()
+    user = require_login()
+    # if user is not None:
+    #     print(user["preferred_username"])
     layout(active_step='oversikt', title='Oversikt over dine prosjekter')
     ui.label('This is the home page.')
 
@@ -140,8 +142,8 @@ def projects_page():
     user = require_login()
     if not user:
         return
-    
-    email = user["claims"].get("preferred_username") or user["claims"].get("emails", [None])[0]
+    email = user["preferred_username"]
+    # email = "jonhakon.odd@digdir.no"  # for testing
     if not email:
         ui.notify('No email claim found in login!')
         return
@@ -151,11 +153,14 @@ def projects_page():
     
     with Session(engine) as session:
         projects = get_project_data(session, email)
-    
+        print(projects)
     # store original copy for later diff
     ORIGINAL_PROJECTS[email] = [p.model_copy(deep=True) for p in projects]
     
     # create a table with editable fields
+    if not projects:
+        ui.label('No projects found for this user.')
+        return
     table = ui.table(
         columns=[{'name': f, 'label': f, 'field': f, 'editable': True} for f in projects[0].model_fields.keys()],
         rows=[p.dict() for p in projects],
