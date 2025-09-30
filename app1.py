@@ -237,7 +237,7 @@ def project_detail(prosjekt_id: str):
         ui.label("Project not found")
         return
 
-    ui.markdown(f"## Rediger prosjekt: {project.navn_tiltak or prosjekt_id}")
+    ui.markdown(f"## *{project.navn_tiltak or prosjekt_id}*")
 
     inputs: dict[str, Any] = {}
     # show all fields as key/value
@@ -297,7 +297,9 @@ def project_detail(prosjekt_id: str):
                 with ui.column().classes('items-left w-64 flex-1'):
                     ui.label("Kompetanse internt")
                     kompetanse_internt_list = ["Ja","Ja, men det er ikke tilstrekkelig kapasitet","Delvis","Nei"]
-                    inputs['kompetanse_internt'] = ui.select(["Ja","Ja, men det er ikke tilstrekkelig kapasitet","Delvis","Nei"], value=lambda x: project.kompetanse_internt if project.kompetanse_internt in kompetanse_internt_list else None).classes('w-64')
+                    selected_kompetanse = project.kompetanse_internt if project.kompetanse_internt in kompetanse_internt_list else None
+
+                    inputs['kompetanse_internt'] = ui.select(kompetanse_internt_list, value=selected_kompetanse).classes('w-64')
                 with ui.column().classes('items-left w-64 flex-1'):
                     ui.label("Månedsverk internt")
                     inputs['månedsverk_interne'] = ui.input(value=int(project.månedsverk_interne) or 0).props('type=number min=0').classes('w-32')
@@ -309,13 +311,18 @@ def project_detail(prosjekt_id: str):
 
         with ui.column().classes('items-left'):
             with ui.row().classes('items-center grid-flow-row auto-rows-max'):
-                ui.label('Estimert budsjett behov')
-                inputs['estimert_behov_utover_driftsrammen'] = ui.input('Budsjettbehov', value=project.estimert_behov_utover_driftsrammen).props('type=number min=0').classes('w-full')
-                # , validation=lambda value: "Må være et tall" if not isinstance(value, int) else None
-            with ui.row().classes('items-center grid-flow-row auto-rows-max'):
-                ui.label("Hvor sikkert er estimatet")
-                print(project.hvor_sikkert_estimatene)
-                # inputs['hvor_sikkert_estimatene'] = ui.select(["Relativt sikkert","Noe usikkert","Svart usikkert"], value=project.hvor_sikkert_estimatene or '').classes('w-full')
+                with ui.column().classes('items-left w-64 flex-1'):
+                    ui.label('Estimert budsjett behov')
+                    inputs['estimert_behov_utover_driftsrammen'] = ui.input('Budsjettbehov', value=project.estimert_behov_utover_driftsrammen).props('type=number min=0').classes('w-full')
+                    # , validation=lambda value: "Må være et tall" if not isinstance(value, int) else None
+                with ui.column().classes('items-left w-64 flex-1'):
+                    ui.label("Hvor sikkert er estimatet")
+                    estimat_liste = ["Relativt sikkert","Noe usikkert","Svart usikkert"]
+                    selected_estimat = project.hvor_sikkert_estimatene if project.hvor_sikkert_estimatene in estimat_liste else None
+                    inputs['hvor_sikkert_estimatene'] = ui.select(estimat_liste, value=selected_estimat).classes('w-full')
+        inputs['estimert_behov_forklaring'] = ui.textarea('Forklaring estimat', value=project.estimert_behov_forklaring).classes('w-full')
+
+
 
                     # (value=str(project.oppstart_tid), on_change=lambda e: date.set_value(e.value)).props('min-width=150px')
 
