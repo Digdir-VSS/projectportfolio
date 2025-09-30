@@ -53,7 +53,7 @@ def validate_token(jwt_token, tenant_name):
 
 
 
-def layout(active_step: str, title: str):
+def layout(active_step: str, title: str, steps: dict[str, str]):
     ui.add_head_html('''
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@digdir/designsystemet-theme/brand/digdir.css">
     ''')
@@ -70,15 +70,22 @@ def layout(active_step: str, title: str):
             --q-secondary: var(--ds-color-success-base-default);
             --q-stepper-color: var(--ds-color-neutral-border-default);
         ''').classes('w-full') as stepper:
-            ui.step('Oversikt over dine prosjekter').props('name=oversikt clickable') \
-                .on('click', lambda: ui.navigate.to('/'))
-            ui.step('Overordnet info').props('name=overordnet clickable') \
-                .on('click', lambda: ui.navigate.to('/overordnet'))
-            ui.step('Om Digdirs aktivitet').props('name=aktivitet clickable') \
-                .on('click', lambda: ui.navigate.to('/digdir_aktivitet'))
-            ui.step('Om Digdirs leveranse').props('name=leveranse clickable') \
-                .on('click', lambda: ui.navigate.to('/leveranse'))
+            for route, label in steps.items():
+                ui.step(label).props(f'name={route} clickable') \
+                    .on('click', lambda _, r=route: ui.navigate.to(f'/{r}'))
+        
+        # set active step
         stepper.value = active_step
+
+        #     ui.step('Oversikt over dine prosjekter').props('name=oversikt clickable') \
+        #         .on('click', lambda: ui.navigate.to('/'))
+        #     ui.step('Overordnet info').props('name=overordnet clickable') \
+        #         .on('click', lambda: ui.navigate.to('/overordnet'))
+        #     ui.step('Om Digdirs aktivitet').props('name=aktivitet clickable') \
+        #         .on('click', lambda: ui.navigate.to('/digdir_aktivitet'))
+        #     ui.step('Om Digdirs leveranse').props('name=leveranse clickable') \
+        #         .on('click', lambda: ui.navigate.to('/leveranse'))
+        # stepper.value = active_step
 
 
 def input_field(

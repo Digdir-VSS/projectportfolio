@@ -364,22 +364,19 @@ table_pk_map = {
     UnderstøtteTildelingsbrev: "strategisk_forankring_id",
     Vurdering: "vurdering_id",
 }
-
-
-def get_project_data(session, email: str):
+def get_project_data(session, email: str | None = None):
     stmt = (
         select(*convert_list.values())
-        .join(Fremskritt, Fremskritt.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
+        .join(Fremskritt, Fremskritt.prosjekt_id == PortfolioProject.prosjekt_id, isouter=False)
         .join(Samarabeid, Samarabeid.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
         .join(Problemstilling, Problemstilling.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
         .join(Tiltak, Tiltak.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
         .join(Risikovurdering, Risikovurdering.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
         .join(UnderstøtteTildelingsbrev, UnderstøtteTildelingsbrev.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
-        .join(Resursbehov, Resursbehov.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
+        .join(Resursbehov, Resursbehov.prosjekt_id == PortfolioProject.prosjekt_id, isouter=False)
         .join(DigitaliseringStrategi, DigitaliseringStrategi.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
         .where(
             PortfolioProject.er_gjeldende == True,
-            PortfolioProject.epost_kontakt == email,
             DigitaliseringStrategi.er_gjeldende == True,
             Fremskritt.er_gjeldende == True,
             Problemstilling.er_gjeldende == True,
@@ -387,21 +384,59 @@ def get_project_data(session, email: str):
             Risikovurdering.er_gjeldende == True,
             Samarabeid.er_gjeldende == True,
             Tiltak.er_gjeldende == True,
-            UnderstøtteTildelingsbrev.er_gjeldende == True
+            UnderstøtteTildelingsbrev.er_gjeldende == True,
         )
     )
+
+    # only filter by email if it’s provided
+    if email:
+        stmt = stmt.where(PortfolioProject.epost_kontakt == email)
+
     results = session.exec(stmt).all()
     projects = [
         ProjectData(
-            **{
-                alias: row[i] 
-                for i, (alias, col) in enumerate(convert_list.items())
-            }
+            **{alias: row[i] for i, (alias, col) in enumerate(convert_list.items())}
         )
         for row in results
     ]
-
     return projects
+
+# def get_project_data(session, email: str):
+#     stmt = (
+#         select(*convert_list.values())
+#         .join(Fremskritt, Fremskritt.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
+#         .join(Samarabeid, Samarabeid.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
+#         .join(Problemstilling, Problemstilling.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
+#         .join(Tiltak, Tiltak.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
+#         .join(Risikovurdering, Risikovurdering.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
+#         .join(UnderstøtteTildelingsbrev, UnderstøtteTildelingsbrev.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
+#         .join(Resursbehov, Resursbehov.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
+#         .join(DigitaliseringStrategi, DigitaliseringStrategi.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
+#         .where(
+#             PortfolioProject.er_gjeldende == True,
+#             PortfolioProject.epost_kontakt == email,
+#             DigitaliseringStrategi.er_gjeldende == True,
+#             Fremskritt.er_gjeldende == True,
+#             Problemstilling.er_gjeldende == True,
+#             Resursbehov.er_gjeldende == True,
+#             Risikovurdering.er_gjeldende == True,
+#             Samarabeid.er_gjeldende == True,
+#             Tiltak.er_gjeldende == True,
+#             UnderstøtteTildelingsbrev.er_gjeldende == True
+#         )
+#     )
+#     results = session.exec(stmt).all()
+#     projects = [
+#         ProjectData(
+#             **{
+#                 alias: row[i] 
+#                 for i, (alias, col) in enumerate(convert_list.items())
+#             }
+#         )
+#         for row in results
+#     ]
+
+#     return projects
 
 
 
