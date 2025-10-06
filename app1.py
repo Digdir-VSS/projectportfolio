@@ -12,6 +12,7 @@ from utils.db_functions import diff_projects, apply_changes
 from utils.project_loader import get_project_data, ProjectData, engine  # your Pydantic model
 from pages.login_page import register_login_pages
 from pages.dashboard import dashboard
+from pages.single_project import project_detail as digdir_overordnet_info_page
 from pages.utils import layout, validate_token
 import uuid
 import json
@@ -71,7 +72,7 @@ def require_login() -> dict[str, Any] | None:
 steps_dict = {
     "home": "Oversikt over dine prosjekter",
     "oppdater_prosjekt": "Ny/ endre prosjekt",
-    "digdir_aktivitet": "Om Digdirs aktivitet",
+    "status_rapportering": "Rapportering av status",
     "leveranse": "Om Digdirs leveranse",
     "projects": "Prosjekter"
 }
@@ -133,13 +134,14 @@ def overordnet():
     # digdir_overordnet_info_page('overordnet')
         # load projects for this user
     email = user["preferred_username"]
+    user_name = user["name"]
     # email = "jonhakon.odd@digdir.no"  # for testing
     if not email:
         ui.notify('No email claim found in login!')
         return
 
     layout(active_step='oppdater_prosjekt', title='Rediger prosjekt', steps=steps_dict)
-    ui.label(f'Prosjekter for {email}')
+    ui.label(f'Prosjekter for {user_name}').classes('text-lg font-bold mb-2')
     if email in super_user:
         ui.label('You are a super user and can edit all projects.')
 
@@ -214,143 +216,24 @@ def overordnet():
     
     # ui.button('Save changes', on_click=save_changes)
 @ui.page('/project/{prosjekt_id}')
-def project_detail(prosjekt_id: str):
-    layout(active_step='oppdater_prosjekt', title='Prosjekt detaljer', steps=steps_dict)
+def project_detail(prosjekt_id: str, ORIGINAL_PROJECTS=ORIGINAL_PROJECTS):
+    
     user = require_login()
     if not user:
         return 
-    # digdir_overordnet_info_page('overordnet')
-        # load projects for this user
+    layout(active_step='oppdater_prosjekt', title='Prosjekt detaljer', steps=steps_dict)
+
     email = user["preferred_username"]
-    # email = "jonhakon.odd@digdir.no"  # for testing
     if not email:
         ui.notify('No email claim found in login!')
         return
-
-    # get all data for this project
-    # print(ORIGINAL_PROJECTS)
-    project = ORIGINAL_PROJECTS[email].get(prosjekt_id)
-
-    # project = next((p for p in projects if str(p.prosjekt_id) == prosjekt_id), None)
-
-    if not project:
-        ui.label("Project not found")
-        return
-
-    ui.markdown(f"## *{project.navn_tiltak or prosjekt_id}*")
-
-    inputs: dict[str, Any] = {}
-    # show all fields as key/value
-    with ui.grid(columns=3).classes("gap-4 w-full"):
-        inputs['navn_tiltak'] = ui.input('Navn prosjekt', value=project.navn_tiltak)
-        inputs['kontaktperson'] = ui.input('Kontaktperson', value=project.kontaktperson)
-        inputs["eier_epost"] = ui.input('Epost kontaktperson', value=project.eier_epost)
-    with ui.grid(columns=2).classes("gap-4 w-full"):
-        with ui.column().classes('items-left'):
-            ui.label('Hovedavdeling')
-            inputs['avdeling'] = ui.radio(
-                avdelinger,  # <-- your real avdelinger
-                value=project.avdeling
-            ).props("inline")
-            ui.label('Samarbeid internt')
-            inputs["samarbeid_internt"] = ui.select(avdelinger, multiple=True, label='Samarbeid internt', value=project.samarbeid_intern.split(',') if project.samarbeid_intern else []).classes('w-64')
-            ui.label('Samarbeid eksternt')
-            inputs["samarbeid_eksternt"] = ui.input('Samarbeid eksternt', value=project.samarbeid_eksternt)
-        inputs['beskrivelse'] = ui.textarea('Beskrivelse av prosjekt', value=project.beskrivelse).classes('w-full')
-        
-        with ui.column().classes('items-left flex'):
-            inputs['avhengigheter_andre'] = ui.textarea(
-                'Avhengigheter andre', value=project.avhengigheter_andre).classes('w-full')
-            with ui.row().classes('items-center grid-flow-row auto-rows-max'):
-                with ui.column().classes('items-left w-64 flex-1'):
-                    ui.label('Start')
-                    with ui.input(str(project.oppstart_tid.date())) as date:
-                        with ui.menu().props('no-parent-event') as menu:
-                            with ui.date().bind_value(date):
-                                with ui.row().classes('justify-end'):
-                                    ui.button('Close', on_click=menu.close).props('flat')
-                        with date.add_slot('append'):
-                            ui.icon('edit_calendar').on('click', menu.open).classes('cursor-pointer')
-                with ui.column().classes('items-left w-64 flex-1'):
-                    ui.label("Planlagt ferdig")
-                    with ui.input(str(project.ferdig_tid.date())) as date:
-                        with ui.menu().props('no-parent-event') as menu:
-                            with ui.date().bind_value(date):
-                                with ui.row().classes('justify-end'):
-                                    ui.button('Close', on_click=menu.close).props('flat')
-                        with date.add_slot('append'):
-                            ui.icon('edit_calendar').on('click', menu.open).classes('cursor-pointer')
-                with ui.column().classes('items-left w-64 flex-1'):
-                    ui.label("Fase tiltak")
-                    inputs['fase_tiltak'] = ui.select(
-                        ['Konsept', 'Planlegging', 'Gjennomføring','Problem/ide'],
-                        value=project.fase_tiltak
-                    )
-        with ui.column().classes('items-left'):
-            ui.label('Problemstilling')
-            inputs['problemstilling'] = ui.textarea('Problemstilling', value=project.problemstilling).classes('w-full')
-        
-        with ui.column().classes('items-left'):
-            ui.label("Kompetansebehov")
-            inputs['kompetanse_behov'] = ui.textarea('Kompetansebehov', value=project.kompetanse_behov).classes('w-full')
-            with ui.row().classes('items-center grid-flow-row auto-rows-max'):
-                with ui.column().classes('items-left w-64 flex-1'):
-                    ui.label("Kompetanse internt")
-                    kompetanse_internt_list = ["Ja","Ja, men det er ikke tilstrekkelig kapasitet","Delvis","Nei"]
-                    selected_kompetanse = project.kompetanse_internt if project.kompetanse_internt in kompetanse_internt_list else None
-
-                    inputs['kompetanse_internt'] = ui.select(kompetanse_internt_list, value=selected_kompetanse).classes('w-64')
-                with ui.column().classes('items-left w-64 flex-1'):
-                    ui.label("Månedsverk internt")
-                    inputs['månedsverk_interne'] = ui.input(value=int(project.månedsverk_interne) or 0).props('type=number min=0').classes('w-32')
-                with ui.column().classes('items-left w-64 flex-1'):
-                    ui.label("Månedsverk eksternt")
-                    inputs['månedsverk_eksterne'] = ui.input(value=int(project.månedsverk_eksterne) or 0).props('type=number min=0').classes('w-32')
-
-        inputs['risiko'] = ui.textarea('Risikovurdering', value=project.risiko).classes('w-full')
-
-        with ui.column().classes('items-left'):
-            with ui.row().classes('items-center grid-flow-row auto-rows-max'):
-                with ui.column().classes('items-left w-64 flex-1'):
-                    ui.label('Estimert budsjett behov')
-                    inputs['estimert_behov_utover_driftsrammen'] = ui.input('Budsjettbehov', value=project.estimert_behov_utover_driftsrammen).props('type=number min=0').classes('w-full')
-                    # , validation=lambda value: "Må være et tall" if not isinstance(value, int) else None
-                with ui.column().classes('items-left w-64 flex-1'):
-                    ui.label("Hvor sikkert er estimatet")
-                    estimat_liste = ["Relativt sikkert","Noe usikkert","Svart usikkert"]
-                    selected_estimat = project.hvor_sikkert_estimatene if project.hvor_sikkert_estimatene in estimat_liste else None
-                    inputs['hvor_sikkert_estimatene'] = ui.select(estimat_liste, value=selected_estimat).classes('w-full')
-        inputs['estimert_behov_forklaring'] = ui.textarea('Forklaring estimat', value=project.estimert_behov_forklaring).classes('w-full')
-
-
-
-                    # (value=str(project.oppstart_tid), on_change=lambda e: date.set_value(e.value)).props('min-width=150px')
-
-            # with date.add_slot('append'):
-            #     ui.icon('edit_calendar').on('click', menu.open).classes('cursor-pointer')
-        # print(project.oppstart_tid.date())
-        # inputs['oppstart_tid'] = ui.date('Oppstart', type='date', value=str(project.oppstart_tid or ''))
-        # inputs['ferdig_tid'] = ui.date('Ferdig', type='date', value=str(project.ferdig_tid or ''))
-        # ui.input(value=project.navn_tiltak).props('label="Navn prosjekt"')
-        # ui.input(value=project.kontaktperson).props('label="Kontaktperson"')   
-        # ui.input(value=project.avdeling).props('label="Hovedavdeling"')
-        # ui.input(value=project.fase_tiltak).props('label="Fase"')
-        # ui.input(value=project.date_modified).props('label="Sist endret"') 
-        # ui.input(value=project.beskrivelse).props('label="Beskrivelse av prosjekt"').classes('w-full')
-        # ui.input(value=project.problemstilling).props('label="Problemstilling"').classes('w-full')
-    # for field, value in project.dict().items():
-    #     print(field)
-    #     with ui.row():
-    #         ui.label(field).classes("font-bold w-48")
-    #         ui.label(str(value))
-
-
-@ui.page("/digdir_aktivitet")
+    digdir_overordnet_info_page(prosjekt_id, ORIGINAL_PROJECTS, email)
+@ui.page("/status_rapportering")
 def digdir():
     user = require_login()
     if not user:
         return 
-    layout(active_step='digdir_aktivitet',  title='Om Digdirs aktivitet',steps=steps_dict)
+    layout(active_step='status_rapportering',  title='Rapportering av status',steps=steps_dict)
     # digdir_aktivitet_page('aktivitet')
     ui.label('This is the Digdir page.')
 
@@ -416,7 +299,7 @@ def projects_page():
 if __name__ in {"__main__", "__mp_main__"}:
     
     ui.run(
-        title='Internasjonale Aktiviteter',
+        title='Projectportfolio',
         port=8080,
         storage_secret=str(uuid.uuid4()),
     )

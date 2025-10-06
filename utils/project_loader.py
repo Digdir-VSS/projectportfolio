@@ -322,6 +322,23 @@ convert_list = {"prosjekt_id": PortfolioProject.prosjekt_id,
 "sammenheng_med_digitaliseringsstrategien_mm": DigitaliseringStrategi.sammenheng_digital_strategi,
 "eier_epost": PortfolioProject.epost_kontakt}
 
+
+convert_list_rapport = {"prosjekt_id": Rapportering.prosjekt_id,
+"sist_levert": Rapportering.sist_endret,
+"email_rapportert": Rapportering.email_rapportering,
+"viktige_endringer": Rapportering.viktige_endringer,
+"viktige_endringer_kommentar": Rapportering.viktige_endringer_kommentar,
+"fase_rapportering": Fremskritt.fase,
+"fremskritt_rapportering": Fremskritt.fremskritt,
+"fremskritt_rapportering_kommentar": Rapportering.viktige_endringer_kommentar,
+"konsulent_anskaffet": Rapportering.konsulent_anskaffet,
+"konsulent_anskaffet_kommentar": Rapportering.konsulent_anskaffet_kommentar,
+"risiko_rapportert": Rapportering.risiko_rapportert,
+"risiko_rapportert_tall": Rapportering.risiko_rapportert_tall,
+"risiko_rapportert_begrunnet": Rapportering.risiko_rapportert_begrunnet,
+"avhengigheter_rapportert": Rapportering.avhengigheter_rapportert
+}
+
 field_to_table_col = {"prosjekt_id": (PortfolioProject,PortfolioProject.prosjekt_id),
 "date_modified": (PortfolioProject,PortfolioProject.sist_endret),
 "navn_tiltak" : (PortfolioProject,PortfolioProject.navn),
