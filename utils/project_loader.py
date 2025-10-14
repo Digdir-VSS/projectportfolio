@@ -77,7 +77,7 @@ class DigitaliseringStrategi(SQLModel, table=True):
     sist_endret: datetime | None = None
     er_gjeldende: bool | None = None
     prosjekt_id : uuid.UUID = Field(
-        foreign_key="portfolio.PortfolioProject.prosjekt_id",  # 👈 link to users
+        foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
 class Finansiering(SQLModel, table=True):
@@ -100,7 +100,7 @@ class Finansiering(SQLModel, table=True):
     sist_endret: datetime | None = None
     er_gjeldende: bool | None = None
     prosjekt_id : uuid.UUID = Field(
-        foreign_key="portfolio.PortfolioProject.prosjekt_id",  # 👈 link to users
+        foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
 class Fremskritt(SQLModel, table=True):
@@ -117,7 +117,7 @@ class Fremskritt(SQLModel, table=True):
     sist_endret: datetime | None = None
     er_gjeldende: bool | None = None
     prosjekt_id : uuid.UUID = Field(
-        foreign_key="portfolio.PortfolioProject.prosjekt_id",  # 👈 link to users
+        foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
 class Problemstilling(SQLModel, table=True):
@@ -132,7 +132,7 @@ class Problemstilling(SQLModel, table=True):
     sist_endret: datetime | None = None
     er_gjeldende: bool | None = None
     prosjekt_id : uuid.UUID = Field(
-        foreign_key="portfolio.PortfolioProject.prosjekt_id",  # 👈 link to users
+        foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
 class Rapportering(SQLModel, table=True):
@@ -155,7 +155,7 @@ class Rapportering(SQLModel, table=True):
     sist_endret: datetime | None = None
     er_gjeldende: bool | None = None
     prosjekt_id : uuid.UUID = Field(
-        foreign_key="portfolio.PortfolioProject.prosjekt_id",  # 👈 link to users
+        foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 class Resursbehov(SQLModel, table=True):
     __tablename__ = "Ressursbehov"
@@ -177,7 +177,7 @@ class Resursbehov(SQLModel, table=True):
     sist_endret: datetime | None = None
     er_gjeldende: bool | None = None
     prosjekt_id : uuid.UUID = Field(
-        foreign_key="portfolio.PortfolioProject.prosjekt_id",  # 👈 link to users
+        foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
 class Risikovurdering(SQLModel, table=True):
@@ -192,7 +192,7 @@ class Risikovurdering(SQLModel, table=True):
     sist_endret: datetime | None = None
     er_gjeldende: bool | None = None
     prosjekt_id : uuid.UUID = Field(
-        foreign_key="portfolio.PortfolioProject.prosjekt_id",  # 👈 link to users
+        foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
 class Samarabeid(SQLModel, table=True):
@@ -209,7 +209,7 @@ class Samarabeid(SQLModel, table=True):
     sist_endret: datetime | None = None
     er_gjeldende: bool | None = None
     prosjekt_id : uuid.UUID = Field(
-        foreign_key="portfolio.PortfolioProject.prosjekt_id",  # 👈 link to users
+        foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
 class Tiltak(SQLModel, table=True):
@@ -224,7 +224,7 @@ class Tiltak(SQLModel, table=True):
     sist_endret: datetime | None = None
     er_gjeldende: bool | None = None
     prosjekt_id : uuid.UUID = Field(
-        foreign_key="portfolio.PortfolioProject.prosjekt_id",  # 👈 link to users
+        foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
 class UnderstøtteTildelingsbrev(SQLModel, table=True):
@@ -244,7 +244,7 @@ class UnderstøtteTildelingsbrev(SQLModel, table=True):
     sist_endret: datetime | None = None
     er_gjeldende: bool | None = None
     prosjekt_id : uuid.UUID = Field(
-        foreign_key="portfolio.PortfolioProject.prosjekt_id",  # 👈 link to users
+        foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
 class Vurdering(SQLModel, table=True):
@@ -262,7 +262,7 @@ class Vurdering(SQLModel, table=True):
     er_gjeldende: bool | None = None
     mscw: str | None = None
     prosjekt_id : uuid.UUID = Field(
-        foreign_key="portfolio.PortfolioProject.prosjekt_id",  # 👈 link to users
+        foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
 class ProjectData(BaseModel):
@@ -290,7 +290,7 @@ class ProjectData(BaseModel):
     månedsverk_eksterne_2025: Optional[int]
     estimert_behov_utover_driftsrammen: Optional[float]
     estimert_behov_forklaring: Optional[str]
-    hvor_sikkert_estimatene: Optional[int]
+    hvor_sikkert_estimatene: Optional[str]
     sammenheng_med_digitaliseringsstrategien_mm: Optional[str]
     eier_epost: str
 
@@ -318,7 +318,7 @@ convert_list = {"prosjekt_id": PortfolioProject.prosjekt_id,
 "månedsverk_eksterne_2025": Resursbehov.antall_mandsverk_ekstern_betalt,
 "estimert_behov_utover_driftsrammen": Resursbehov.estimert_budsjet_behov,
 "estimert_behov_forklaring": Resursbehov.estimert_budsjet_forklaring,	
-"hvor_sikkert_estimatene": Resursbehov.risiko_av_estimat_tall,
+"hvor_sikkert_estimatene": Resursbehov.risiko_av_estimat,
 "sammenheng_med_digitaliseringsstrategien_mm": DigitaliseringStrategi.sammenheng_digital_strategi,
 "eier_epost": PortfolioProject.epost_kontakt}
 
@@ -363,9 +363,22 @@ field_to_table_col = {"prosjekt_id": (PortfolioProject,PortfolioProject.prosjekt
 "månedsverk_eksterne_2025": (Resursbehov,Resursbehov.antall_mandsverk_ekstern_betalt),
 "estimert_behov_utover_driftsrammen": (Resursbehov,Resursbehov.estimert_budsjet_behov),
 "estimert_behov_forklaring": (Resursbehov,Resursbehov.estimert_budsjet_forklaring),    
-"hvor_sikkert_estimatene": (Resursbehov,Resursbehov.risiko_av_estimat_tall),
+"hvor_sikkert_estimatene": (Resursbehov,Resursbehov.risiko_av_estimat),
 "sammenheng_med_digitaliseringsstrategien_mm": (DigitaliseringStrategi,DigitaliseringStrategi.sammenheng_digital_strategi),
 "eier_epost": (PortfolioProject,PortfolioProject.epost_kontakt)}
+
+class JustProject(SQLModel):
+    prosjekt_id: UUID
+    navn: Optional[str]
+    avdeling: Optional[str]
+    kontaktpersoner: Optional[str]
+    epost_kontakt: str
+
+project_names = {"prosjekt_id": PortfolioProject.prosjekt_id,
+                 "navn_tiltak" : PortfolioProject.navn,
+                 "avdeling" : PortfolioProject.avdeling,
+                 "kontaktperson"	: PortfolioProject.kontaktpersoner,
+                 "epost_kontakt": PortfolioProject.epost_kontakt}
 
 table_pk_map = {
     PortfolioProject: "prosjekt_sk_id",
@@ -381,6 +394,174 @@ table_pk_map = {
     UnderstøtteTildelingsbrev: "strategisk_forankring_id",
     Vurdering: "vurdering_id",
 }
+def create_empty_project(eier_epost: str, pid: UUID) -> ProjectData:
+    return ProjectData(
+        prosjekt_id=pid,
+        date_modified=None,
+        navn_tiltak="",
+        kontaktperson="",
+        avdeling=None,
+        fase_tiltak=None,
+        oppstart_tid=None,
+        ferdig_tid=None,
+        samarbeid_intern="",
+        samarbeid_eksternt="",
+        avhengigheter_andre="",
+        problemstilling="",
+        beskrivelse="",
+        risiko="",
+        mål_1_tildelingsbrevet=None,
+        mål_2_tildelingsbrevet=None,
+        mål_3_tildelingsbrevet=None,
+        kompetanse_behov="",
+        kompetanse_internt=None,
+        månedsverk_interne=None,
+        månedsverk_eksterne=None,
+        månedsverk_eksterne_2025=None,
+        estimert_behov_utover_driftsrammen=None,
+        estimert_behov_forklaring="",
+        hvor_sikkert_estimatene="",
+        sammenheng_med_digitaliseringsstrategien_mm="",
+        eier_epost=eier_epost,
+    )
+
+def get_projects(session, email: str | None = None):
+    columns = [
+        PortfolioProject.prosjekt_id,
+        PortfolioProject.navn,
+        PortfolioProject.avdeling,
+        PortfolioProject.kontaktpersoner,
+        PortfolioProject.epost_kontakt,
+    ]
+    if email:
+        stmt = select(*columns).where(PortfolioProject.er_gjeldende == True, PortfolioProject.epost_kontakt == email)
+    else:
+        stmt = select(*columns).where(PortfolioProject.er_gjeldende == True)
+    results = session.exec(stmt).all()
+    return [
+        {
+            "prosjekt_id": r[0],
+            "navn": r[1],
+            "avdeling": r[2],
+            "kontaktpersoner": r[3],
+            "epost_kontakt": r[4],
+        }
+        for r in results
+    ]
+    # projects = [
+    #     JustProject(
+    #         **{alias: row[i] for i, (alias, col) in enumerate(project_names.items())}
+    #     )
+    #     for row in results
+    # ]
+    # return projects
+    # return results
+def get_single_project_data(session, project_id: str):
+    stmt = (
+        select(*convert_list.values())
+        .join(
+            Fremskritt,
+            (Fremskritt.prosjekt_id == PortfolioProject.prosjekt_id)
+            & (Fremskritt.er_gjeldende == True),
+            isouter=True,
+        )
+        .join(
+            Samarabeid,
+            (Samarabeid.prosjekt_id == PortfolioProject.prosjekt_id)
+            & (Samarabeid.er_gjeldende == True),
+            isouter=True,
+        )
+        .join(
+            Problemstilling,
+            (Problemstilling.prosjekt_id == PortfolioProject.prosjekt_id)
+            & (Problemstilling.er_gjeldende == True),
+            isouter=True,
+        )
+        .join(
+            Tiltak,
+            (Tiltak.prosjekt_id == PortfolioProject.prosjekt_id)
+            & (Tiltak.er_gjeldende == True),
+            isouter=True,
+        )
+        .join(
+            Risikovurdering,
+            (Risikovurdering.prosjekt_id == PortfolioProject.prosjekt_id)
+            & (Risikovurdering.er_gjeldende == True),
+            isouter=True,
+        )
+        .join(
+            UnderstøtteTildelingsbrev,
+            (UnderstøtteTildelingsbrev.prosjekt_id == PortfolioProject.prosjekt_id)
+            & (UnderstøtteTildelingsbrev.er_gjeldende == True),
+            isouter=True,
+        )
+        .join(
+            Resursbehov,
+            (Resursbehov.prosjekt_id == PortfolioProject.prosjekt_id)
+            & (Resursbehov.er_gjeldende == True),
+            isouter=True,
+        )
+        .join(
+            DigitaliseringStrategi,
+            (DigitaliseringStrategi.prosjekt_id == PortfolioProject.prosjekt_id)
+            & (DigitaliseringStrategi.er_gjeldende == True),
+            isouter=True,
+        )
+        .where(
+            PortfolioProject.prosjekt_id == project_id,
+            PortfolioProject.er_gjeldende == True,
+        )
+    )
+
+    result = session.exec(stmt).first()
+    if not result:
+        return None
+
+    # Build a ProjectData instance directly from the first row
+    project_data = ProjectData(
+        **{alias: result[i] for i, (alias, col) in enumerate(convert_list.items())}
+    )
+
+    return project_data
+# def get_single_project_data(session, project_id: str):
+#     stmt = (
+#         select(*convert_list.values())
+#         .join(Fremskritt, Fremskritt.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
+#         .join(Samarabeid, Samarabeid.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
+#         .join(Problemstilling, Problemstilling.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
+#         .join(Tiltak, Tiltak.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
+#         .join(Risikovurdering, Risikovurdering.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
+#         .join(UnderstøtteTildelingsbrev, UnderstøtteTildelingsbrev.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
+#         .join(Resursbehov, Resursbehov.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
+#         .join(DigitaliseringStrategi, DigitaliseringStrategi.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
+#         .where(
+#             PortfolioProject.prosjekt_id == project_id,
+#             PortfolioProject.er_gjeldende == True,
+#             DigitaliseringStrategi.er_gjeldende == True,
+#             Fremskritt.er_gjeldende == True,
+#             Problemstilling.er_gjeldende == True,
+#             Resursbehov.er_gjeldende == True,
+#             Risikovurdering.er_gjeldende == True,
+#             Samarabeid.er_gjeldende == True,
+#             Tiltak.er_gjeldende == True,
+#             UnderstøtteTildelingsbrev.er_gjeldende == True,
+#         )
+#     )
+
+#     # only filter by email if it’s provided
+#     # if email:
+#     #     stmt = stmt.where(PortfolioProject.epost_kontakt == email)
+
+#     result = session.exec(stmt).first()
+#     if not result:
+#         return None
+
+#     # Build a ProjectData instance directly from the first row
+#     project_data = ProjectData(
+#         **{alias: result[i] for i, (alias, col) in enumerate(convert_list.items())}
+#     )
+
+#     return project_data
 def get_project_data(session, email: str | None = None):
     stmt = (
         select(*convert_list.values())
@@ -418,47 +599,12 @@ def get_project_data(session, email: str | None = None):
     ]
     return projects
 
-# def get_project_data(session, email: str):
-#     stmt = (
-#         select(*convert_list.values())
-#         .join(Fremskritt, Fremskritt.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
-#         .join(Samarabeid, Samarabeid.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
-#         .join(Problemstilling, Problemstilling.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
-#         .join(Tiltak, Tiltak.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
-#         .join(Risikovurdering, Risikovurdering.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
-#         .join(UnderstøtteTildelingsbrev, UnderstøtteTildelingsbrev.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
-#         .join(Resursbehov, Resursbehov.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
-#         .join(DigitaliseringStrategi, DigitaliseringStrategi.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
-#         .where(
-#             PortfolioProject.er_gjeldende == True,
-#             PortfolioProject.epost_kontakt == email,
-#             DigitaliseringStrategi.er_gjeldende == True,
-#             Fremskritt.er_gjeldende == True,
-#             Problemstilling.er_gjeldende == True,
-#             Resursbehov.er_gjeldende == True,
-#             Risikovurdering.er_gjeldende == True,
-#             Samarabeid.er_gjeldende == True,
-#             Tiltak.er_gjeldende == True,
-#             UnderstøtteTildelingsbrev.er_gjeldende == True
-#         )
-#     )
-#     results = session.exec(stmt).all()
-#     projects = [
-#         ProjectData(
-#             **{
-#                 alias: row[i] 
-#                 for i, (alias, col) in enumerate(convert_list.items())
-#             }
-#         )
-#         for row in results
-#     ]
-
-#     return projects
-
-
-
-
-
+def normalize_value(val):
+    """Normalize text values to avoid false differences."""
+    if isinstance(val, str):
+        # Strip leading/trailing whitespace and normalize newlines
+        return val.strip().replace('\r\n', '\n').replace('\r', '\n')
+    return val
 
 def diff_projects(
     original: List[Any],
@@ -519,7 +665,9 @@ def diff_projects(
         for field in keys:
             old = getattr(o, field, None) if o is not None else None
             new = getattr(e, field, None)
-            if old != new:
+            old_norm = normalize_value(old)
+            new_norm = normalize_value(new)
+            if old_norm != new_norm:
                 diffs[field] = {"old": old, "new": new}
 
         if diffs:
@@ -541,49 +689,182 @@ def diff_projects(
 
 
 from collections import defaultdict
-def apply_changes(diffs, session):
+def apply_changes(diffs, session, new=False):
     for diff in diffs:
-        prosjekt_id = diff["prosjekt_id"]
+        prosjekt_id = str(diff["prosjekt_id"]).lower()
         changes = diff["changes"]
 
-        # 1️⃣ Group changes by table
+        # Group changes by table
         changes_by_table = defaultdict(dict)
         for field, change in changes.items():
             table_cls, col_attr = field_to_table_col[field]
             changes_by_table[table_cls][field] = change
 
-        # 2️⃣ Apply updates per table
         for table_cls, table_changes in changes_by_table.items():
-            stmt = select(table_cls).where(
-                table_cls.prosjekt_id == prosjekt_id,
-                table_cls.er_gjeldende == True
-            )
-            current = session.exec(stmt).one_or_none()
-            if not current:
-                print(f"⚠️ No current row found for {table_cls.__tablename__}, prosjekt_id={prosjekt_id}")
-                continue
+            new_row_data = {}
 
-            # Mark old row as not current
-            current.er_gjeldende = False
-            session.add(current)
+            if not new:
+                # Find current active row
+                stmt = select(table_cls).where(
+                    table_cls.prosjekt_id == prosjekt_id,
+                    table_cls.er_gjeldende == True
+                )
+                current = session.exec(stmt).one_or_none()
 
-            # Copy current row values
-            new_row_data = current.dict() if hasattr(current, "dict") else current.__dict__.copy()
-            pk_col = table_pk_map[table_cls]
-            new_row_data.pop(pk_col, None)  # remove surrogate key
-            new_row_data[pk_col] = str(uuid.uuid4())  # or let DB autogenerate
-            new_row_data["sist_endret"] = datetime.utcnow()
-            new_row_data["er_gjeldende"] = True
+                if current:
+                    # Mark old row as inactive
+                    current.er_gjeldende = False
+                    session.add(current)
 
-            # Apply all changes for this table
+                    # Copy all old values
+                    new_row_data = (
+                        current.dict() if hasattr(current, "dict") else current.__dict__.copy()
+                    )
+
+                    # Clean up
+                    pk_col = table_pk_map[table_cls]
+                    new_row_data.pop(pk_col, None)
+                    new_row_data[pk_col] = str(uuid.uuid4()).lower()
+                    new_row_data["sist_endret"] = datetime.utcnow()
+                    new_row_data["er_gjeldende"] = True
+
+                else:
+                    # No current row exists — create new one
+                    new_row_data = {
+                        "prosjekt_id": prosjekt_id,
+                        "er_gjeldende": True,
+                        "sist_endret": datetime.utcnow(),
+                    }
+
+                    pk_col = table_pk_map[table_cls]
+                    new_row_data[pk_col] = str(uuid.uuid4()).lower()
+
+                    if table_cls == PortfolioProject:
+                        # skip if missing portfolio project
+                        print(f"⚠️ No current row found for {table_cls.__tablename__}, prosjekt_id={prosjekt_id}")
+                        continue
+
+            else:
+                # new project entirely
+                new_row_data = {
+                    col.name: None for col in table_cls.__table__.columns
+                }
+                pk_col = table_pk_map[table_cls]
+                new_row_data[pk_col] = str(uuid.uuid4()).lower()
+                new_row_data["prosjekt_id"] = prosjekt_id
+                new_row_data["sist_endret"] = datetime.utcnow()
+                new_row_data["er_gjeldende"] = True
+
+            # Apply changed values
             for field, change in table_changes.items():
                 _, col_attr = field_to_table_col[field]
-                col_name = col_attr.key  # SQLAlchemy column name
+                col_name = getattr(col_attr, "key", None) or field
                 new_row_data[col_name] = change["new"]
 
-            # Insert new row
+            # Add single new row per table
             new_row = table_cls(**new_row_data)
             session.add(new_row)
 
-    session.commit()
+        session.commit()
 
+# def apply_changes(diffs, session, new = False):
+#     for diff in diffs:
+#         prosjekt_id = str(diff["prosjekt_id"]).lower()
+#         changes = diff["changes"]
+
+#         # 1️⃣ Group changes by table
+#         changes_by_table = defaultdict(dict)
+#         for field, change in changes.items():
+#             table_cls, col_attr = field_to_table_col[field]
+#             changes_by_table[table_cls][field] = change
+
+#         # 2️⃣ Apply updates per table
+#         for table_cls, table_changes in changes_by_table.items():
+#             new_row_data = {}
+#             if not new:
+#                 stmt = select(table_cls).where(
+#                     table_cls.prosjekt_id == prosjekt_id,
+#                     table_cls.er_gjeldende == True
+#                 )
+#                 current = session.exec(stmt).one_or_none()
+            
+#                 if current:    
+#                     # Mark old row as not current
+#                     current.er_gjeldende = False
+#                     session.add(current)
+
+#                     # Copy current row values
+#                     new_row_data = current.dict() if hasattr(current, "dict") else current.__dict__.copy()
+#                     pk_col = table_pk_map[table_cls]
+#                     new_row_data.pop(pk_col, None)  # remove surrogate key
+#                     new_row_data[pk_col] = str(uuid.uuid4()).lower()  # or let DB autogenerate
+#                     new_row_data["sist_endret"] = datetime.utcnow()
+#                     new_row_data["er_gjeldende"] = True
+
+#                     # Apply all changes for this table
+#                     for field, change in table_changes.items():
+#                         _, col_attr = field_to_table_col[field]
+#                         col_name = col_attr.key  # SQLAlchemy column name
+#                         new_row_data[col_name] = change["new"]
+
+#                     # Insert new row
+#                     new_row = table_cls(**new_row_data)
+#                     session.add(new_row)
+#                 elif not current:
+#                     if table_cls == PortfolioProject:
+#                         print(f"⚠️ No current row found for {table_cls.__tablename__}, prosjekt_id={prosjekt_id}")
+#                         continue
+#                     new_row_data = {
+#                     "prosjekt_id": prosjekt_id,
+#                     "er_gjeldende": True,
+#                     "sist_endret": datetime.utcnow(),}
+
+#                     # Apply all changed values for this table
+#                     for field, change in table_changes.items():
+#                         _, col_attr = field_to_table_col[field]
+#                         col_name = col_attr.key
+#                         new_row_data[col_name] = change["new"]
+
+#                     # If table has its own surrogate PK, generate one
+#                     pk_col = table_pk_map[table_cls]
+#                     new_row_data[pk_col] = str(uuid.uuid4()).lower()
+
+#                     new_row = table_cls(**new_row_data)
+#                     session.add(new_row)
+#             else:
+#                 # new project: create an empty/new row for this table
+#                 new_row_data = {}
+#                 for col in table_cls.__table__.columns:
+#                     # Initialize columns with None (or column.default if you want)
+#                     new_row_data[col.name] = None
+
+#                 pk_col = table_pk_map[table_cls]
+#                 new_row_data[pk_col] = str(uuid.uuid4()).lower()
+#                 new_row_data["prosjekt_id"] = prosjekt_id
+#                 new_row_data["sist_endret"] = datetime.utcnow()
+#                 new_row_data["er_gjeldende"] = True
+
+#             # Apply all changes for this table
+#             for field, change in table_changes.items():
+#                 _, col_attr = field_to_table_col[field]
+#                 # col_attr is SQLAlchemy InstrumentedAttribute; .key is the column name
+#                 col_name = getattr(col_attr, "key", None) or getattr(col_attr, "name", None) or field
+#                 new_row_data[col_name] = change["new"]
+
+#             # Create object and insert
+#             new_row = table_cls(**new_row_data)
+#             session.add(new_row)
+
+#         session.commit()
+
+def update_project_from_diffs(project: ProjectData, diffs: list) -> ProjectData:
+    """
+    Update a ProjectData instance in memory using a diff list from diff_projects.
+
+    Only applies changes belonging to this project's prosjekt_id.
+    """
+    for diff in diffs:
+        if isinstance(diff.get("prosjekt_id"), UUID) and diff["prosjekt_id"] == project.prosjekt_id:
+            for field, change in diff.get("changes", {}).items():
+                setattr(project, field, change["new"])
+    return project

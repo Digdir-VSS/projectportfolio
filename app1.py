@@ -9,7 +9,7 @@ from msal import ConfidentialClientApplication
 from sqlmodel import Session
 
 from utils.db_functions import diff_projects, apply_changes
-from utils.project_loader import get_project_data, ProjectData, engine  # your Pydantic model
+from utils.project_loader import get_project_data, ProjectData, engine, get_projects, create_empty_project  # your Pydantic model
 from pages.login_page import register_login_pages
 from pages.dashboard import dashboard
 from pages.single_project import project_detail as digdir_overordnet_info_page
@@ -102,7 +102,7 @@ def index(client: Client):
     if not user:
         # Display log in components
         with ui.column().classes("w-full items-center"):
-            ui.markdown(f"## NiceGUI Entra authentication app\n Welcome to this app. \n Please log in").style(
+            ui.markdown(f"## Prosjekt portalen autentisering \n Welcome to this app. \n Please log in").style(
                 "white-space: pre-wrap"
             ).classes('text-l')
 
@@ -118,8 +118,7 @@ def index(client: Client):
 @ui.page('/home')
 def main_page():
     user = require_login()
-    # if user is not None:
-    #     print(user["preferred_username"])
+
     layout(active_step='home', title='Oversikt over dine prosjekter', steps=steps_dict)
     ui.label('This is the home page.')
     dashboard()
@@ -131,11 +130,9 @@ def overordnet():
     user = require_login()
     if not user:
         return 
-    # digdir_overordnet_info_page('overordnet')
-        # load projects for this user
+
     email = user["preferred_username"]
     user_name = user["name"]
-    # email = "jonhakon.odd@digdir.no"  # for testing
     if not email:
         ui.notify('No email claim found in login!')
         return
@@ -146,11 +143,11 @@ def overordnet():
         ui.label('You are a super user and can edit all projects.')
 
         with Session(engine) as session:
-            projects = get_project_data(session, None)
+            projects = get_projects(session, None)
     else:        
         with Session(engine) as session:
-            projects = get_project_data(session, email)
-        # print(projects)
+            projects = get_projects(session, email)
+    
     # store original copy for later diff
 
     
@@ -158,65 +155,98 @@ def overordnet():
     if not projects:
         ui.label('No projects found for this user.')
         return
-    ORIGINAL_PROJECTS[email] = {
-        str(p.prosjekt_id): p.model_copy(deep=True) for p in projects
-    }
-    # print(projects[0].model_fields.keys())
-#     rows = [
-#     {new_key: getattr(p, old_key) for old_key, new_key in field_mapping.items()}
-#     for p in projects
-# ]
+    ORIGINAL_PROJECTS[email] = [p for p in projects]
+    with ui.column().classes("w-full gap-2"):
+        with ui.row().classes('gap-2'):
+            ui.button("➕ New Project", on_click=lambda: new_project()).props("color=secondary")
 
-    # define columns with new names
-    columns = [
-        {"name": new_key, "label": new_key, "field": new_key, "editable": True}
-        for new_key in field_mapping.values()
-    ]
-    rows = [
-        {
-            "prosjekt_id": str(p.prosjekt_id),
-            **{new_key: getattr(p, old_key) for old_key, new_key in field_mapping.items()}
-        }
-        for p in projects
-    ]
-    table = ui.table(
-        columns=columns,
-        rows=rows,
-        row_key='prosjekt_id',  # or "Kontaktperson" if that's unique, or keep prosjekt_id hidden
-        column_defaults={"align": "left", 'headerClasses': 'uppercase text-primary', "sortable": True, "filterable": True},
-        selection="single",
-    ).classes("w-full")
+        visible_keys = [
+            key for key in projects[0].keys()
+            if key not in ["prosjekt_id", "epost_kontakt"]
+        ]
 
-    selected = ui.label("No project selected")
+        columns = [
+            {
+                "name": key,
+                "label": key.replace("_", " ").title(),
+                "field": key,
+                "sortable": True,
+                "align": "left",
+            }
+            for key in visible_keys
+        ]
 
-    def on_row_select(e):
-        if e.args:
-            selected.set_text(f"Selected: {e.args["rows"][0]["Navn prosjekt"]}")
 
-    table.on("selection", on_row_select)
-    def open_details():
-        selected_rows = table.selected
-        if selected_rows:
-            prosjekt_id = selected_rows[0]['prosjekt_id']
-            ui.navigate.to(f"/project/{prosjekt_id}")
+        rows = [
+            {**p, "prosjekt_id": str(p["prosjekt_id"])}  # ensure UUID is a string
+            for p in projects
+        ]
 
-    ui.button("Open details", on_click=open_details)
-    # def save_changes():
-    #     # get edited rows back from table
-    #     edited = [ProjectData(**row) for row in table.rows]
-    #     diffs = diff_projects(ORIGINAL_PROJECTS[email], edited)
-        
-    #     if not diffs:
-    #         ui.notify('No changes detected')
-    #         return
-        
-    #     with Session(engine) as session:
-    #         apply_changes(session, diffs)
-    #         ui.notify('Changes saved to database!')
-    
-    # ui.button('Save changes', on_click=save_changes)
+        table =  ui.table(columns=columns,
+                    rows=rows,
+                    row_key="prosjekt_id",
+                    column_defaults={
+                        "align": "left",
+                        "headerClasses": "uppercase text-primary",
+                        "sortable": True,
+                        "filterable": True,
+                    },).classes("w-full")
+
+        table.add_slot(
+            'header',
+            r'''
+            <q-tr :props="props">
+                <q-th auto-width />
+                <q-th v-for="col in props.cols" :key="col.name" :props="props">
+                    {{ col.label }}
+                </q-th>
+            </q-tr>
+            '''
+        )
+
+        table.add_slot(
+            'body',
+            r'''
+            <q-tr :props="props">
+                <q-td auto-width>
+                    <a :href="'/project/' + props.row.prosjekt_id"><q-btn size="sm" color="primary" round dense
+                    @click="location.href = '/project/' + props.row.prosjekt_id"
+
+                    icon="edit" /></a>
+                    
+                </q-td>
+                <q-td v-for="col in props.cols" :key="col.name" :props="props">
+                    {{ col.value }}
+                </q-td>
+            </q-tr>
+            '''
+        )
+   
+    def new_project():
+        # Create a blank ProjectData with default values
+        new_id = str(uuid.uuid4())
+
+        # Store it in the same place so project_detail() can load it
+        ui.notify("New project created", type="positive")
+
+        # Navigate to the same project page as "edit"
+        ui.navigate.to(f"/project/new/{new_id}")
+
 @ui.page('/project/{prosjekt_id}')
-def project_detail(prosjekt_id: str, ORIGINAL_PROJECTS=ORIGINAL_PROJECTS):
+def project_detail(prosjekt_id: str):
+  
+    user = require_login()
+    if not user:
+        return 
+    layout(active_step='oppdater_prosjekt', title='Prosjekt detaljer', steps=steps_dict)
+
+    email = user["preferred_username"]
+    if not email:
+        ui.notify('No email claim found in login!')
+        return
+    digdir_overordnet_info_page(prosjekt_id, email)
+@ui.page('/project/new/{prosjekt_id}')
+def project_detail(prosjekt_id: str):
     
     user = require_login()
     if not user:
@@ -227,7 +257,7 @@ def project_detail(prosjekt_id: str, ORIGINAL_PROJECTS=ORIGINAL_PROJECTS):
     if not email:
         ui.notify('No email claim found in login!')
         return
-    digdir_overordnet_info_page(prosjekt_id, ORIGINAL_PROJECTS, email)
+    digdir_overordnet_info_page(prosjekt_id, email, new=True)
 @ui.page("/status_rapportering")
 def digdir():
     user = require_login()
@@ -235,7 +265,11 @@ def digdir():
         return 
     layout(active_step='status_rapportering',  title='Rapportering av status',steps=steps_dict)
     # digdir_aktivitet_page('aktivitet')
-    ui.label('This is the Digdir page.')
+    email = user["preferred_username"]
+    user_name = user["name"]
+    if not email:
+        ui.notify('No email claim found in login!')
+        return
 
 
 @ui.page("/leveranse")
@@ -266,7 +300,6 @@ def projects_page():
     
     with Session(engine) as session:
         projects = get_project_data(session, email)
-        print(projects)
     # store original copy for later diff
     ORIGINAL_PROJECTS[email] = [p.model_copy(deep=True) for p in projects]
     
