@@ -47,7 +47,7 @@ def provide_token(dialect, conn_rec, cargs, cparams):
 
 # --- SQLModel tables ---
 
-schema_name = "portfolio_dev"
+schema_name = os.getenv("SCHEMA")
 class PortfolioProject(SQLModel, table=True):
     __tablename__ = "PortfolioProject"
     __table_args__ = {"schema": schema_name}
@@ -114,6 +114,28 @@ class Fremskritt(SQLModel, table=True):
     fremskritt: str | None = None
     fase: str | None = None
     planlagt_ferdig: datetime | None = None
+    sist_endret: datetime | None = None
+    er_gjeldende: bool | None = None
+    prosjekt_id : uuid.UUID = Field(
+        foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
+    )
+
+class Malbilde(SQLModel, table=True):
+    __tablename__ = "Malbilde"
+    __table_args__ = {"schema": schema_name}
+
+    malbilde_id: uuid.UUID = Field(
+            default_factory=uuid.uuid4,
+            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True, default=uuid.uuid4),
+        )
+    malbilde_1_beskrivelse: str | None = None
+    malbilde_1_vurdering: str | None = None
+    malbilde_2_beskrivelse: str | None = None
+    malbilde_2_vurdering: str | None = None
+    malbilde_3_beskrivelse: str | None = None
+    malbilde_3_vurdering: str | None = None
+    malbilde_4_beskrivelse: str | None = None
+    malbilde_4_vurdering: str | None = None
     sist_endret: datetime | None = None
     er_gjeldende: bool | None = None
     prosjekt_id : uuid.UUID = Field(
@@ -280,9 +302,10 @@ class ProjectData(BaseModel):
     problemstilling: Optional[str]
     beskrivelse: Optional[str]
     risiko: Optional[str]
-    mål_1_tildelingsbrevet: Optional[str]
-    mål_2_tildelingsbrevet: Optional[str]
-    mål_3_tildelingsbrevet: Optional[str]
+    malbilde_1_beskrivelse: Optional[str]
+    malbilde_2_beskrivelse: Optional[str]
+    malbilde_3_beskrivelse: Optional[str]
+    malbilde_4_beskrivelse: Optional[str]
     kompetanse_behov: Optional[str]
     kompetanse_internt: Optional[str]
     månedsverk_interne: Optional[int]
@@ -308,9 +331,10 @@ convert_list = {"prosjekt_id": PortfolioProject.prosjekt_id,
 "problemstilling": Problemstilling.problem,
 "beskrivelse": Tiltak.tiltak_beskrivelse,
 "risiko": Risikovurdering.vurdering,
-"mål_1_tildelingsbrevet": UnderstøtteTildelingsbrev.mål_1_beskrivelse,
-"mål_2_tildelingsbrevet": UnderstøtteTildelingsbrev.mål_2_beskrivelse,
-"mål_3_tildelingsbrevet": UnderstøtteTildelingsbrev.mål_3_beskrivelse,
+"malbilde_1_beskrivelse": Malbilde.malbilde_1_beskrivelse,
+"malbilde_2_beskrivelse": Malbilde.malbilde_2_beskrivelse,
+"malbilde_3_beskrivelse": Malbilde.malbilde_3_beskrivelse,
+"malbilde_4_beskrivelse": Malbilde.malbilde_4_beskrivelse,
 "kompetanse_behov": Resursbehov.kompetanse_som_trengs,
 "kompetanse_internt": Resursbehov.kompetanse_tilgjengelig,
 "månedsverk_interne": Resursbehov.antall_mandsverk_intern,
@@ -353,9 +377,10 @@ field_to_table_col = {"prosjekt_id": (PortfolioProject,PortfolioProject.prosjekt
 "problemstilling": (Problemstilling,Problemstilling.problem),
 "beskrivelse": (Tiltak,Tiltak.tiltak_beskrivelse),
 "risiko": (Risikovurdering,Risikovurdering.vurdering),
-"mål_1_tildelingsbrevet": (UnderstøtteTildelingsbrev,UnderstøtteTildelingsbrev.mål_1_beskrivelse),
-"mål_2_tildelingsbrevet": (UnderstøtteTildelingsbrev,UnderstøtteTildelingsbrev.mål_2_beskrivelse),
-"mål_3_tildelingsbrevet": (UnderstøtteTildelingsbrev,UnderstøtteTildelingsbrev.mål_3_beskrivelse),
+"malbilde_1_beskrivelse": (Malbilde,Malbilde.malbilde_1_beskrivelse),
+"malbilde_2_beskrivelse": (Malbilde,Malbilde.malbilde_2_beskrivelse),
+"malbilde_3_beskrivelse": (Malbilde,Malbilde.malbilde_3_beskrivelse),
+"malbilde_4_beskrivelse": (Malbilde,Malbilde.malbilde_4_beskrivelse),
 "kompetanse_behov": (Resursbehov,Resursbehov.kompetanse_som_trengs),
 "kompetanse_internt": (Resursbehov,Resursbehov.kompetanse_tilgjengelig),
 "månedsverk_interne": (Resursbehov,Resursbehov.antall_mandsverk_intern),
@@ -391,7 +416,7 @@ table_pk_map = {
     Risikovurdering: "risiko_vurdering_id",
     Samarabeid: "samarbeid_id",
     Tiltak: "tiltak_id",
-    UnderstøtteTildelingsbrev: "strategisk_forankring_id",
+    Malbilde: "malbilde_id",
     Vurdering: "vurdering_id",
 }
 def create_empty_project(eier_epost: str, pid: UUID) -> ProjectData:
@@ -410,9 +435,10 @@ def create_empty_project(eier_epost: str, pid: UUID) -> ProjectData:
         problemstilling="",
         beskrivelse="",
         risiko="",
-        mål_1_tildelingsbrevet=None,
-        mål_2_tildelingsbrevet=None,
-        mål_3_tildelingsbrevet=None,
+        malbilde_1_beskrivelse=None,
+        malbilde_2_beskrivelse=None,
+        malbilde_3_beskrivelse=None,
+        malbilde_4_beskrivelse=None,
         kompetanse_behov="",
         kompetanse_internt=None,
         månedsverk_interne=None,
@@ -490,9 +516,9 @@ def get_single_project_data(session, project_id: str):
             isouter=True,
         )
         .join(
-            UnderstøtteTildelingsbrev,
-            (UnderstøtteTildelingsbrev.prosjekt_id == PortfolioProject.prosjekt_id)
-            & (UnderstøtteTildelingsbrev.er_gjeldende == True),
+            Malbilde,
+            (Malbilde.prosjekt_id == PortfolioProject.prosjekt_id)
+            & (Malbilde.er_gjeldende == True),
             isouter=True,
         )
         .join(
@@ -570,7 +596,7 @@ def get_project_data(session, email: str | None = None):
         .join(Problemstilling, Problemstilling.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
         .join(Tiltak, Tiltak.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
         .join(Risikovurdering, Risikovurdering.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
-        .join(UnderstøtteTildelingsbrev, UnderstøtteTildelingsbrev.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
+        .join(Malbilde, Malbilde.prosjekt_id == Malbilde.prosjekt_id, isouter=True)
         .join(Resursbehov, Resursbehov.prosjekt_id == PortfolioProject.prosjekt_id, isouter=False)
         .join(DigitaliseringStrategi, DigitaliseringStrategi.prosjekt_id == PortfolioProject.prosjekt_id, isouter=True)
         .where(
@@ -582,7 +608,7 @@ def get_project_data(session, email: str | None = None):
             Risikovurdering.er_gjeldende == True,
             Samarabeid.er_gjeldende == True,
             Tiltak.er_gjeldende == True,
-            UnderstøtteTildelingsbrev.er_gjeldende == True,
+            Malbilde.er_gjeldende == True,
         )
     )
 
