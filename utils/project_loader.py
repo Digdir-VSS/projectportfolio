@@ -4,6 +4,8 @@ import urllib
 from sqlmodel import SQLModel, Field, Session, select, Relationship
 from sqlalchemy import create_engine, event, Column
 from azure.identity import DefaultAzureCredential, ClientSecretCredential
+from azure.keyvault.secrets import SecretClient
+
 import uuid
 from sqlalchemy.dialects.mssql import UNIQUEIDENTIFIER
 from datetime import datetime
@@ -33,7 +35,13 @@ engine = create_engine(odbc_str, echo=True)
 
 # --- Token injection hook ---
 azure_client_id = os.getenv("AZURE_CLIENT_ID")
-azure_client_secret = os.getenv("AZURE_CLIENT_SECRET")
+credential = DefaultAzureCredential()
+client = SecretClient(
+    vault_url=os.getenv("KEY_VAULT_URL"), credential=credential
+)
+CLIENT_SECRET = client.get_secret(os.getenv("CLIENT_SECRET")).value
+# client_secret_new = client.get_secret(os.getenv("CLIENT_SECRET")).value
+azure_client_secret = client.get_secret(os.getenv("AZURE_CLIENT_SECRET")).value
 azure_tenant_id = os.getenv("AZURE_TENANT_ID")
 credential = ClientSecretCredential(tenant_id=azure_tenant_id,client_id=azure_client_id,client_secret=azure_client_secret)  # or ClientSecretCredential if you prefer
 
