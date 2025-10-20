@@ -4,6 +4,7 @@ from utils.project_loader import diff_projects, ProjectData, engine, apply_chang
 from sqlmodel import Session
 from uuid import UUID
 from datetime import datetime
+import ast
 avdelinger = ['BOD','DSS' ,'KOM','FEL','STL' ,'TUU', 'VIS']
 def project_detail(prosjekt_id: str, email: str, new: bool = False):
     if new:
@@ -181,7 +182,11 @@ def project_detail(prosjekt_id: str, email: str, new: bool = False):
         }
         with ui.element("div").classes('col-span-2 row-span-2 col-start-1 row-start-8'):
             ui.label('Sammenheng med Digitaliseringsstrategien').classes('text-lg font-bold')
-            selected_keys = project.sammenheng_med_digitaliseringsstrategien_mm or []
+            try:
+                selected_keys = ast.literal_eval(project.sammenheng_med_digitaliseringsstrategien_mm)
+            except (ValueError, SyntaxError):
+                selected_keys = project.sammenheng_med_digitaliseringsstrategien_mm = []
+            # selected_keys = project.sammenheng_med_digitaliseringsstrategien_mm or []
             selected_labels = [digitaliserings_strategi_digdir[i] for i in selected_keys if i in digitaliserings_strategi_digdir]
 
             inputs['sammenheng_med_digitaliseringsstrategien_mm'] = ui.select(list(digitaliserings_strategi_digdir.values()), 
@@ -259,7 +264,7 @@ def project_detail(prosjekt_id: str, email: str, new: bool = False):
             edited_project.hvor_sikkert_estimatene = ""
         if len(edited_project.sammenheng_med_digitaliseringsstrategien_mm) > 0 and isinstance(edited_project.sammenheng_med_digitaliseringsstrategien_mm[0], str):
             reverse_digdir = {v: k for k, v in digitaliserings_strategi_digdir.items()}
-            edited_project.sammenheng_med_digitaliseringsstrategien_mm = [reverse_digdir[label] for label in edited_project.sammenheng_med_digitaliseringsstrategien_mm if label in reverse_digdir]
+            edited_project.sammenheng_med_digitaliseringsstrategien_mm = str([reverse_digdir[label] for label in edited_project.sammenheng_med_digitaliseringsstrategien_mm if label in reverse_digdir])
         # print([project], [edited_project])
         diffs = diff_projects([project],[edited_project])
         print(new)

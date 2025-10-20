@@ -734,14 +734,14 @@ def apply_changes(diffs, session, new=False):
                 stmt = select(table_cls).where(
                     table_cls.prosjekt_id == prosjekt_id,
                     table_cls.er_gjeldende == True
-                )
+                ).with_for_update()
                 current = session.exec(stmt).one_or_none()
 
                 if current:
                     # Mark old row as inactive
                     current.er_gjeldende = False
                     session.add(current)
-
+                    session.flush()
                     # Copy all old values
                     new_row_data = (
                         current.dict() if hasattr(current, "dict") else current.__dict__.copy()
