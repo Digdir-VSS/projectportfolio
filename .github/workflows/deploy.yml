@@ -1,0 +1,55 @@
+name: Build and Deploy to Azure Container Apps (Dev)
+
+on:
+  push:
+    branches:
+      - dev
+
+env:
+  ACR_NAME: projectportfolioregistry
+  IMAGE_NAME: portfolio.dev
+  CONTAINER_APP_NAME: project-portfolio-dev-app
+  RESOURCE_GROUP: project-portfolio-resource
+  SUBSCRIPTION_ID: 7d1f4d1a-a15e-4e0c-acea-315378a149ee
+  BASE_APPLICATION_URL: https://project-portfolio-dev-app.wittybay-0abce5d9.norwayeast.azurecontainerapps.io
+  SCHEMA: "portfolio_dev"
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Build Docker image
+      run: |
+        docker build -t $ACR_NAME.azurecr.io/$IMAGE_NAME:${{ github.sha }} .
+        docker tag $ACR_NAME.azurecr.io/$IMAGE_NAME:${{ github.sha }} $ACR_NAME.azurecr.io/$IMAGE_NAME:latest
+
+    - name: Login to ACR
+      run: |
+        az acr login --name $ACR_NAME
+
+    - name: Push Docker image to ACR
+      run: |
+        docker push $ACR_NAME.azurecr.io/$IMAGE_NAME:latest
+
+    - name: Deploy to Azure Container Apps (dev)
+      uses: azure/CLI@v1
+      with:
+        inlineScript: |
+          az account set --subscription $SUBSCRIPTION_ID
+          az containerapp update \
+            --name $CONTAINER_APP_NAME \
+            --resource-group $RESOURCE_GROUP \
+            --container-name $CONTAINER_APP_NAME \
+            --image $ACR_NAME.azurecr.io/$IMAGE_NAME:${{ github.sha }} \
+            --set-env-vars BASE_APPLICATION_URL=$BASE_APPLICATION_URL SCHEMA=$SCHEMA \
+            --cpu 1 \
+            --memory 2Gi
