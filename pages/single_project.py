@@ -5,7 +5,39 @@ from sqlmodel import Session
 from uuid import UUID
 from datetime import datetime
 import ast
-avdelinger = ['BOD','DSS' ,'KOM','FEL','STL' ,'TUU', 'VIS']
+import configparser
+import asyncio
+from msgraph import GraphServiceClient
+from msgraph.generated.models.o_data_errors.o_data_error import ODataError
+from utils.graph import Graph
+from azure.identity import ClientSecretCredential, DefaultAzureCredential
+from azure.keyvault.secrets import SecretClient
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+credential = DefaultAzureCredential()
+client = SecretClient(
+    vault_url=os.getenv("KEY_VAULT_URL"), credential=credential
+)
+# async def list_gr
+CLIENT_SECRET = client.get_secret(os.getenv("CLIENT_SECRET")).value
+CLIENT_ID = os.environ.get("CLIENT_ID")
+TENANT_ID = os.environ.get("TENANT_ID")
+credentials = ClientSecretCredential(
+    tenant_id=TENANT_ID,
+    client_id=CLIENT_ID,
+    client_secret=CLIENT_SECRET
+)
+scopes = ['https://graph.microsoft.com/.default']
+client = GraphServiceClient(credentials=credentials, scopes=scopes)
+# async def get_user():
+#     user = await client.users.by_user_id('userPrincipalName').get()
+#     if user:
+#         print(user.display_name)
+# asyncio.run(get_user())
+
+avdelinger = ['BOD','DSS' ,'KOM','FEL','STL' ,'TUU', 'VIS', "KI Norge"]
 def project_detail(prosjekt_id: str, email: str, new: bool = False):
     if new:
         project = create_empty_project(email, pid=prosjekt_id)
@@ -33,7 +65,7 @@ def project_detail(prosjekt_id: str, email: str, new: bool = False):
     # show all fields as key/value
     with ui.grid(columns=5).classes("w-full gap-5"):
         with ui.element("div").classes('col-span-1 row-span-1 col-start-1 row-start-1'):
-            ui.label("Navn prosjekt").classes('text-lg font-bold')
+            ui.label("Navn på tiltak").classes('text-lg font-bold')
             inputs['navn_tiltak'] = ui.input(value=project.navn_tiltak).classes('w-full')
         with ui.element("div").classes('col-span-1 row-span-1 col-start-2 row-start-1'):
             ui.label("Kontaktperson").classes('text-lg font-bold')
@@ -102,7 +134,7 @@ def project_detail(prosjekt_id: str, email: str, new: bool = False):
                 # inputs['ferdig_tid'] =date.label
  
         with ui.element("div").classes('col-span-1 row-span-1 col-start-3 row-start-5'):
-            ui.label("Fase tiltak").classes('text-lg font-bold')
+            ui.label("Hvilken fase skal startes").classes('text-lg font-bold')
             inputs['fase_tiltak'] = ui.select(
                 ['Konsept', 'Planlegging', 'Gjennomføring','Problem/ide'],
                 value=project.fase_tiltak

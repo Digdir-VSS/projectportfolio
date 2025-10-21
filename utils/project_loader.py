@@ -760,6 +760,7 @@ def apply_changes(diffs, session, new=False):
                     # Clean up
                     pk_col = table_pk_map[table_cls]
                     new_row_data.pop(pk_col, None)
+                    new_row_data["prosjekt_id"] = prosjekt_id
                     new_row_data[pk_col] = str(uuid.uuid4()).lower()
                     new_row_data["sist_endret"] = datetime.utcnow()
                     new_row_data["er_gjeldende"] = True

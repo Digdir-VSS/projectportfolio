@@ -8,7 +8,6 @@ from dotenv import load_dotenv
 from msal import ConfidentialClientApplication
 from sqlmodel import Session
 
-from utils.db_functions import diff_projects, apply_changes
 from utils.project_loader import get_project_data, ProjectData, engine, get_projects  # your Pydantic model
 from pages.login_page import register_login_pages
 from pages.dashboard import dashboard
@@ -73,8 +72,7 @@ steps_dict = {
     "home": "Oversikt over dine prosjekter",
     "oppdater_prosjekt": "Ny/ endre prosjekt",
     "status_rapportering": "Rapportering av status",
-    "leveranse": "Om Digdirs leveranse",
-    "projects": "Prosjekter"
+    "leveranse": "Om Digdirs leveranse"
 }
 field_mapping = {
     "navn_tiltak": "Navn prosjekt",
@@ -279,54 +277,6 @@ def leveranse():
         return 
     layout(active_step='leveranse', title='Om Digdirs leveranse',steps=steps_dict)
     # digdir_leveranse("leveranse")
-
-
-
-
-@ui.page('/projects')
-def projects_page():
-    user = require_login()
-    if not user:
-        return
-    # load projects for this user
-    email = user["preferred_username"]
-    # email = "jonhakon.odd@digdir.no"  # for testing
-    if not email:
-        ui.notify('No email claim found in login!')
-        return
-    
-    layout(active_step='oversikt', title='Prosjekter', steps=steps_dict)
-    ui.label(f'Prosjekter for {email}')
-    
-    with Session(engine) as session:
-        projects = get_project_data(session, email)
-    # store original copy for later diff
-    ORIGINAL_PROJECTS[email] = [p.model_copy(deep=True) for p in projects]
-    
-    # create a table with editable fields
-    if not projects:
-        ui.label('No projects found for this user.')
-        return
-    table = ui.table(
-        columns=[{'name': f, 'label': f, 'field': f, 'editable': True} for f in projects[0].model_fields.keys()],
-        rows=[p.dict() for p in projects],
-        row_key='prosjekt_id'
-    ).classes('w-full')
-    
-    def save_changes():
-        # get edited rows back from table
-        edited = [ProjectData(**row) for row in table.rows]
-        diffs = diff_projects(ORIGINAL_PROJECTS[email], edited)
-        
-        if not diffs:
-            ui.notify('No changes detected')
-            return
-        
-        with Session(engine) as session:
-            apply_changes(session, diffs)
-            ui.notify('Changes saved to database!')
-    
-    ui.button('Save changes', on_click=save_changes)
 
 
 if __name__ in {"__main__", "__mp_main__"}:
