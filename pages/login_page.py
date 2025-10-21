@@ -46,8 +46,6 @@ def register_login_pages(msal_app, AUTH_FLOW_STATES, ENTRA_LOGOUT_ENDPOINT, SCOP
         """
         Logs out the user and redirects to Microsoft logout endpoint.
         """
-        print(app.storage.user)
         app.storage.user.pop("user", None)
         app.storage.user.pop("claims", None)
-        print(app.storage.user)
         return RedirectResponse(f"{ENTRA_LOGOUT_ENDPOINT}?post_logout_redirect_uri={os.environ.get('BASE_APPLICATION_URL')}")
