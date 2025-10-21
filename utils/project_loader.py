@@ -40,10 +40,7 @@ client = SecretClient(
     vault_url=os.getenv("KEY_VAULT_URL"), credential=credentials
 )
 CLIENT_SECRET = client.get_secret("Fabric-secret").value
-# CLIENT_SECRET = client.get_secret(os.getenv("CLIENT_SECRET")).value
-# print(type(os.getenv("AZURE_CLIENT_SECRET")))
-# azure_client_secret = client.get_secret(os.getenv("AZURE_CLIENT_SECRET")).value
-# azure_client_secret = os.getenv("AZURE_CLIENT_SECRET")
+
 azure_tenant_id = os.getenv("AZURE_TENANT_ID")
 credential = ClientSecretCredential(tenant_id=azure_tenant_id,client_id=azure_client_id,client_secret=CLIENT_SECRET)  # or ClientSecretCredential if you prefer
 
