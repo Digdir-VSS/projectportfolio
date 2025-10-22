@@ -29,7 +29,7 @@ jobs:
       
       - name: Checkout code
         uses: actions/checkout@v4
-        
+
       - name: Build Docker image
         run: |
           docker build -t $ACR_NAME.azurecr.io/$IMAGE_NAME:${{ github.sha }} .
@@ -41,18 +41,19 @@ jobs:
 
       - name: Push Docker image to ACR
         run: |
+          docker push $ACR_NAME.azurecr.io/$IMAGE_NAME:${{ github.sha }}
           docker push $ACR_NAME.azurecr.io/$IMAGE_NAME:latest
 
-      - name: Deploy to Azure Container Apps (dev)
-        uses: azure/CLI@v1
-        with:
-          inlineScript: |
-            az account set --subscription $SUBSCRIPTION_ID
-            az containerapp update \
-              --name $CONTAINER_APP_NAME \
-              --resource-group $RESOURCE_GROUP \
-              --container-name $CONTAINER_APP_NAME \
-              --image $ACR_NAME.azurecr.io/$IMAGE_NAME:${{ github.sha }} \
-              --set-env-vars BASE_APPLICATION_URL=$BASE_APPLICATION_URL SCHEMA=$SCHEMA \
-              --cpu 1 \
-              --memory 2Gi
+            - name: Deploy to Azure Container Apps (dev)
+              uses: azure/CLI@v1
+              with:
+                inlineScript: |
+                  az account set --subscription $SUBSCRIPTION_ID
+                  az containerapp update \
+                    --name $CONTAINER_APP_NAME \
+                    --resource-group $RESOURCE_GROUP \
+                    --container-name $CONTAINER_APP_NAME \
+                    --image $ACR_NAME.azurecr.io/$IMAGE_NAME:${{ github.sha }} \
+                    --set-env-vars BASE_APPLICATION_URL=$BASE_APPLICATION_URL SCHEMA=$SCHEMA \
+                    --cpu 1 \
+                    --memory 2Gi
