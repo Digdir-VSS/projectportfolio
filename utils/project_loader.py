@@ -43,7 +43,7 @@ keyvault_credential = DefaultAzureCredential()
 kv_client = SecretClient(vault_url=key_vault_url, credential=keyvault_credential)
 
 fabric_client_secret = kv_client.get_secret(fabric_secret_name).value
-credential = ClientSecretCredential(tenant_id=fabric_client_id,client_id=fabric_tenant_id,client_secret=fabric_client_secret)  # or ClientSecretCredential if you prefer
+credential = ClientSecretCredential(tenant_id=fabric_tenant_id,client_id=fabric_client_id,client_secret=fabric_client_secret)  # or ClientSecretCredential if you prefer
 
 @event.listens_for(engine, "do_connect")
 def provide_token(dialect, conn_rec, cargs, cparams):
