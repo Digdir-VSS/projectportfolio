@@ -80,5 +80,6 @@ jobs:
                 FABRIC_SECRET_NAME=${{ secrets.FABRIC_SECRET_NAME }} \
                 TENANT_ID=${{ secrets.TENANT_ID }} \
                 UUID_RUN=${{ github.run_id }} \
+              --set-managed-identity systemassigned \
               --cpu 1 \
               --memory 2Gi
