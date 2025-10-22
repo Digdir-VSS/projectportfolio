@@ -13,7 +13,9 @@ env:
   SUBSCRIPTION_ID: 7d1f4d1a-a15e-4e0c-acea-315378a149ee
   BASE_APPLICATION_URL: https://project-portfolio-dev-app.wittybay-0abce5d9.norwayeast.azurecontainerapps.io
   SCHEMA: "portfolio_dev"
-
+permissions:
+  id-token: write
+  contents: read
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
