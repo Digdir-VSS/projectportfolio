@@ -8,6 +8,7 @@ dependencies = [
     "azure-identity>=1.25.1",
     "azure-keyvault-secrets>=4.10.0",
     "cachetools>=6.2.1",
+    "microsoft-kiota-abstractions>=1.9.7",
     "msgraph-core>=1.3.8",
     "msgraph-sdk>=1.46.0",
     "nicegui>=2.23.0",
