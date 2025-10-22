@@ -52,8 +52,10 @@ jobs:
           echo "RESOURCE_GROUP=$RESOURCE_GROUP"
           echo "IMAGE=$ACR_NAME.azurecr.io/$IMAGE_NAME:${{ github.sha }}"
           echo "KEY_VAULT_URL=${{ secrets.KEY_VAULT_URL }}"
-          echo "FABRIC_SECRET_NAME=${{ secrets.FABRIC_SECRET_NAME }}"
+          echo "CLIENT_ID=${{ secrets.CLIENT_ID }}"
+          echo "CLIENT_SECRET_NAME=${{ secrets.CLIENT_SECRET_NAME }}"
           echo "FABRIC_CLIENT_ID=${{ secrets.FABRIC_CLIENT_ID }}"
+          echo "FABRIC_SECRET_NAME=${{ secrets.FABRIC_SECRET_NAME }}"
           echo "TENANT_ID=${{ secrets.TENANT_ID }}"
       - name: Deploy to Azure Container Apps (dev)
         uses: azure/CLI@v1
