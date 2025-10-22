@@ -53,6 +53,7 @@ jobs:
               --name $CONTAINER_APP_NAME \
               --resource-group $RESOURCE_GROUP \
               --image $ACR_NAME.azurecr.io/$IMAGE_NAME:${{ github.sha }} \
+              --revision-suffix "build-${{ github.run_number }}" \
               --set-env-vars "BASE_APPLICATION_URL=${BASE_APPLICATION_URL}" "SCHEMA=${SCHEMA}" \
               --cpu 1 \
               --memory 2Gi
