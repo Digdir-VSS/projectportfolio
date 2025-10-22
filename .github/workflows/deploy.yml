@@ -54,6 +54,6 @@ jobs:
                     --resource-group $RESOURCE_GROUP \
                     --container-name $CONTAINER_APP_NAME \
                     --image $ACR_NAME.azurecr.io/$IMAGE_NAME:${{ github.sha }} \
-                    --set-env-vars BASE_APPLICATION_URL=$BASE_APPLICATION_URL SCHEMA=$SCHEMA \
+                    --set-env-vars "BASE_APPLICATION_URL=${BASE_APPLICATION_URL}" "SCHEMA=${SCHEMA}" \
                     --cpu 1 \
                     --memory 2Gi
