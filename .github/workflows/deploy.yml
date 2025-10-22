@@ -17,39 +17,37 @@ env:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@main
-          
-    - name: 'Login via Azure CLI'
-      uses: azure/login@v1
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-    - name: Build Docker image
-      run: |
-        docker build -t $ACR_NAME.azurecr.io/$IMAGE_NAME:${{ github.sha }} .
-        docker tag $ACR_NAME.azurecr.io/$IMAGE_NAME:${{ github.sha }} $ACR_NAME.azurecr.io/$IMAGE_NAME:latest
+      - name: Build Docker image
+        run: |
+          docker build -t $ACR_NAME.azurecr.io/$IMAGE_NAME:${{ github.sha }} .
+          docker tag $ACR_NAME.azurecr.io/$IMAGE_NAME:${{ github.sha }} $ACR_NAME.azurecr.io/$IMAGE_NAME:latest
 
-    - name: Login to ACR
-      run: |
-        az acr login --name $ACR_NAME
+      - name: Login to ACR
+        run: |
+          az acr login --name $ACR_NAME
 
-    - name: Push Docker image to ACR
-      run: |
-        docker push $ACR_NAME.azurecr.io/$IMAGE_NAME:latest
+      - name: Push Docker image to ACR
+        run: |
+          docker push $ACR_NAME.azurecr.io/$IMAGE_NAME:latest
 
-    - name: Deploy to Azure Container Apps (dev)
-      uses: azure/CLI@v1
-      with:
-        inlineScript: |
-          az account set --subscription $SUBSCRIPTION_ID
-          az containerapp update \
-            --name $CONTAINER_APP_NAME \
-            --resource-group $RESOURCE_GROUP \
-            --container-name $CONTAINER_APP_NAME \
-            --image $ACR_NAME.azurecr.io/$IMAGE_NAME:${{ github.sha }} \
-            --set-env-vars BASE_APPLICATION_URL=$BASE_APPLICATION_URL SCHEMA=$SCHEMA \
-            --cpu 1 \
-            --memory 2Gi
+      - name: Deploy to Azure Container Apps (dev)
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+            az account set --subscription $SUBSCRIPTION_ID
+            az containerapp update \
+              --name $CONTAINER_APP_NAME \
+              --resource-group $RESOURCE_GROUP \
+              --container-name $CONTAINER_APP_NAME \
+              --image $ACR_NAME.azurecr.io/$IMAGE_NAME:${{ github.sha }} \
+              --set-env-vars BASE_APPLICATION_URL=$BASE_APPLICATION_URL SCHEMA=$SCHEMA \
+              --cpu 1 \
+              --memory 2Gi
