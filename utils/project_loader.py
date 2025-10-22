@@ -16,43 +16,44 @@ from collections import Counter
 from typing import List, Any
 from dotenv import load_dotenv
 load_dotenv()
-# --- Azure creds ---
-driver_name = "{ODBC Driver 18 for SQL Server}"
-server_name = os.getenv("SERVER")      # e.g. "xxx.datawarehouse.fabric.microsoft.com"
-database_name = os.getenv("DATABASE")
 
-# --- Connection string (NO auth here, token comes later) ---
-connection_string = (
-    "Driver={};Server=tcp:{},1433;Database={};Encrypt=yes;"
-    "TrustServerCertificate=no;Connection Timeout=30"
-).format(driver_name, server_name, database_name)
+def get_engine():
+    driver_name = "{ODBC Driver 18 for SQL Server}"
+    server_name = os.getenv("SERVER")      # e.g. "xxx.datawarehouse.fabric.microsoft.com"
+    database_name = os.getenv("DATABASE")
 
-params = urllib.parse.quote(connection_string)
-odbc_str = f"mssql+pyodbc:///?odbc_connect={params}"
+    # --- Connection string (NO auth here, token comes later) ---
+    connection_string = (
+        "Driver={};Server=tcp:{},1433;Database={};Encrypt=yes;"
+        "TrustServerCertificate=no;Connection Timeout=30"
+    ).format(driver_name, server_name, database_name)
 
-# --- Get SQLAlchemy engine ---
-engine = create_engine(odbc_str, echo=True)
+    params = urllib.parse.quote(connection_string)
+    odbc_str = f"mssql+pyodbc:///?odbc_connect={params}"
 
-# --- Token injection hook ---
-fabric_client_id = os.getenv("FABRIC_CLIENT_ID")
-fabric_tenant_id  = os.getenv("TENANT_ID")
-key_vault_url = os.getenv("KEY_VAULT_URL")
-fabric_secret_name = os.getenv("FABRIC_SECRET_NAME")
+    # --- Get SQLAlchemy engine ---
+    engine = create_engine(odbc_str, echo=True)
 
-keyvault_credential = DefaultAzureCredential()
-kv_client = SecretClient(vault_url=key_vault_url, credential=keyvault_credential)
+    # --- Token injection hook ---
+    fabric_client_id = os.getenv("FABRIC_CLIENT_ID")
+    fabric_tenant_id  = os.getenv("TENANT_ID")
+    key_vault_url = os.getenv("KEY_VAULT_URL")
+    fabric_secret_name = os.getenv("FABRIC_SECRET_NAME")
 
-fabric_client_secret = kv_client.get_secret(fabric_secret_name).value
-credential = ClientSecretCredential(tenant_id=fabric_tenant_id,client_id=fabric_client_id,client_secret=fabric_client_secret)  # or ClientSecretCredential if you prefer
+    keyvault_credential = DefaultAzureCredential()
+    kv_client = SecretClient(vault_url=key_vault_url, credential=keyvault_credential)
 
-@event.listens_for(engine, "do_connect")
-def provide_token(dialect, conn_rec, cargs, cparams):
-    print("🔑 Requesting new Entra ID token for SQL Server...")
-    token_bytes = credential.get_token("https://database.windows.net/.default").token.encode("utf-16-le")
-    token_struct = struct.pack(f"<I{len(token_bytes)}s", len(token_bytes), token_bytes)
-    SQL_COPT_SS_ACCESS_TOKEN = 1256
-    cparams["attrs_before"] = {SQL_COPT_SS_ACCESS_TOKEN: token_struct}
+    fabric_client_secret = kv_client.get_secret(fabric_secret_name).value
+    credential = ClientSecretCredential(tenant_id=fabric_tenant_id,client_id=fabric_client_id,client_secret=fabric_client_secret)  # or ClientSecretCredential if you prefer
 
+    @event.listens_for(engine, "do_connect")
+    def provide_token(dialect, conn_rec, cargs, cparams):
+        print("🔑 Requesting new Entra ID token for SQL Server...")
+        token_bytes = credential.get_token("https://database.windows.net/.default").token.encode("utf-16-le")
+        token_struct = struct.pack(f"<I{len(token_bytes)}s", len(token_bytes), token_bytes)
+        SQL_COPT_SS_ACCESS_TOKEN = 1256
+        cparams["attrs_before"] = {SQL_COPT_SS_ACCESS_TOKEN: token_struct}
+    return engine
 # --- SQLModel tables ---
 
 schema_name = os.getenv("SCHEMA")

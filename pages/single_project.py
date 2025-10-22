@@ -1,10 +1,13 @@
 from nicegui import ui, app, Client
 from typing import Any
-from utils.project_loader import diff_projects, ProjectData, engine, apply_changes, update_project_from_diffs, get_single_project_data, create_empty_project
+from utils.project_loader import diff_projects, get_engine, apply_changes, update_project_from_diffs, get_single_project_data, create_empty_project
 from sqlmodel import Session
 from uuid import UUID
 from datetime import datetime
 import ast
+
+
+engine = get_engine()
 avdelinger = ['BOD','DSS' ,'KOM','FEL','STL' ,'TUU', 'VIS']
 def project_detail(prosjekt_id: str, email: str, new: bool = False):
     if new:

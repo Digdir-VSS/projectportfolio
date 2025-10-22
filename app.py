@@ -9,7 +9,7 @@ from msal import ConfidentialClientApplication
 from sqlmodel import Session
 
 from utils.db_functions import diff_projects, apply_changes
-from utils.project_loader import get_project_data, ProjectData, engine, get_projects  # your Pydantic model
+from utils.project_loader import get_project_data, ProjectData, get_projects, get_engine  # your Pydantic model
 from pages.login_page import register_login_pages
 from pages.dashboard import dashboard
 from pages.single_project import project_detail as digdir_overordnet_info_page
@@ -47,6 +47,8 @@ msal_app = ConfidentialClientApplication(
     authority=AUTHORITY,
     client_credential=CLIENT_SECRET,
 )
+
+engine = get_engine()
 # Cache for in-progress authorisation flows. Give the user 5 minutes to complete the flow
 AUTH_FLOW_STATES: TTLCache[str, dict[str, Any]] = TTLCache(maxsize=256, ttl=60 * 5)
 
