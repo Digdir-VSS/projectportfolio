@@ -37,7 +37,7 @@ engine = create_engine(odbc_str, echo=True)
 fabric_client_id = os.getenv("FABRIC_CLIENT_ID")
 fabric_tenant_id  = os.getenv("TENANT_ID")
 key_vault_url = os.getenv("KEY_VAULT_URL")
-fabric_secret_name = os.getenv("FABRIC_CLIENT_SECRET_NAME")
+fabric_secret_name = os.getenv("FABRIC_SECRET_NAME")
 
 keyvault_credential = DefaultAzureCredential()
 kv_client = SecretClient(vault_url=key_vault_url, credential=keyvault_credential)
