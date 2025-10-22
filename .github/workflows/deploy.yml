@@ -56,9 +56,15 @@ jobs:
               --resource-group $RESOURCE_GROUP \
               --image $ACR_NAME.azurecr.io/$IMAGE_NAME:${{ github.sha }} \
               --revision-suffix "build-${{ github.run_number }}" \
-              --set-env-vars "BASE_APPLICATION_URL=${BASE_APPLICATION_URL}" "SCHEMA=${SCHEMA}" \
-              "DRIVER=${DRIVER}" "TENANT_NAME=${TENANT_NAME}" "DATABASE=${DATABASE}" "DRIVER=${DRIVER}" \
-              "KEY_VAULT_URL=$${{ secrets.KEY_VAULT_URL }}" "CLIENT_ID=$${{ secrets.CLIENT_ID }}" "CLIENT_SECRET=$${{ secrets.CLIENT_SECRET }}" \
-              "AZURE_TENANT_ID=$${{ secrets.FABRICS_CLIENT_ID }}" "uuid_run=$${{ secrets.UUID_RUN }}"
+              --set-env-vars \
+                BASE_APPLICATION_URL=${BASE_APPLICATION_URL} \
+                SCHEMA=${SCHEMA} \
+                TENANT_NAME=${TENANT_NAME} \
+                DRIVER="${DRIVER}" \
+                DATABASE=${DATABASE} \
+                KEY_VAULT_URL=${{ secrets.KEY_VAULT_URL }} \
+                AZURE_CLIENT_ID=${{ secrets.AZURE_CLIENT_ID }} \
+                AZURE_TENANT_ID=${{ secrets.AZURE_TENANT_ID }} \
+                UUID_RUN=${{ github.run_id }} \
               --cpu 1 \
               --memory 2Gi
