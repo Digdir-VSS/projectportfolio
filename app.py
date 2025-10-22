@@ -24,7 +24,7 @@ credential = DefaultAzureCredential()
 client = SecretClient(
     vault_url=os.getenv("KEY_VAULT_URL"), credential=credential
 )
-CLIENT_SECRET = client.get_secret(os.getenv("CLIENT_SECRET")).value
+CLIENT_SECRET = client.get_secret(os.getenv("CLIENT_SECRET_NAME")).value
 CLIENT_ID = os.environ.get("CLIENT_ID")
 
 AUTHORITY = f"https://login.microsoftonline.com/{os.environ.get('TENANT_NAME')}"
