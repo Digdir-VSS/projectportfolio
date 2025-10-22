@@ -34,18 +34,16 @@ odbc_str = f"mssql+pyodbc:///?odbc_connect={params}"
 engine = create_engine(odbc_str, echo=True)
 
 # --- Token injection hook ---
-azure_client_id = os.getenv("AZURE_CLIENT_ID")
-credentials = DefaultAzureCredential()
-client = SecretClient(
-    vault_url=os.getenv("KEY_VAULT_URL"), credential=credentials
-)
-CLIENT_SECRET = client.get_secret("Fabric-secret").value
-# CLIENT_SECRET = client.get_secret(os.getenv("CLIENT_SECRET")).value
-# print(type(os.getenv("AZURE_CLIENT_SECRET")))
-# azure_client_secret = client.get_secret(os.getenv("AZURE_CLIENT_SECRET")).value
-# azure_client_secret = os.getenv("AZURE_CLIENT_SECRET")
-azure_tenant_id = os.getenv("AZURE_TENANT_ID")
-credential = ClientSecretCredential(tenant_id=azure_tenant_id,client_id=azure_client_id,client_secret=CLIENT_SECRET)  # or ClientSecretCredential if you prefer
+fabric_client_id = os.getenv("FABRIC_CLIENT_ID")
+fabric_tenant_id  = os.getenv("TENANT_ID")
+key_vault_url = os.getenv("KEY_VAULT_URL")
+fabric_secret_name = os.getenv("FABRIC_CLIENT_SECRET_NAME")
+
+keyvault_credential = DefaultAzureCredential()
+kv_client = SecretClient(vault_url=key_vault_url, credential=keyvault_credential)
+
+fabric_client_secret = kv_client.get_secret(fabric_secret_name).value
+credential = ClientSecretCredential(tenant_id=fabric_client_id,client_id=fabric_tenant_id,client_secret=fabric_client_secret)  # or ClientSecretCredential if you prefer
 
 @event.listens_for(engine, "do_connect")
 def provide_token(dialect, conn_rec, cargs, cparams):
