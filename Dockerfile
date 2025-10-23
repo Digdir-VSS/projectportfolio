@@ -33,6 +33,6 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 ENV PATH="/.venv/bin:$PATH"
 
-EXPOSE 8080
+EXPOSE 80
 
 CMD ["python", "app.py"]
