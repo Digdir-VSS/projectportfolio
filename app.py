@@ -337,6 +337,6 @@ if __name__ in {"__main__", "__mp_main__"}:
         title='Projectportfolio',
         host="0.0.0.0",    
         port=8080,
-        storage_secret=os.getenv("uuid_run"),
+        storage_secret=os.getenv("STORAGE_SECRET"),
         favicon='icon/Verktøykasse.png'
     )
