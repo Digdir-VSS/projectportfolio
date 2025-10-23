@@ -73,6 +73,8 @@ jobs:
                 TENANT_NAME=${TENANT_NAME} \
                 DRIVER="${DRIVER}" \
                 DATABASE=${DATABASE} \
+                SUPER_USER=${{ secrets.SUPER_USER }} \
+                SERVER=${{ secrets.SERVER }} \
                 CLIENT_ID=${{ secrets.CLIENT_ID }} \
                 CLIENT_SECRET_NAME=${{ secrets.CLIENT_SECRET_NAME }} \
                 KEY_VAULT_URL=${{ secrets.KEY_VAULT_URL }} \
