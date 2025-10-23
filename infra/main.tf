@@ -57,7 +57,7 @@ resource "azurerm_container_app" "projectportfolio_prod" {
 
   ingress {
     external_enabled = true
-    target_port      = 80
+    target_port      = 8080
     traffic_weight {
       percentage      = 100
       latest_revision = true
@@ -91,7 +91,7 @@ resource "azurerm_container_app" "projectportfolio_dev" {
 
   ingress {
     external_enabled = true
-    target_port      = 80
+    target_port      = 8080
     traffic_weight {
       percentage      = 100
       latest_revision = true
