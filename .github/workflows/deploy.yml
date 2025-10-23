@@ -45,18 +45,7 @@ jobs:
         run: |
           docker push $ACR_NAME.azurecr.io/$IMAGE_NAME:${{ github.sha }}
           docker push $ACR_NAME.azurecr.io/$IMAGE_NAME:latest
-      - name: Debug env vars
-        run: |
-          echo "🚀 Debugging variables:"
-          echo "CONTAINER_APP_NAME=$CONTAINER_APP_NAME"
-          echo "RESOURCE_GROUP=$RESOURCE_GROUP"
-          echo "IMAGE=$ACR_NAME.azurecr.io/$IMAGE_NAME:${{ github.sha }}"
-          echo "KEY_VAULT_URL=${{ secrets.KEY_VAULT_URL }}"
-          echo "CLIENT_ID=${{ secrets.CLIENT_ID }}"
-          echo "CLIENT_SECRET_NAME=${{ secrets.CLIENT_SECRET_NAME }}"
-          echo "FABRIC_CLIENT_ID=${{ secrets.FABRIC_CLIENT_ID }}"
-          echo "FABRIC_SECRET_NAME=${{ secrets.FABRIC_SECRET_NAME }}"
-          echo "TENANT_ID=${{ secrets.TENANT_ID }}"
+
       - name: Deploy to Azure Container Apps (dev)
         uses: azure/CLI@v1
         with:
@@ -73,6 +62,7 @@ jobs:
                 TENANT_NAME=${TENANT_NAME} \
                 DRIVER="${DRIVER}" \
                 DATABASE=${DATABASE} \
+                STORAGE_SECRET=${{ secrets.STORAGE_SECRET }} \
                 SUPER_USER=${{ secrets.SUPER_USER }} \
                 SERVER=${{ secrets.SERVER }} \
                 CLIENT_ID=${{ secrets.CLIENT_ID }} \
