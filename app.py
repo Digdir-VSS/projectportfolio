@@ -335,7 +335,7 @@ if __name__ in {"__main__", "__mp_main__"}:
     
     ui.run(
         title='Projectportfolio',
-        port=8080,
+        port=80,
         storage_secret=os.getenv("uuid_run"),
         favicon='icon/Verktøykasse.png'
     )
