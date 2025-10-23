@@ -86,7 +86,7 @@ field_mapping = {
     "date_modified": "Sist endret",
 }
 avdelinger = ['BOD','DSS' ,'KOM','FEL','STL' ,'TUU', 'VIS']  # <-- your real avdelinger
-super_user = json.loads(open('.hidden_config/config.json').read())[0]['super_user']
+super_user = os.getenv("SUPER_USER")
 # keep a global cache of loaded projects for comparison
 ORIGINAL_PROJECTS: dict[str, list[ProjectData]] = {}
 @ui.page("/")
