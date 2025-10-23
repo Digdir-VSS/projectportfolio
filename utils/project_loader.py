@@ -37,13 +37,8 @@ def get_engine():
     # --- Token injection hook ---
     fabric_client_id = os.getenv("FABRIC_CLIENT_ID")
     fabric_tenant_id  = os.getenv("TENANT_ID")
-    key_vault_url = os.getenv("KEY_VAULT_URL")
-    fabric_secret_name = os.getenv("FABRIC_SECRET_NAME")
+    fabric_client_secret = os.getenv("FABRIC_SECRET")
 
-    keyvault_credential = DefaultAzureCredential()
-    kv_client = SecretClient(vault_url=key_vault_url, credential=keyvault_credential)
-
-    fabric_client_secret = kv_client.get_secret(fabric_secret_name).value
     credential = ClientSecretCredential(tenant_id=fabric_tenant_id,client_id=fabric_client_id,client_secret=fabric_client_secret)  # or ClientSecretCredential if you prefer
 
     @event.listens_for(engine, "do_connect")
