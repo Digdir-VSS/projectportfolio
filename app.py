@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 from msal import ConfidentialClientApplication
 from sqlmodel import Session
 
-from utils.project_loader import get_project_data, ProjectData, engine, get_projects  # your Pydantic model
+from utils.project_loader import ProjectData, get_engine, get_projects  # your Pydantic model
 from pages.login_page import register_login_pages
 from pages.dashboard import dashboard
 from pages.single_project import project_detail as digdir_overordnet_info_page
@@ -23,7 +23,7 @@ credential = DefaultAzureCredential()
 client = SecretClient(
     vault_url=os.getenv("KEY_VAULT_URL"), credential=credential
 )
-CLIENT_SECRET = client.get_secret(os.getenv("CLIENT_SECRET")).value
+CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 CLIENT_ID = os.environ.get("CLIENT_ID")
 
 AUTHORITY = f"https://login.microsoftonline.com/{os.environ.get('TENANT_NAME')}"
@@ -46,6 +46,8 @@ msal_app = ConfidentialClientApplication(
     authority=AUTHORITY,
     client_credential=CLIENT_SECRET,
 )
+
+engine = get_engine()
 # Cache for in-progress authorisation flows. Give the user 5 minutes to complete the flow
 AUTH_FLOW_STATES: TTLCache[str, dict[str, Any]] = TTLCache(maxsize=256, ttl=60 * 5)
 
@@ -83,7 +85,7 @@ field_mapping = {
     "date_modified": "Sist endret",
 }
 avdelinger = ['BOD','DSS' ,'KOM','FEL','STL' ,'TUU', 'VIS']  # <-- your real avdelinger
-super_user = json.loads(open('.hidden_config/config.json').read())[0]['super_user']
+super_user = os.getenv("SUPER_USER")
 # keep a global cache of loaded projects for comparison
 ORIGINAL_PROJECTS: dict[str, list[ProjectData]] = {}
 @ui.page("/")
@@ -287,7 +289,8 @@ if __name__ in {"__main__", "__mp_main__"}:
     
     ui.run(
         title='Projectportfolio',
+        host="0.0.0.0",    
         port=8080,
-        storage_secret=os.getenv("uuid_run"),
+        storage_secret=os.getenv("STORAGE_SECRET"),
         favicon='icon/Verktøykasse.png'
     )

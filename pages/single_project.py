@@ -1,6 +1,6 @@
 from nicegui import ui
 from typing import Any
-from utils.project_loader import diff_projects, engine, apply_changes, update_project_from_diffs, get_single_project_data, create_empty_project
+from utils.project_loader import diff_projects, ProjectData, get_engine, apply_changes, update_project_from_diffs, get_single_project_data, create_empty_project
 from sqlmodel import Session
 from uuid import UUID
 from datetime import datetime
@@ -10,8 +10,8 @@ from utils.azure_users import load_users
 
 brukere = load_users()
 brukere_list = list(brukere.keys())
-
-avdelinger = ['BOD','DSS' ,'KOM','FEL','STL' ,'TUU', 'VIS', "KI Norge"]
+engine = get_engine()
+avdelinger = ['BOD','DSS' ,'KOM','FEL','STL' ,'TUU', 'VIS']
 def project_detail(prosjekt_id: str, email: str, user_name: str, new: bool = False):
     if new:
         project = create_empty_project(email,user_name=user_name, pid=prosjekt_id)

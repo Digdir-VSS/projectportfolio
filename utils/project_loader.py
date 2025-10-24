@@ -16,45 +16,39 @@ from collections import Counter
 from typing import List, Any
 from dotenv import load_dotenv
 load_dotenv()
-# --- Azure creds ---
-driver_name = "{ODBC Driver 18 for SQL Server}"
-server_name = os.getenv("SERVER")      # e.g. "xxx.datawarehouse.fabric.microsoft.com"
-database_name = os.getenv("DATABASE")
 
-# --- Connection string (NO auth here, token comes later) ---
-connection_string = (
-    "Driver={};Server=tcp:{},1433;Database={};Encrypt=yes;"
-    "TrustServerCertificate=no;Connection Timeout=30"
-).format(driver_name, server_name, database_name)
+def get_engine():
+    driver_name = "{ODBC Driver 18 for SQL Server}"
+    server_name = os.getenv("SERVER")      # e.g. "xxx.datawarehouse.fabric.microsoft.com"
+    database_name = os.getenv("DATABASE")
 
-params = urllib.parse.quote(connection_string)
-odbc_str = f"mssql+pyodbc:///?odbc_connect={params}"
+    # --- Connection string (NO auth here, token comes later) ---
+    connection_string = (
+        "Driver={};Server=tcp:{},1433;Database={};Encrypt=yes;"
+        "TrustServerCertificate=no;Connection Timeout=30"
+    ).format(driver_name, server_name, database_name)
 
-# --- Get SQLAlchemy engine ---
-engine = create_engine(odbc_str, echo=True)
+    params = urllib.parse.quote(connection_string)
+    odbc_str = f"mssql+pyodbc:///?odbc_connect={params}"
 
-# --- Token injection hook ---
-azure_client_id = os.getenv("AZURE_CLIENT_ID")
-credentials = DefaultAzureCredential()
-client = SecretClient(
-    vault_url=os.getenv("KEY_VAULT_URL"), credential=credentials
-)
-CLIENT_SECRET = client.get_secret("Fabric-secret").value
-# CLIENT_SECRET = client.get_secret(os.getenv("CLIENT_SECRET")).value
-# print(type(os.getenv("AZURE_CLIENT_SECRET")))
-# azure_client_secret = client.get_secret(os.getenv("AZURE_CLIENT_SECRET")).value
-# azure_client_secret = os.getenv("AZURE_CLIENT_SECRET")
-azure_tenant_id = os.getenv("AZURE_TENANT_ID")
-credential = ClientSecretCredential(tenant_id=azure_tenant_id,client_id=azure_client_id,client_secret=CLIENT_SECRET)  # or ClientSecretCredential if you prefer
+    # --- Get SQLAlchemy engine ---
+    engine = create_engine(odbc_str, echo=True)
 
-@event.listens_for(engine, "do_connect")
-def provide_token(dialect, conn_rec, cargs, cparams):
-    print("🔑 Requesting new Entra ID token for SQL Server...")
-    token_bytes = credential.get_token("https://database.windows.net/.default").token.encode("utf-16-le")
-    token_struct = struct.pack(f"<I{len(token_bytes)}s", len(token_bytes), token_bytes)
-    SQL_COPT_SS_ACCESS_TOKEN = 1256
-    cparams["attrs_before"] = {SQL_COPT_SS_ACCESS_TOKEN: token_struct}
+    # --- Token injection hook ---
+    fabric_client_id = os.getenv("FABRIC_CLIENT_ID")
+    fabric_tenant_id  = os.getenv("TENANT_ID")
+    fabric_client_secret = os.getenv("FABRIC_SECRET")
 
+    credential = ClientSecretCredential(tenant_id=fabric_tenant_id,client_id=fabric_client_id,client_secret=fabric_client_secret)  # or ClientSecretCredential if you prefer
+
+    @event.listens_for(engine, "do_connect")
+    def provide_token(dialect, conn_rec, cargs, cparams):
+        print("🔑 Requesting new Entra ID token for SQL Server...")
+        token_bytes = credential.get_token("https://database.windows.net/.default").token.encode("utf-16-le")
+        token_struct = struct.pack(f"<I{len(token_bytes)}s", len(token_bytes), token_bytes)
+        SQL_COPT_SS_ACCESS_TOKEN = 1256
+        cparams["attrs_before"] = {SQL_COPT_SS_ACCESS_TOKEN: token_struct}
+    return engine
 # --- SQLModel tables ---
 
 schema_name = os.getenv("SCHEMA")
