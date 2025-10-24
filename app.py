@@ -77,6 +77,7 @@ steps_dict = {
 field_mapping = {
     "navn_tiltak": "Navn prosjekt",
     "kontaktperson": "Kontaktperson",
+    "tiltakseier":"Tiltakseier",
     "avdeling": "Hovedavdeling",
     "fase_tiltak": "Fase",
     "date_modified": "Sist endret",
@@ -237,12 +238,13 @@ def project_detail(prosjekt_id: str):
     if not user:
         return 
     layout(active_step='oppdater_prosjekt', title='Prosjekt detaljer', steps=steps_dict)
-
+    user_name = user["name"]
+    print(user_name)
     email = user["preferred_username"]
     if not email:
         ui.notify('No email claim found in login!')
         return
-    digdir_overordnet_info_page(prosjekt_id, email)
+    digdir_overordnet_info_page(prosjekt_id, email=email, user_name=user_name)
 @ui.page('/project/new/{prosjekt_id}')
 def project_detail(prosjekt_id: str):
     
@@ -252,10 +254,12 @@ def project_detail(prosjekt_id: str):
     layout(active_step='oppdater_prosjekt', title='Prosjekt detaljer', steps=steps_dict)
 
     email = user["preferred_username"]
+    user_name = user["name"]
+    print(user_name)
     if not email:
         ui.notify('No email claim found in login!')
         return
-    digdir_overordnet_info_page(prosjekt_id, email, new=True)
+    digdir_overordnet_info_page(prosjekt_id, email=email, user_name=user_name, new=True)
 @ui.page("/status_rapportering")
 def digdir():
     user = require_login()

@@ -1,88 +1,20 @@
-from nicegui import ui, app, Client
+from nicegui import ui
 from typing import Any
-from utils.project_loader import diff_projects, ProjectData, engine, apply_changes, update_project_from_diffs, get_single_project_data, create_empty_project
+from utils.project_loader import diff_projects, engine, apply_changes, update_project_from_diffs, get_single_project_data, create_empty_project
 from sqlmodel import Session
 from uuid import UUID
 from datetime import datetime
 import ast
-import configparser
-import asyncio
-from msgraph import GraphServiceClient
-# from msgraph.generated.models.o_data_errors.o_data_error import ODataError
-from msgraph.generated.users.users_request_builder import UsersRequestBuilder
-from kiota_abstractions.base_request_configuration import RequestConfiguration
-from utils.graph import Graph
-from azure.identity import ClientSecretCredential, DefaultAzureCredential
-from azure.keyvault.secrets import SecretClient
-import os
-from dotenv import load_dotenv
-load_dotenv()
+from utils.azure_users import load_users
 
-credential = DefaultAzureCredential()
-client = SecretClient(
-    vault_url=os.getenv("KEY_VAULT_URL"), credential=credential
-)
-# async def list_gr
-CLIENT_SECRET = client.get_secret("Fabric-secret").value
-CLIENT_ID = os.environ.get("AZURE_CLIENT_ID")
-TENANT_ID = os.environ.get("TENANT_ID")
-credentials = ClientSecretCredential(
-    tenant_id=TENANT_ID,
-    client_id=CLIENT_ID,
-    client_secret=CLIENT_SECRET
-)
-scopes = ['https://graph.microsoft.com/.default']
-client = GraphServiceClient(credentials=credentials, scopes=scopes)
-# query_params = UsersRequestBuilder.UsersRequestBuilderGetQueryParameters(
-# 		select = ["displayName","mail", "job_title"],
-# 		filter = "accountEnabled eq true",
-# )
 
-# request_configuration = RequestConfiguration(
-# query_parameters = query_params,
-# )
-async def get_all_users():
-    users = []
-    page = await client.users.get()
-    brukere = {}
-    while page:
-        if page.value:
-            users.extend(page.value)
-            # Print each page of users
-            for user in page.value:
-                if user.job_title and user.job_title != "Eksterne":
-                    brukere[user.display_name] = user.mail
-                    # print("Display Name:", user.display_name)
-                    # print("Email:", user.mail)
-                    # print("Job Title:", user.job_title)
-                    # print("-" * 50)
-
-        # Handle pagination: follow the next link
-        if page.odata_next_link:
-            page = await client.users.with_url(page.odata_next_link).get()
-        else:
-            break
-    return brukere
-    # print(f"✅ Total users fetched: {len(users)}")
-    # print(f"✅ Total brukere with job title: {len(brukere)}")
-
-brukere = asyncio.run(get_all_users())
+brukere = load_users()
 brukere_list = list(brukere.keys())
-# async def get_user():
-#     results = await client.users.get()
-#     users = results.value
-#     for user in users:
-#         if user.job_title:
-#             print("Jobb title:", user.job_title)
-#             print("User Email:", user.mail)
-#             print("User Display Name:", user.display_name)
-#             print("-" * 50)  # Separating each user with a line
-# asyncio.run(get_user())
 
 avdelinger = ['BOD','DSS' ,'KOM','FEL','STL' ,'TUU', 'VIS', "KI Norge"]
-def project_detail(prosjekt_id: str, email: str, new: bool = False):
+def project_detail(prosjekt_id: str, email: str, user_name: str, new: bool = False):
     if new:
-        project = create_empty_project(email, pid=prosjekt_id)
+        project = create_empty_project(email,user_name=user_name, pid=prosjekt_id)
     else:
         with Session(engine) as session:
             prosjet_list = get_single_project_data(session, prosjekt_id)
@@ -93,15 +25,7 @@ def project_detail(prosjekt_id: str, email: str, new: bool = False):
         if not prosjet_list:
             ui.label('Project not found or you do not have access to it.')
             return
-    # get all data for this project
-    # print(ORIGINAL_PROJECTS)
-    # project = ORIGINAL_PROJECTS[email].get(prosjekt_id)
 
-    # project = next((p for p in projects if str(p.prosjekt_id) == prosjekt_id), None)
-
-
-
-    # ui.markdown(f"## *{project.navn_tiltak or prosjekt_id}*")
     ui.markdown(f"## *Porteføljeinitiativ: {project.navn_tiltak}*").classes('text-xl font-bold')
     inputs: dict[str, Any] = {}
     # show all fields as key/value
@@ -112,29 +36,16 @@ def project_detail(prosjekt_id: str, email: str, new: bool = False):
             inputs['navn_tiltak'] = ui.input(value=project.navn_tiltak).classes('w-full bg-white rounded-lg')
         with ui.element("div").classes('col-span-3 row-span-1 col-start-1 row-start-4'):
             ui.label("Tiltakseier").classes('text-lg font-bold')
-            inputs['tiltakseier'] = ui.select(brukere_list, with_input=True, multiple=True,value=project.tiltakseier.split(',') if project.tiltakseier else []).props(
+            inputs['tiltakseier'] = ui.select(brukere_list, with_input=True, multiple=False,value=project.tiltakseier, validation= lambda value: "Du må velge en tiltakseier" if value == None else None).props(
                     "outlined dense clearable options-dense color=primary").classes(
                         "w-full bg-white rounded-lg").props('use-chips')
  
-        # with ui.element("div").classes('col-span-1 row-span-1 col-start-1 row-start-4'):
-        #     ui.label("Tiltakseier").classes('text-lg font-bold')
-        #     inputs['kontaktperson'] = ui.input(value=project.kontaktperson, ).classes('w-full bg-white rounded-lg')
-        # with ui.element("div").classes('col-span-2 row-span-1 col-start-2 row-start-4'):
-
-        #     epost_list = [i for i in inputs['tiltakseier'].value]
-        #     print(epost_list)
-        #     ui.label("Epost tiltakseier").classes('text-lg font-bold')
-        #     inputs["eier_epost"] = ui.input(value=project.eier_epost).classes('w-full bg-white rounded-lg')
         with ui.element("div").classes('col-span-3 row-span-1 col-start-1 row-start-5'):
             ui.label("Kontaktpersoner").classes('text-lg font-bold')
-            inputs['kontaktperson'] = ui.select(brukere_list, with_input=True, multiple=True,value=project.kontaktperson.split(',') if project.kontaktperson else []).props(
+            kontakt_person = ast.literal_eval(project.kontaktperson) if "[" in project.kontaktperson else None
+            inputs['kontaktperson'] = ui.select(brukere_list, with_input=True, multiple=True,value=kontakt_person).props(
                     "clearable options-dense color=primary").classes("w-full bg-white rounded-lg").props('use-chips')
-        # with ui.element("div").classes('col-span-1 row-span-1 col-start-1 row-start-5'):
-        #     ui.label("Kontaktpersoner").classes('text-lg font-bold')
-        #     ui.input(value=project.kontaktperson).classes('w-full bg-white rounded-lg')
-        # with ui.element("div").classes('col-span-2 row-span-1 col-start-2 row-start-5'):
-        #     ui.label("Epost kontaktpersoner").classes('text-lg font-bold')
-        #     ui.input(value=project.eier_epost).classes('w-full bg-white rounded-lg')
+
 
         with ui.element("div").classes('col-span-3 row-span-1 col-start-1 row-start-6'):
             ui.label('Hovedavdeling').classes('text-lg font-bold')
@@ -290,24 +201,7 @@ def project_detail(prosjekt_id: str, email: str, new: bool = False):
             inputs['sammenheng_med_digitaliseringsstrategien_mm'] = ui.select(list(digitaliserings_strategi_digdir.values()), 
                                                                               multiple=True, 
                                                                               value=selected_labels).classes('w-full bg-white rounded-lg')
-            # inputs['sammenheng_med_digitaliseringsstrategien_mm'] = ui.textarea(value=project.sammenheng_med_digitaliseringsstrategien_mm).classes('w-full')
 
-    # def get_input_value(inp):
-    #     # Try the most common attributes first
-    #     for attr in ("value", "text", "label"):
-    #         if hasattr(inp, attr):
-    #             val = getattr(inp, attr)
-    #             # Normalize strings: strip spaces and treat empty as None
-    #             if isinstance(val, str):
-    #                 val = val.strip()
-    #                 if val == "":
-    #                     val = None
-    #             return val
-    #     # Some UI elements might use 'checked' (checkboxes)
-    #     if hasattr(inp, "checked"):
-    #         return inp.checked
-    #     # If no known value field, return None
-    #     return None
     def get_input_value(inp):
         """
         Extracts the value from various NiceGUI UI elements.
@@ -342,16 +236,9 @@ def project_detail(prosjekt_id: str, email: str, new: bool = False):
 
     def update_data():
         updated_data = {field: get_input_value(inp) for field, inp in inputs.items()}
-        # for field, inp in inputs.items():
-        #     if inp.label:
-        #         updated_data[field] = inp.label
-        #     else:
-        #         updated_data[field] = inp.value if inp.value != "" else None
-        # {field: inp.label if inp.value == "" else inp.value for field, inp in inputs.items()}
+
         updated_data["prosjekt_id"] = UUID(prosjekt_id)
-        # updated_data["eier_epost"] = project.eier_epost  # do not allow changing owner here
-        # list_fields = [inp.label if inp.value == "" else inp.value for field, inp in inputs.items()]
-        # edited_project = ProjectData(**updated_data)
+
         edited_project = project.model_copy(update=updated_data)
 
         if edited_project.oppstart_tid:
@@ -363,12 +250,24 @@ def project_detail(prosjekt_id: str, email: str, new: bool = False):
         if len(edited_project.sammenheng_med_digitaliseringsstrategien_mm) > 0 and isinstance(edited_project.sammenheng_med_digitaliseringsstrategien_mm[0], str):
             # reverse_digdir = {v: k for k, v in digitaliserings_strategi_digdir.items()}
             edited_project.sammenheng_med_digitaliseringsstrategien_mm = str([reverse_digdir[label] for label in edited_project.sammenheng_med_digitaliseringsstrategien_mm if label in reverse_digdir])
+        if not edited_project.tiltakseier or edited_project.tiltakseier.strip() == "":
+            ui.notify("❌ Du må fylle inn tiltakseier.", type="warning", position="top", close_button="OK")
+            return
+        edited_project.eier_epost = str([brukere[edited_project.tiltakseier]])
+        if not edited_project.navn_tiltak or edited_project.navn_tiltak.strip() == "":
+            ui.notify("❌ Du må fylle inn tiltaksnavn.", type="warning", position="top", close_button="OK")
+            return
         if len(edited_project.kontaktperson) > 0 and isinstance(edited_project.kontaktperson[0], str):
+            kontakt_epost = [brukere.get(i) for i in edited_project.kontaktperson]
             edited_project.kontaktperson = str(edited_project.kontaktperson)
-        if len(edited_project.tiltakseier) > 0 and isinstance(edited_project.tiltakseier[0], str):
-            edited_project.tiltakseier = str(edited_project.tiltakseier)
-        
-        # print([project], [edited_project])
+            epost_list = ast.literal_eval(edited_project.eier_epost)
+            if epost_list[0] not in kontakt_epost:
+                epost_list.extend(kontakt_epost)
+                edited_project.eier_epost = str(epost_list)
+            else:
+                edited_project.eier_epost = str(kontakt_epost)
+        edited_project.endret_av = user_name
+
         diffs = diff_projects([project],[edited_project])
         print(new)
         print(diffs)
@@ -377,15 +276,14 @@ def project_detail(prosjekt_id: str, email: str, new: bool = False):
             return
         with Session(engine) as session:
             if new:
-                diffs[0]["changes"]["eier_epost"] = {"old": None, "new": updated_data["eier_epost"]}
-                apply_changes(diffs, session, new=new)
+                # diffs[0]["changes"]["eier_epost"] = {"old": None, "new": updated_data["eier_epost"]}
+                apply_changes(diffs, session, new=new, endret_av=user_name)
                 
                 ui.navigate.to(f"/project/{prosjekt_id}")
             else:
-                apply_changes(diffs, session)
+                apply_changes(diffs, session, endret_av=user_name)
                 update_project_from_diffs(project=project, diffs=diffs)
 
             ui.notify('Changes saved to database!')
-        # diff_projects(dict(project), updated_data)
-        # print(diff_projects)
+
     ui.button("💾 Save", on_click=update_data).classes("mt-4")

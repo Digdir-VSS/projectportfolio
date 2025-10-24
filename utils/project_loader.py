@@ -73,7 +73,7 @@ class PortfolioProject(SQLModel, table=True):
     kontaktpersoner: str | None = None
     epost_kontakt: str | None = None
     sist_endret: datetime | None = None
-    epost_endret: str | None = None
+    endret_av: str | None = None
     er_gjeldende: bool | None = None
 
 
@@ -87,6 +87,7 @@ class DigitaliseringStrategi(SQLModel, table=True):
         )
     sammenheng_digital_strategi: str | None = None
     sist_endret: datetime | None = None
+    endret_av: str | None = None
     er_gjeldende: bool | None = None
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
@@ -110,6 +111,7 @@ class Finansiering(SQLModel, table=True):
     usikkerhet_estimat: str | None = None
     risiko_av_estimat_tall: float | None = None
     sist_endret: datetime | None = None
+    endret_av: str | None = None
     er_gjeldende: bool | None = None
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
@@ -127,6 +129,7 @@ class Fremskritt(SQLModel, table=True):
     fase: str | None = None
     planlagt_ferdig: datetime | None = None
     sist_endret: datetime | None = None
+    endret_av: str | None = None
     er_gjeldende: bool | None = None
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
@@ -149,6 +152,7 @@ class Malbilde(SQLModel, table=True):
     malbilde_4_beskrivelse: str | None = None
     malbilde_4_vurdering: str | None = None
     sist_endret: datetime | None = None
+    endret_av: str | None = None
     er_gjeldende: bool | None = None
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
@@ -164,6 +168,7 @@ class Problemstilling(SQLModel, table=True):
         )
     problem: str | None = None
     sist_endret: datetime | None = None
+    endret_av: str | None = None
     er_gjeldende: bool | None = None
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
@@ -187,6 +192,7 @@ class Rapportering(SQLModel, table=True):
     risiko_rapportert_tall: float | None = None
     viktige_endringer: float | None = None
     sist_endret: datetime | None = None
+    endret_av: str | None = None
     er_gjeldende: bool | None = None
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
@@ -209,6 +215,7 @@ class Resursbehov(SQLModel, table=True):
     kompetanse_som_trengs: str | None = None
     kompetanse_tilgjengelig: str | None = None
     sist_endret: datetime | None = None
+    endret_av: str | None = None
     er_gjeldende: bool | None = None
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
@@ -224,6 +231,7 @@ class Risikovurdering(SQLModel, table=True):
         )
     vurdering: str | None = None
     sist_endret: datetime | None = None
+    endret_av: str | None = None
     er_gjeldende: bool | None = None
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
@@ -241,6 +249,7 @@ class Samarabeid(SQLModel, table=True):
     samarbeid_eksternt: str | None = None
     avhengigheter_andre: str | None = None
     sist_endret: datetime | None = None
+    endret_av: str | None = None
     er_gjeldende: bool | None = None
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
@@ -256,6 +265,7 @@ class Tiltak(SQLModel, table=True):
         )
     tiltak_beskrivelse: str | None = None
     sist_endret: datetime | None = None
+    endret_av: str | None = None
     er_gjeldende: bool | None = None
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
@@ -276,6 +286,7 @@ class UnderstøtteTildelingsbrev(SQLModel, table=True):
     mål_2: float | None = None
     mål_3: float | None = None
     sist_endret: datetime | None = None
+    endret_av: str | None = None
     er_gjeldende: bool | None = None
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
@@ -292,7 +303,8 @@ class Vurdering(SQLModel, table=True):
     gruppe: str | None = None
     pulje: int | None = None
     risiko_vurdering: str | None = None
-    sist_endret: datetime
+    sist_endret: datetime | None = None
+    endret_av: str | None = None
     er_gjeldende: bool | None = None
     mscw: str | None = None
     prosjekt_id : uuid.UUID = Field(
@@ -329,7 +341,7 @@ class ProjectData(BaseModel):
     hvor_sikkert_estimatene: Optional[str]
     sammenheng_med_digitaliseringsstrategien_mm: Optional[str]
     eier_epost: str
-    epost_endret: Optional[str]
+    endret_av: Optional[str]
 
 convert_list = {"prosjekt_id": PortfolioProject.prosjekt_id,
 "date_modified": PortfolioProject.sist_endret,
@@ -360,7 +372,7 @@ convert_list = {"prosjekt_id": PortfolioProject.prosjekt_id,
 "hvor_sikkert_estimatene": Resursbehov.risiko_av_estimat,
 "sammenheng_med_digitaliseringsstrategien_mm": DigitaliseringStrategi.sammenheng_digital_strategi,
 "eier_epost": PortfolioProject.epost_kontakt,
-"epost_endret": PortfolioProject.epost_endret}
+"endret_av": PortfolioProject.endret_av}
 
 
 convert_list_rapport = {"prosjekt_id": Rapportering.prosjekt_id,
@@ -408,7 +420,7 @@ field_to_table_col = {"prosjekt_id": (PortfolioProject,PortfolioProject.prosjekt
 "hvor_sikkert_estimatene": (Resursbehov,Resursbehov.risiko_av_estimat),
 "sammenheng_med_digitaliseringsstrategien_mm": (DigitaliseringStrategi,DigitaliseringStrategi.sammenheng_digital_strategi),
 "eier_epost": (PortfolioProject,PortfolioProject.epost_kontakt),
-"epost_endret":(PortfolioProject,PortfolioProject.epost_endret)}
+"endret_av":(PortfolioProject,PortfolioProject.endret_av)}
 
 class JustProject(SQLModel):
     prosjekt_id: UUID
@@ -437,12 +449,12 @@ table_pk_map = {
     Malbilde: "malbilde_id",
     Vurdering: "vurdering_id",
 }
-def create_empty_project(eier_epost: str, pid: UUID) -> ProjectData:
+def create_empty_project(eier_epost: str,user_name: str, pid: UUID) -> ProjectData:
     return ProjectData(
         prosjekt_id=pid,
         date_modified=None,
         navn_tiltak="",
-        tiltakseier="",
+        tiltakseier=user_name,
         kontaktperson="",
         avdeling=None,
         fase_tiltak=None,
@@ -468,7 +480,7 @@ def create_empty_project(eier_epost: str, pid: UUID) -> ProjectData:
         hvor_sikkert_estimatene="",
         sammenheng_med_digitaliseringsstrategien_mm="",
         eier_epost=eier_epost,
-        epost_endret=eier_epost,
+        endret_av=user_name,
     )
 
 def get_projects(session, email: str | None = None):
@@ -476,7 +488,7 @@ def get_projects(session, email: str | None = None):
         PortfolioProject.prosjekt_id,
         PortfolioProject.navn,
         PortfolioProject.avdeling,
-        PortfolioProject.kontaktpersoner,
+        PortfolioProject.tiltakseier,
         PortfolioProject.epost_kontakt,
     ]
     if email:
@@ -489,7 +501,7 @@ def get_projects(session, email: str | None = None):
             "prosjekt_id": r[0],
             "navn": r[1],
             "avdeling": r[2],
-            "kontaktpersoner": r[3],
+            "tiltakseier": r[3],
             "epost_kontakt": r[4],
         }
         for r in results
@@ -670,7 +682,8 @@ def diff_projects(
 
         # compute diffs
         diffs = {}
-        for field in keys:
+        IGNORED_FIELDS = {"endret_av"}
+        for field in keys - IGNORED_FIELDS:
             old = getattr(o, field, None) if o is not None else None
             new = getattr(e, field, None)
             old_norm = normalize_value(old)
@@ -697,7 +710,7 @@ def diff_projects(
 
 
 from collections import defaultdict
-def apply_changes(diffs, session, new=False):
+def apply_changes(diffs, session, new=False, endret_av: str = None):
     for diff in diffs:
         prosjekt_id = str(diff["prosjekt_id"]).lower()
         changes = diff["changes"]
@@ -769,6 +782,10 @@ def apply_changes(diffs, session, new=False):
                 _, col_attr = field_to_table_col[field]
                 col_name = getattr(col_attr, "key", None) or field
                 new_row_data[col_name] = change["new"]
+            
+            # ✅ Add who made the change (if the table supports it)
+            if "endret_av" in table_cls.__table__.columns:
+                new_row_data["endret_av"] = endret_av
 
             # Add single new row per table
             new_row = table_cls(**new_row_data)
