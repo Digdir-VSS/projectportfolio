@@ -12,8 +12,8 @@ async def _fetch_all_users() -> dict:
         vault_url=os.getenv("KEY_VAULT_URL"), credential=credential
     )
     # async def list_gr
-    CLIENT_SECRET = client.get_secret("Fabric-secret").value
-    CLIENT_ID = os.environ.get("AZURE_CLIENT_ID")
+    CLIENT_SECRET = os.environ.get("FABRIC_SECRET")
+    CLIENT_ID = os.environ.get("FABRIC_CLIENT_ID")
     TENANT_ID = os.environ.get("TENANT_ID")
     credentials = ClientSecretCredential(
         tenant_id=TENANT_ID,
