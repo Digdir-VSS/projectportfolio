@@ -33,7 +33,7 @@ def get_engine():
 
     # --- Get SQLAlchemy engine ---
     engine = create_engine(odbc_str, echo=True)
-
+   
     # --- Token injection hook ---
     fabric_client_id = os.getenv("FABRIC_CLIENT_ID")
     fabric_tenant_id  = os.getenv("TENANT_ID")
@@ -50,7 +50,7 @@ def get_engine():
         cparams["attrs_before"] = {SQL_COPT_SS_ACCESS_TOKEN: token_struct}
     return engine
 # --- SQLModel tables ---
-
+#
 schema_name = os.getenv("SCHEMA")
 class PortfolioProject(SQLModel, table=True):
     __tablename__ = "PortfolioProject"
