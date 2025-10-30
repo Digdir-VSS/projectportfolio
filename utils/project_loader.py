@@ -214,6 +214,22 @@ class Resursbehov(SQLModel, table=True):
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
+class Ressursbruk(SQLModel, table=True):
+    __tablename__ = "Ressursbruk"
+    __table_args__ = {"schema": schema_name}
+
+    ressursbruk_id: uuid.UUID = Field(
+            default_factory=uuid.uuid4,
+            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True, default=uuid.uuid4),
+        )
+    year: int
+    predicted_resources: float | None = None
+    sist_endret: datetime | None = None
+    endret_av: str | None = None
+    er_gjeldende: bool | None = None
+    prosjekt_id: uuid.UUID = Field(
+        foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
+    )
 
 class Risikovurdering(SQLModel, table=True):
     __tablename__ = "Risikovurdering"
