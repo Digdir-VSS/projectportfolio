@@ -6,9 +6,9 @@ from azure.keyvault.secrets import SecretClient
 import os
 from dotenv import load_dotenv
 from msal import ConfidentialClientApplication
-from sqlmodel import Session
 
-from utils.project_loader import ProjectData, get_engine, get_projects  # your Pydantic model
+from utils.project_loader import ProjectData
+from utils.db_connection import DBConnector
 from pages.login_page import register_login_pages
 from pages.dashboard import dashboard
 from pages.single_project import project_detail as digdir_overordnet_info_page
@@ -47,7 +47,7 @@ msal_app = ConfidentialClientApplication(
     client_credential=CLIENT_SECRET,
 )
 
-engine = get_engine()
+db_connector = DBConnector.create_engine(driver_name = "{ODBC Driver 18 for SQL Server}", server_name = os.getenv("SERVER"), database_name = os.getenv("DATABASE"), fabric_client_id = os.getenv("FABRIC_CLIENT_ID"), fabric_tenant_id  = os.getenv("TENANT_ID"), fabric_client_secret = os.getenv("FABRIC_SECRET"))
 # Cache for in-progress authorisation flows. Give the user 5 minutes to complete the flow
 AUTH_FLOW_STATES: TTLCache[str, dict[str, Any]] = TTLCache(maxsize=256, ttl=60 * 5)
 
@@ -119,7 +119,6 @@ def index(client: Client):
 @ui.page('/home')
 def main_page():
     user = require_login()
-
     layout(active_step='home', title='Oversikt over dine prosjekter', steps=steps_dict)
     ui.label('This is the home page.')
     dashboard()
@@ -142,12 +141,9 @@ def overordnet():
     ui.label(f'Prosjekter for {user_name}').classes('text-lg font-bold mb-2')
     if email in super_user:
         ui.label('You are a super user and can edit all projects.')
-
-        with Session(engine) as session:
-            projects = get_projects(session, None)
+        projects = db_connector.get_projects(email=None)
     else:        
-        with Session(engine) as session:
-            projects = get_projects(session, email)
+        projects = db_connector.get_projects(email=email)
     
     # store original copy for later diff
 
@@ -246,7 +242,7 @@ def project_detail(prosjekt_id: str):
     if not email:
         ui.notify('No email claim found in login!')
         return
-    digdir_overordnet_info_page(prosjekt_id, email=email, user_name=user_name)
+    digdir_overordnet_info_page(db_connector=db_connector, prosjekt_id=prosjekt_id, email=email, user_name=user_name)
 @ui.page('/project/new/{prosjekt_id}')
 def project_detail(prosjekt_id: str):
     
@@ -261,7 +257,7 @@ def project_detail(prosjekt_id: str):
     if not email:
         ui.notify('No email claim found in login!')
         return
-    digdir_overordnet_info_page(prosjekt_id, email=email, user_name=user_name, new=True)
+    digdir_overordnet_info_page(db_connector=db_connector, prosjekt_id=prosjekt_id, email=email, user_name=user_name, new=True)
 @ui.page("/status_rapportering")
 def digdir():
     user = require_login()
