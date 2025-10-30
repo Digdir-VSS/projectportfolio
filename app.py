@@ -29,12 +29,6 @@ CLIENT_ID = os.environ.get("CLIENT_ID")
 AUTHORITY = f"https://login.microsoftonline.com/{os.environ.get('TENANT_NAME')}"
 
 SCOPE = ["User.Read"]
-
-# Redirect path where the user will be directed to after logging in. This needs to configured in the Entra Application
-# Registration -> Manage -> Authentication -> Web Redirect URIs, prepended with the possible values for
-# BASE_APPLICATION_URL, e.g.:
-# - `http://localhost:8080/.auth/login/aad/callback`
-# - `https://<your_app_name>.azurewebsites.net/.auth/login/aad/callback`
 REDIRECT_PATH = "/.auth/login/aad/callback"
 
 # URL to log the user out in Entra
@@ -51,24 +45,20 @@ engine = get_engine()
 # Cache for in-progress authorisation flows. Give the user 5 minutes to complete the flow
 AUTH_FLOW_STATES: TTLCache[str, dict[str, Any]] = TTLCache(maxsize=256, ttl=60 * 5)
 
-# Cache authenticated users for a maximum of 10 hours. TTL is in seconds
-USER_DATA: TTLCache[str, dict[str, Any]] = TTLCache(maxsize=256, ttl=60 * 60 * 10)
 register_login_pages(
     msal_app=msal_app,
     AUTH_FLOW_STATES=AUTH_FLOW_STATES,
-    USER_DATA=USER_DATA,
     ENTRA_LOGOUT_ENDPOINT=ENTRA_LOGOUT_ENDPOINT,
     SCOPE=SCOPE,
     REDIRECT_PATH=REDIRECT_PATH,
 )
 
 def require_login() -> dict[str, Any] | None:
-    browser_id = app.storage.browser["id"]
-    user = USER_DATA.get(browser_id)
-    if not user:
+    claims = app.storage.user.get("claims")
+    if not claims:
         ui.navigate.to("/login")
         return None
-    return user
+    return claims
 
 steps_dict = {
     "home": "Oversikt over dine prosjekter",
@@ -96,11 +86,9 @@ def index(client: Client):
     """
 
     # Obtain the browser ID and use it to determine whether the user is logged in or not
-    browser_id = app.storage.browser["id"]
-    user = USER_DATA.get(browser_id, None)
-
+    claims = app.storage.user.get("claims")
     # if "user" was not initialised
-    if not user:
+    if not claims:
         # Display log in components
         with ui.column().classes("w-full items-center"):
             ui.markdown(f"## Prosjekt portalen autentisering \n Welcome to this app. \n Please log in").style(
@@ -110,8 +98,6 @@ def index(client: Client):
             ui.button("Login with Microsoft", on_click=lambda: ui.navigate.to("/login"))
     else:
         # If the user is logged in, store their information and redirect them to the actual app
-        app.storage.user["user"] = user.get("claims")
-
         ui.navigate.to("/home")
 
 
@@ -119,6 +105,8 @@ def index(client: Client):
 @ui.page('/home')
 def main_page():
     user = require_login()
+    if not user:
+        return 
 
     layout(active_step='home', title='Oversikt over dine prosjekter', steps=steps_dict)
     ui.label('This is the home page.')
