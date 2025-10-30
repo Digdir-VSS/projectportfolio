@@ -1,30 +1,28 @@
 from nicegui import ui
 from typing import Any
 from utils.project_loader import diff_projects, ProjectData, get_engine, apply_changes, update_project_from_diffs, get_single_project_data, create_empty_project
-from sqlmodel import Session
 from uuid import UUID
 from datetime import datetime
 import ast
 from utils.azure_users import load_users
+from utils.db_connection import DBConnector
 
 
 brukere = load_users()
 brukere_list = list(brukere.keys())
 engine = get_engine()
 avdelinger = ['BOD','DSS' ,'KOM','FEL','STL' ,'TUU', 'VIS']
-def project_detail(prosjekt_id: str, email: str, user_name: str, new: bool = False):
+def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user_name: str, new: bool = False):
     if new:
         project = create_empty_project(email,user_name=user_name, pid=prosjekt_id)
     else:
-        with Session(engine) as session:
-            prosjet_list = get_single_project_data(session, prosjekt_id)
-            print(prosjet_list)
-            if prosjet_list:
-                project =  prosjet_list.model_copy(deep=True)
-
+        prosjet_list = db_connector.get_single_project(prosjekt_id)
         if not prosjet_list:
             ui.label('Project not found or you do not have access to it.')
             return
+        project =  prosjet_list.model_copy(deep=True)
+
+
 
     ui.markdown(f"## *Porteføljeinitiativ: {project.navn_tiltak}*").classes('text-xl font-bold')
     inputs: dict[str, Any] = {}
@@ -269,21 +267,11 @@ def project_detail(prosjekt_id: str, email: str, user_name: str, new: bool = Fal
         edited_project.endret_av = user_name
 
         diffs = diff_projects([project],[edited_project])
-        print(new)
-        print(diffs)
         if not diffs:
             ui.notify('No changes made.')
             return
-        with Session(engine) as session:
-            if new:
-                # diffs[0]["changes"]["eier_epost"] = {"old": None, "new": updated_data["eier_epost"]}
-                apply_changes(diffs, session, new=new, endret_av=user_name)
-                
-                ui.navigate.to(f"/project/{prosjekt_id}")
-            else:
-                apply_changes(diffs, session, endret_av=user_name)
-                update_project_from_diffs(project=project, diffs=diffs)
-
-            ui.notify('Changes saved to database!')
+        db_connector.update_project(new, diffs, user_name)
+        ui.navigate.to(f"/project/{prosjekt_id}")
+        ui.notify('Changes saved to database!')
 
     ui.button("💾 Save", on_click=update_data).classes("mt-4")
