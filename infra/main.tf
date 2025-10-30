@@ -40,28 +40,30 @@ resource "azurerm_container_registry" "container-reg" {
   admin_enabled       = true
 }
 
-resource "azurerm_container_app" "projectportfolio_prod" {
+# -------------------------------
+# Placeholder secret workaround
+# -------------------------------
+locals {
+  placeholder_secret_name  = "placeholder"
+  placeholder_secret_value = "temp"
+}
+
+# -------------------------------
+# DEV Container App
+# -------------------------------
+resource "azurerm_container_app" "projectportfolio_dev" {
   name                         = var.dev_aca_name
-  container_app_environment_id = azurerm_container_app_environment.containerappenv.id
   resource_group_name          = azurerm_resource_group.rg.name
+  container_app_environment_id = azurerm_container_app_environment.containerappenv.id
   revision_mode                = "Single"
 
-  template {
-    container {
-      name   = "projectportfoliocontainerapp"
-      image  = "mcr.microsoft.com/k8se/quickstart:latest"
-      cpu    = 0.25
-      memory = "0.5Gi"
-    }
+  identity {
+    type = "SystemAssigned"
   }
 
-  ingress {
-    external_enabled = true
-    target_port      = 80
-    traffic_weight {
-      percentage      = 100
-      latest_revision = true
-    }
+  secret {
+    name  = local.placeholder_secret_name
+    value = local.placeholder_secret_value
   }
 
   registry {
@@ -69,33 +71,47 @@ resource "azurerm_container_app" "projectportfolio_prod" {
     identity = "System"
   }
 
-  identity {
-    type = "SystemAssigned"
+  ingress {
+    external_enabled = true
+    target_port      = 8080
+
+    traffic_weight {
+      latest_revision = true
+      percentage      = 100
+    }
+  }
+
+  template {
+    container {
+      name   = "projectportfoliocontainerapp"
+      image  = "mcr.microsoft.com/k8se/quickstart:latest"
+      cpu    = 0.25
+      memory = "0.5Gi"
+
+      env {
+        name        = "PLACEHOLDER"
+        secret_name = local.placeholder_secret_name
+      }
+    }
   }
 }
 
-resource "azurerm_container_app" "projectportfolio_dev" {
+# -------------------------------
+# PROD Container App
+# -------------------------------
+resource "azurerm_container_app" "projectportfolio_prod" {
   name                         = var.aca_name
-  container_app_environment_id = azurerm_container_app_environment.containerappenv.id
   resource_group_name          = azurerm_resource_group.rg.name
+  container_app_environment_id = azurerm_container_app_environment.containerappenv.id
   revision_mode                = "Single"
 
-  template {
-    container {
-      name   = "projectportfoliocontainerapp"
-      image  = "mcr.microsoft.com/k8se/quickstart:latest"
-      cpu    = 0.25
-      memory = "0.5Gi"
-    }
+  identity {
+    type = "SystemAssigned"
   }
 
-  ingress {
-    external_enabled = true
-    target_port      = 80
-    traffic_weight {
-      percentage      = 100
-      latest_revision = true
-    }
+  secret {
+    name  = local.placeholder_secret_name
+    value = local.placeholder_secret_value
   }
 
   registry {
@@ -103,7 +119,42 @@ resource "azurerm_container_app" "projectportfolio_dev" {
     identity = "System"
   }
 
-  identity {
-    type = "SystemAssigned"
+  ingress {
+    external_enabled = true
+    target_port      = 8080
+
+    traffic_weight {
+      latest_revision = true
+      percentage      = 100
+    }
   }
+
+  template {
+    container {
+      name   = "projectportfoliocontainerapp"
+      image  = "mcr.microsoft.com/k8se/quickstart:latest"
+      cpu    = 0.25
+      memory = "0.5Gi"
+
+      env {
+        name        = "PLACEHOLDER"
+        secret_name = local.placeholder_secret_name
+      }
+    }
+  }
+}
+
+# -------------------------------
+# ACR Pull Permissions
+# -------------------------------
+resource "azurerm_role_assignment" "acr_pull_dev" {
+  scope                = azurerm_container_registry.container-reg.id
+  role_definition_name = "AcrPull"
+  principal_id         = azurerm_container_app.projectportfolio_dev.identity[0].principal_id
+}
+
+resource "azurerm_role_assignment" "acr_pull_prod" {
+  scope                = azurerm_container_registry.container-reg.id
+  role_definition_name = "AcrPull"
+  principal_id         = azurerm_container_app.projectportfolio_prod.identity[0].principal_id
 }
