@@ -500,14 +500,7 @@ def get_projects(session, email: str | None = None):
         }
         for r in results
     ]
-    # projects = [
-    #     JustProject(
-    #         **{alias: row[i] for i, (alias, col) in enumerate(project_names.items())}
-    #     )
-    #     for row in results
-    # ]
-    # return projects
-    # return results
+
 def get_single_project_data(session, project_id: str):
     stmt = (
         select(*convert_list.values())
