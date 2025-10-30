@@ -1,13 +1,16 @@
-import os
 import struct
 import urllib
-from sqlmodel import SQLModel, Field, Session, select, Relationship
+from sqlmodel import Session, select
 from sqlalchemy import create_engine, event, Engine
+from sqlalchemy.exc import OperationalError
 from azure.identity import ClientSecretCredential
-from .project_loader import PortfolioProject, Fremskritt, Resursbehov, Samarabeid, Problemstilling, Tiltak, Risikovurdering, Malbilde, DigitaliseringStrategi, ProjectData, convert_list, diff_projects, apply_changes, update_project_from_diffs
-
+from tenacity import retry, retry_if_exception_type, wait_exponential, stop_after_attempt
 from dotenv import load_dotenv
+
+from .project_loader import PortfolioProject, Fremskritt, Resursbehov, Samarabeid, Problemstilling, Tiltak, Risikovurdering, Malbilde, DigitaliseringStrategi, ProjectData, convert_list, apply_changes
+
 load_dotenv()
+
 
 def get_single_project_data(project_id: str):
     stmt = (
@@ -96,7 +99,11 @@ class DBConnector:
             SQL_COPT_SS_ACCESS_TOKEN = 1256
             cparams["attrs_before"] = {SQL_COPT_SS_ACCESS_TOKEN: token_struct}
         return cls(engine)
-
+    
+    @retry(retry=retry_if_exception_type(OperationalError),
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    stop=stop_after_attempt(3),
+    reraise=True)
     def get_projects(self, email: str | None = None):
         columns = [
             PortfolioProject.prosjekt_id,
@@ -123,6 +130,10 @@ class DBConnector:
             for r in results
         ]
 
+    @retry(retry=retry_if_exception_type(OperationalError),
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    stop=stop_after_attempt(3),
+    reraise=True)
     def get_single_project(self, project_id: str):
         with Session(self.engine) as session:
             stmt = get_single_project_data(project_id)
@@ -135,7 +146,10 @@ class DBConnector:
         )
 
         return project_data
-    
+    @retry(retry=retry_if_exception_type(OperationalError),
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    stop=stop_after_attempt(3),
+    reraise=True)
     def update_project(self, new, diffs, user_name):
         with Session(self.engine) as session:
             apply_changes(diffs, session, new=new, endret_av=user_name)
