@@ -4,13 +4,17 @@ from utils.project_loader import diff_projects, ProjectData, get_engine, apply_c
 from uuid import UUID
 from datetime import datetime
 import ast
+import json
+
 from utils.azure_users import load_users
 from utils.db_connection import DBConnector
 
 
 brukere = load_users()
 brukere_list = list(brukere.keys())
-engine = get_engine()
+#engine = get_engine()
+#avdelinger = {'BOD': 'BOD', 'DSS': 'DSS','FEL': 'FEL', 'STL': 'STL',
+ #             'VIS': 'VIS', 'KOM': 'KOM', "TUU": "TUU"}
 avdelinger = ['BOD','DSS' ,'KOM','FEL','STL' ,'TUU', 'VIS']
 def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user_name: str, new: bool = False):
     if new:
@@ -53,8 +57,18 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
             ).props("inline")
         with ui.element("div").classes('col-span-2 row-span-1 col-start-1 row-start-7'):
             ui.label('Samarbeid internt').classes('text-lg font-bold')
-            inputs["samarbeid_internt"] = ui.select(avdelinger, multiple=True, value=project.samarbeid_intern.split(',') if project.samarbeid_intern else []).classes('w-full bg-white rounded-lg')
-        
+            try:
+                samarbeid_intern_list = json.loads(project.samarbeid_intern)
+            except (TypeError, json.JSONDecodeError):
+                samarbeid_intern_list = []
+
+            inputs["samarbeid_intern"] = ui.select(
+                avdelinger,
+                multiple=True,
+                value=samarbeid_intern_list
+            ).props("use-chips").classes("w-full bg-white rounded-lg")
+                                # inputs["samarbeid_intern"] = ui.select(avdelinger, multiple=True, value=project.samarbeid_intern.split(',') if project.samarbeid_intern else []).classes('w-full bg-white rounded-lg')
+
         with ui.element("div").classes('col-span-1 row-span-1 col-start-3 row-start-7'):
             ui.label('Samarbeid eksternt').classes('text-lg font-bold')
             inputs["samarbeid_eksternt"] = ui.input(value=project.samarbeid_eksternt).classes('w-full bg-white rounded-lg')
@@ -195,11 +209,9 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
                 selected_keys = project.sammenheng_med_digitaliseringsstrategien_mm = []
             # selected_keys = project.sammenheng_med_digitaliseringsstrategien_mm or []
             selected_labels = [digitaliserings_strategi_digdir[i] for i in selected_keys if i in digitaliserings_strategi_digdir]
-
             inputs['sammenheng_med_digitaliseringsstrategien_mm'] = ui.select(list(digitaliserings_strategi_digdir.values()), 
                                                                               multiple=True, 
                                                                               value=selected_labels).classes('w-full bg-white rounded-lg')
-
     def get_input_value(inp):
         """
         Extracts the value from various NiceGUI UI elements.
@@ -236,9 +248,9 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
         updated_data = {field: get_input_value(inp) for field, inp in inputs.items()}
 
         updated_data["prosjekt_id"] = UUID(prosjekt_id)
-
         edited_project = project.model_copy(update=updated_data)
-
+        if edited_project.samarbeid_intern:
+            edited_project.samarbeid_intern = json.dumps(edited_project.samarbeid_intern)
         if edited_project.oppstart_tid:
             edited_project.oppstart_tid = datetime.strptime(edited_project.oppstart_tid , "%Y-%m-%d")
         if edited_project.ferdig_tid:
