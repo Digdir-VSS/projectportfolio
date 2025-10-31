@@ -5,7 +5,6 @@ from uuid import UUID
 from datetime import datetime
 import ast
 import json
-
 from utils.azure_users import load_users
 from utils.db_connection import DBConnector
 
@@ -64,7 +63,6 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
                 multiple=True,
                 value=samarbeid_intern_list
             ).props("use-chips").classes("w-full bg-white rounded-lg")
-                                # inputs["samarbeid_intern"] = ui.select(avdelinger, multiple=True, value=project.samarbeid_intern.split(',') if project.samarbeid_intern else []).classes('w-full bg-white rounded-lg')
 
         with ui.element("div").classes('col-span-1 row-span-1 col-start-3 row-start-7'):
             ui.label('Samarbeid eksternt').classes('text-lg font-bold')
