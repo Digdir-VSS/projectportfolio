@@ -1,4 +1,4 @@
-from nicegui import ui, run, background_tasks
+from nicegui import ui, run
 from typing import Any
 from utils.project_loader import diff_projects, ProjectData, get_engine, apply_changes, update_project_from_diffs, get_single_project_data, create_empty_project
 from uuid import UUID
