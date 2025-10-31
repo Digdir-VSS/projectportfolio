@@ -232,7 +232,7 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
         return None
 
 
-    def update_data():
+    async def update_data():
         updated_data = {field: get_input_value(inp) for field, inp in inputs.items()}
 
         updated_data["prosjekt_id"] = UUID(prosjekt_id)
@@ -270,11 +270,7 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
         if not diffs:
             ui.notify('No changes made.')
             return
-        
-        async def update_projects(): 
-            await run.io_bound(db_connector.update_project, new, diffs, user_name) 
-        background_tasks.create(update_projects())
-        
+        await run.io_bound(db_connector.update_project, new, diffs, user_name) 
         ui.navigate.to(f"/oppdater_prosjekt")
         ui.notify('Changes saved to database!')
 
