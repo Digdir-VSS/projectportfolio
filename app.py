@@ -1,4 +1,4 @@
-from nicegui import ui, app, Client
+from nicegui import ui, app, Client, run
 from typing import Any
 from cachetools import TTLCache
 from azure.identity import DefaultAzureCredential
@@ -115,7 +115,7 @@ def main_page():
 
 
 @ui.page('/oppdater_prosjekt')
-def overordnet():
+async def overordnet():
     user = require_login()
     if not user:
         return 
@@ -130,9 +130,9 @@ def overordnet():
     ui.label(f'Prosjekter for {user_name}').classes('text-lg font-bold mb-2')
     if email in super_user:
         ui.label('You are a super user and can edit all projects.')
-        projects = db_connector.get_projects(email=None)
+        projects = await run.io_bound(db_connector.get_projects, None)
     else:        
-        projects = db_connector.get_projects(email=email)
+        projects = await run.io_bound(db_connector.get_projects, email)
     
     # store original copy for later diff
 
