@@ -12,9 +12,6 @@ from utils.db_connection import DBConnector
 
 brukere = load_users()
 brukere_list = list(brukere.keys())
-#engine = get_engine()
-#avdelinger = {'BOD': 'BOD', 'DSS': 'DSS','FEL': 'FEL', 'STL': 'STL',
- #             'VIS': 'VIS', 'KOM': 'KOM', "TUU": "TUU"}
 avdelinger = ['BOD','DSS' ,'KOM','FEL','STL' ,'TUU', 'VIS']
 def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user_name: str, new: bool = False):
     if new:
