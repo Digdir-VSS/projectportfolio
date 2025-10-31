@@ -166,7 +166,7 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
         ui.label("3 Vi sikrer trygg tilgang til digitale tjenester for alle").classes('col-span-2 row-span-1 col-start-1 row-start-7 text-lg')
         inputs['malbilde_3_beskrivelse'] = ui.textarea(value=project.malbilde_3_beskrivelse).classes('col-span-2 row-span-2 col-start-1 row-start-8 bg-white rounded-lg')
         ui.label("4 Vi løser komplekse utfordringer sammen og tilpasser oss en verden i rask endring").classes('col-span-2 row-span-1 col-start-3 row-start-7 text-lg')
-        inputs['malbilde_4_beskrivelse'] = ui.textarea(value=project.malbilde_3_beskrivelse).classes('col-span-2 row-span-2 col-start-3 row-start-8 bg-white rounded-lg')
+        inputs['malbilde_4_beskrivelse'] = ui.textarea(value=project.malbilde_4_beskrivelse).classes('col-span-2 row-span-2 col-start-3 row-start-8 bg-white rounded-lg')
         digitaliserings_strategi_digdir = {
             "6": "6: få på plass veiledning om regelverksutvikling innen digitalisering, KI og datadeling",
             "11a": "11a: forsterke arbeidet med sammenhengende tjenester, i samarbeid med KS",
