@@ -1,4 +1,4 @@
-from nicegui import ui
+from nicegui import ui, run
 from typing import Any
 from utils.project_loader import diff_projects, ProjectData, get_engine, apply_changes, update_project_from_diffs, get_single_project_data, create_empty_project
 from uuid import UUID
@@ -239,7 +239,7 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
         return None
 
 
-    def update_data():
+    async def update_data():
         updated_data = {field: get_input_value(inp) for field, inp in inputs.items()}
 
         updated_data["prosjekt_id"] = UUID(prosjekt_id)
@@ -277,8 +277,8 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
         if not diffs:
             ui.notify('No changes made.')
             return
-        db_connector.update_project(new, diffs, user_name)
-        ui.navigate.to(f"/project/{prosjekt_id}")
+        await run.io_bound(db_connector.update_project, new, diffs, user_name) 
+        ui.navigate.to(f"/oppdater_prosjekt")
         ui.notify('Changes saved to database!')
 
     ui.button("💾 Save", on_click=update_data).classes("mt-4")
