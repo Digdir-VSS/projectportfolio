@@ -24,8 +24,8 @@ def project_detail(prosjekt_id: str, email: str, user_name: str, new: bool = Fal
         if not prosjet_list:
             ui.label('Project not found or you do not have access to it.')
             return
-
-    ui.markdown(f"## *Porteføljeinitiativ: {project.navn_tiltak}*").classes('text-xl font-bold')
+    ui.markdown(f"## Porteføljeinitiativ: *{project.navn_tiltak}*").classes('text-xl font-bold')
+    ui.markdown()
     inputs: dict[str, Any] = {}
     # show all fields as key/value
     with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
@@ -213,7 +213,9 @@ def project_detail(prosjekt_id: str, email: str, user_name: str, new: bool = Fal
             ui.label('Forklaring estimat').classes('text-lg font-bold')
             inputs['estimert_behov_forklaring'] = ui.textarea(value=project.estimert_behov_forklaring).classes('w-full bg-white rounded-lg')
 
-    
+        with ui.element("div").classes('col-span-2 row-span-1 col-start-1 row-start-8'):
+            ui.label('Eventuelt kommentar ressursbehov').classes('text-lg font-bold')
+            ui.textarea(value=None).classes('w-full bg-white rounded-lg')
 
     def get_input_value(inp):
         """
@@ -263,8 +265,8 @@ def project_detail(prosjekt_id: str, email: str, user_name: str, new: bool = Fal
         if len(edited_project.sammenheng_med_digitaliseringsstrategien_mm) > 0 and isinstance(edited_project.sammenheng_med_digitaliseringsstrategien_mm[0], str):
             # reverse_digdir = {v: k for k, v in digitaliserings_strategi_digdir.items()}
             edited_project.sammenheng_med_digitaliseringsstrategien_mm = str([reverse_digdir[label] for label in edited_project.sammenheng_med_digitaliseringsstrategien_mm if label in reverse_digdir])
-        if not edited_project.tiltakseier or edited_project.tiltakseier.strip() == "":
-            ui.notify("❌ Du må fylle inn tiltakseier.", type="warning", position="top", close_button="OK")
+        if not edited_project.kontaktperson:
+            ui.notify("❌ Du må fylle inn kontaktperson.", type="warning", position="top", close_button="OK")
             return
         edited_project.eier_epost = str([brukere[edited_project.tiltakseier]])
         if not edited_project.navn_tiltak or edited_project.navn_tiltak.strip() == "":
