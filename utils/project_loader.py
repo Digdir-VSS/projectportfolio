@@ -9,12 +9,12 @@ from azure.keyvault.secrets import SecretClient
 import uuid
 from sqlalchemy.dialects.mssql import UNIQUEIDENTIFIER
 from datetime import datetime
-from pydantic import BaseModel
-from typing import Optional
+from pydantic import BaseModel, field_validator
+from typing import Optional, List, Any, Dict
 from uuid import UUID
 from collections import Counter
-from typing import List, Any
 from dotenv import load_dotenv
+import json
 load_dotenv()
 
 def get_engine():
@@ -214,6 +214,22 @@ class Resursbehov(SQLModel, table=True):
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
+class Ressursbruk(SQLModel, table=True):
+    __tablename__ = "Ressursbruk"
+    __table_args__ = {"schema": schema_name}
+
+    ressursbruk_id: uuid.UUID = Field(
+            default_factory=uuid.uuid4,
+            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True, default=uuid.uuid4),
+        )
+    year: int
+    predicted_resources: float | None = None
+    sist_endret: datetime | None = None
+    endret_av: str | None = None
+    er_gjeldende: bool | None = None
+    prosjekt_id: uuid.UUID = Field(
+        foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
+    )
 
 class Risikovurdering(SQLModel, table=True):
     __tablename__ = "Risikovurdering"
@@ -334,8 +350,18 @@ class ProjectData(BaseModel):
     estimert_behov_forklaring: Optional[str]
     hvor_sikkert_estimatene: Optional[str]
     sammenheng_med_digitaliseringsstrategien_mm: Optional[str]
+    # ressursbruk: Optional[List[Dict[str,Any]]]
     eier_epost: str
     endret_av: Optional[str]
+
+    # @field_validator("ressursbruk", mode="before")
+    # def parse_ressursbruk(cls, v):
+    #     if isinstance(v, str):
+    #         try:
+    #             return json.loads(v)
+    #         except json.JSONDecodeError:
+    #             return []
+    #     return v
 
 convert_list = {"prosjekt_id": PortfolioProject.prosjekt_id,
 "date_modified": PortfolioProject.sist_endret,
@@ -413,6 +439,7 @@ field_to_table_col = {"prosjekt_id": (PortfolioProject,PortfolioProject.prosjekt
 "estimert_behov_forklaring": (Resursbehov,Resursbehov.estimert_budsjet_forklaring),    
 "hvor_sikkert_estimatene": (Resursbehov,Resursbehov.risiko_av_estimat),
 "sammenheng_med_digitaliseringsstrategien_mm": (DigitaliseringStrategi,DigitaliseringStrategi.sammenheng_digital_strategi),
+"ressursbruk":(Ressursbruk,Ressursbruk.predicted_resources),
 "eier_epost": (PortfolioProject,PortfolioProject.epost_kontakt),
 "endret_av":(PortfolioProject,PortfolioProject.endret_av)}
 
@@ -473,6 +500,7 @@ def create_empty_project(eier_epost: str,user_name: str, pid: UUID) -> ProjectDa
         estimert_behov_forklaring="",
         hvor_sikkert_estimatene="",
         sammenheng_med_digitaliseringsstrategien_mm="",
+        ressursbruk=[], 
         eier_epost=eier_epost,
         endret_av=user_name,
     )
@@ -566,7 +594,22 @@ def get_single_project_data(session, project_id: str):
     project_data = ProjectData(
         **{alias: result[i] for i, (alias, col) in enumerate(convert_list.items())}
     )
+    # this_year = 2026
+    # next_year = 2027
 
+    # res_query = (
+    #     select(Ressursbruk)
+    #     .where(
+    #         Ressursbruk.prosjekt_id == project_id,
+    #         Ressursbruk.er_gjeldende == True,
+    #         Ressursbruk.year.in_([this_year, next_year])
+    #     )
+    # )
+    # resources = session.exec(res_query).all()
+    # print("Resources: ",resources)
+    # # 3️⃣ Attach to the model
+    # if resources:
+    #     project_data.ressursbruk = {r.year: r.predicted_resources for r in resources}
     return project_data
 
 def get_project_data(session, email: str | None = None):
