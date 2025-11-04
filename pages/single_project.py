@@ -53,6 +53,7 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
             ui.label('Samarbeid internt').classes('text-lg font-bold')
             try:
                 samarbeid_intern_list = json.loads(project.samarabeid.samarbeid_intern)
+                print(samarbeid_intern_list)
             except (TypeError, json.JSONDecodeError):
                 samarbeid_intern_list = []
 
@@ -138,12 +139,18 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
 
         with ui.element("div").classes('col-span-1 row-span-1 col-start-1 row-start-6'):
             ui.label("Interne").classes('text-lg font-bold')
-            manedsverk_intern = project.resursbehov.antall_mandsverk_intern if type(project.resursbehov.antall_mandsverk_intern) == int else None
-            inputs['månedsverk_interne'] = ui.input(value=manedsverk_intern).props('type=number min=0').classes('w-full bg-white rounded-lg')
+            if isinstance(project.resursbehov.antall_mandsverk_intern, float) or isinstance(project.resursbehov.antall_mandsverk_intern, str) or isinstance(project.resursbehov.antall_mandsverk_intern, int):
+                antall_mandsverk_intern = int(project.resursbehov.antall_mandsverk_ekstern)
+            else:
+                antall_mandsverk_intern = None
+            inputs['månedsverk_interne'] = ui.input(value=antall_mandsverk_intern).props('type=number min=0').classes('w-full bg-white rounded-lg')
         with ui.element("div").classes('col-span-1 row-span-1 col-start-2 row-start-6'):
             ui.label("Eksterne").classes('text-lg font-bold')
-            manedsverk_ekstern = project.resursbehov.antall_mandsverk_ekstern if type(project.resursbehov.antall_mandsverk_ekstern) == int else None
-            inputs['månedsverk_eksterne'] = ui.input(value=manedsverk_ekstern).props('type=number min=0').classes('w-full bg-white rounded-lg')
+            if isinstance(project.resursbehov.antall_mandsverk_ekstern, float) or isinstance(project.resursbehov.antall_mandsverk_ekstern, str) or isinstance(project.resursbehov.antall_mandsverk_intern, int):
+                antall_mandsverk_ekstern = int(project.resursbehov.antall_mandsverk_ekstern)
+            else:
+                antall_mandsverk_ekstern = None
+            inputs['månedsverk_eksterne'] = ui.input(value=antall_mandsverk_ekstern).props('type=number min=0').classes('w-full bg-white rounded-lg')
 
         
         ui.label("Estimert finansieringsbehov (eksl. interne ressurser)").classes('text-lg font-bold col-span-1 row-span-1 col-start-4 row-start-2')
