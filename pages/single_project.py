@@ -10,6 +10,7 @@ from utils.db_connection import DBConnector
 
 
 brukere = load_users()
+
 brukere_list = list(brukere.keys())
 avdelinger = ['BOD','DSS' ,'KOM','FEL','STL' ,'TUU', 'VIS', 'KI Norge']
 def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user_name: str, new: bool = False):
@@ -273,19 +274,28 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
         if not edited_project.kontaktperson:
             ui.notify("❌ Du må fylle inn kontaktperson.", type="warning", position="top", close_button="OK")
             return
-        edited_project.eier_epost = str([brukere[edited_project.tiltakseier]])
         if not edited_project.navn_tiltak or edited_project.navn_tiltak.strip() == "":
             ui.notify("❌ Du må fylle inn tiltaksnavn.", type="warning", position="top", close_button="OK")
             return
-        if len(edited_project.kontaktperson) > 0 and isinstance(edited_project.kontaktperson[0], str):
-            kontakt_epost = [brukere.get(i) for i in edited_project.kontaktperson]
-            edited_project.kontaktperson = str(edited_project.kontaktperson)
+        kontakt_epost = [brukere.get(i) for i in edited_project.kontaktperson]
+        edited_project.kontaktperson = str(edited_project.kontaktperson)
+        if edited_project.tiltakseier:
+            edited_project.eier_epost = str([brukere[edited_project.tiltakseier]])
             epost_list = ast.literal_eval(edited_project.eier_epost)
             if epost_list[0] not in kontakt_epost:
                 epost_list.extend(kontakt_epost)
                 edited_project.eier_epost = str(epost_list)
-            else:
-                edited_project.eier_epost = str(kontakt_epost)
+        else:
+            edited_project.eier_epost = str([])
+
+        # if len(edited_project.kontaktperson) > 0 and isinstance(edited_project.kontaktperson[0], str):
+            
+            # epost_list = ast.literal_eval(edited_project.eier_epost)
+            # if epost_list[0] not in kontakt_epost:
+            #     epost_list.extend(kontakt_epost)
+            #     edited_project.eier_epost = str(epost_list)
+            # else:
+            #     edited_project.eier_epost = str(kontakt_epost)
         edited_project.endret_av = user_name
 
         diffs = diff_projects([project],[edited_project])
