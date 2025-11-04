@@ -32,8 +32,8 @@ def get_engine():
     odbc_str = f"mssql+pyodbc:///?odbc_connect={params}"
 
     # --- Get SQLAlchemy engine ---
-    engine = create_engine(odbc_str, echo=True)
-
+    engine = create_engine(odbc_str, echo=True, pool_pre_ping=True, pool_recycle=3600, pool_timeout=30)
+   
     # --- Token injection hook ---
     fabric_client_id = os.getenv("FABRIC_CLIENT_ID")
     fabric_tenant_id  = os.getenv("TENANT_ID")
@@ -528,14 +528,7 @@ def get_projects(session, email: str | None = None):
         }
         for r in results
     ]
-    # projects = [
-    #     JustProject(
-    #         **{alias: row[i] for i, (alias, col) in enumerate(project_names.items())}
-    #     )
-    #     for row in results
-    # ]
-    # return projects
-    # return results
+
 def get_single_project_data(session, project_id: str):
     stmt = (
         select(*convert_list.values())

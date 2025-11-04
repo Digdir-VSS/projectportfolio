@@ -1,31 +1,30 @@
-from nicegui import ui
+from nicegui import ui, run
 from typing import Any
 from utils.project_loader import diff_projects, ProjectData, get_engine, apply_changes, update_project_from_diffs, get_single_project_data, create_empty_project
-from sqlmodel import Session
 from uuid import UUID
 from datetime import datetime
 import ast
+import json
 from utils.azure_users import load_users
+from utils.db_connection import DBConnector
 
 
 brukere = load_users()
 brukere_list = list(brukere.keys())
-engine = get_engine()
 avdelinger = ['BOD','DSS' ,'KOM','FEL','STL' ,'TUU', 'VIS', 'KI Norge']
-def project_detail(prosjekt_id: str, email: str, user_name: str, new: bool = False):
+def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user_name: str, new: bool = False):
     if new:
         project = create_empty_project(email,user_name=user_name, pid=prosjekt_id)
     else:
-        with Session(engine) as session:
-            prosjet_list = get_single_project_data(session, prosjekt_id)
-            if prosjet_list:
-                project =  prosjet_list.model_copy(deep=True)
-
+        prosjet_list = db_connector.get_single_project(prosjekt_id)
         if not prosjet_list:
             ui.label('Project not found or you do not have access to it.')
             return
-    ui.markdown(f"## Porteføljeinitiativ: *{project.navn_tiltak}*").classes('text-xl font-bold')
-    ui.markdown()
+        project =  prosjet_list.model_copy(deep=True)
+
+
+
+    ui.markdown(f"## *Porteføljeinitiativ: {project.navn_tiltak}*").classes('text-xl font-bold')
     inputs: dict[str, Any] = {}
     # show all fields as key/value
     with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
@@ -54,8 +53,17 @@ def project_detail(prosjekt_id: str, email: str, user_name: str, new: bool = Fal
             ).props("inline")
         with ui.element("div").classes('col-span-2 row-span-1 col-start-1 row-start-7'):
             ui.label('Samarbeid internt').classes('text-lg font-bold')
-            inputs["samarbeid_internt"] = ui.select(avdelinger, multiple=True, value=project.samarbeid_intern.split(',') if project.samarbeid_intern else []).classes('w-full bg-white rounded-lg')
-        
+            try:
+                samarbeid_intern_list = json.loads(project.samarbeid_intern)
+            except (TypeError, json.JSONDecodeError):
+                samarbeid_intern_list = []
+
+            inputs["samarbeid_intern"] = ui.select(
+                avdelinger,
+                multiple=True,
+                value=samarbeid_intern_list
+            ).props("use-chips").classes("w-full bg-white rounded-lg")
+
         with ui.element("div").classes('col-span-1 row-span-1 col-start-3 row-start-7'):
             ui.label('Samarbeid eksternt').classes('text-lg font-bold')
             inputs["samarbeid_eksternt"] = ui.input(value=project.samarbeid_eksternt).classes('w-full bg-white rounded-lg')
@@ -124,7 +132,7 @@ def project_detail(prosjekt_id: str, email: str, user_name: str, new: bool = Fal
             ui.label("3 Vi sikrer trygg tilgang til digitale tjenester for alle").classes('col-span-2 row-span-1 col-start-1 row-start-7 text-lg')
             inputs['malbilde_3_beskrivelse'] = ui.textarea(value=project.malbilde_3_beskrivelse).classes('col-span-2 row-span-2 col-start-1 row-start-8 bg-white rounded-lg')
             ui.label("4 Vi løser komplekse utfordringer sammen og tilpasser oss en verden i rask endring").classes('col-span-2 row-span-1 col-start-3 row-start-7 text-lg')
-            inputs['malbilde_4_beskrivelse'] = ui.textarea(value=project.malbilde_3_beskrivelse).classes('col-span-2 row-span-2 col-start-3 row-start-8 bg-white rounded-lg')
+            inputs['malbilde_4_beskrivelse'] = ui.textarea(value=project.malbilde_4_beskrivelse).classes('col-span-2 row-span-2 col-start-3 row-start-8 bg-white rounded-lg')
             digitaliserings_strategi_digdir = {
                 "6": "6: få på plass veiledning om regelverksutvikling innen digitalisering, KI og datadeling",
                 "11a": "11a: forsterke arbeidet med sammenhengende tjenester, i samarbeid med KS",
@@ -213,9 +221,6 @@ def project_detail(prosjekt_id: str, email: str, user_name: str, new: bool = Fal
             ui.label('Forklaring estimat').classes('text-lg font-bold')
             inputs['estimert_behov_forklaring'] = ui.textarea(value=project.estimert_behov_forklaring).classes('w-full bg-white rounded-lg')
 
-        with ui.element("div").classes('col-span-2 row-span-1 col-start-1 row-start-8'):
-            ui.label('Eventuelt kommentar ressursbehov').classes('text-lg font-bold')
-            ui.textarea(value=None).classes('w-full bg-white rounded-lg')
 
     def get_input_value(inp):
         """
@@ -249,13 +254,13 @@ def project_detail(prosjekt_id: str, email: str, user_name: str, new: bool = Fal
         return None
 
 
-    def update_data():
+    async def update_data():
         updated_data = {field: get_input_value(inp) for field, inp in inputs.items()}
 
         updated_data["prosjekt_id"] = UUID(prosjekt_id)
-
         edited_project = project.model_copy(update=updated_data)
-
+        if edited_project.samarbeid_intern:
+            edited_project.samarbeid_intern = json.dumps(edited_project.samarbeid_intern)
         if edited_project.oppstart_tid:
             edited_project.oppstart_tid = datetime.strptime(edited_project.oppstart_tid , "%Y-%m-%d")
         if edited_project.ferdig_tid:
@@ -284,21 +289,11 @@ def project_detail(prosjekt_id: str, email: str, user_name: str, new: bool = Fal
         edited_project.endret_av = user_name
 
         diffs = diff_projects([project],[edited_project])
-        print(new)
-        print(diffs)
         if not diffs:
             ui.notify('No changes made.')
             return
-        with Session(engine) as session:
-            if new:
-                # diffs[0]["changes"]["eier_epost"] = {"old": None, "new": updated_data["eier_epost"]}
-                apply_changes(diffs, session, new=new, endret_av=user_name)
-                
-                ui.navigate.to(f"/project/{prosjekt_id}")
-            else:
-                apply_changes(diffs, session, endret_av=user_name)
-                update_project_from_diffs(project=project, diffs=diffs)
-
-            ui.notify('Changes saved to database!')
+        await run.io_bound(db_connector.update_project, new, diffs, user_name) 
+        ui.navigate.to(f"/oppdater_prosjekt")
+        ui.notify('Changes saved to database!')
 
     ui.button("💾 Save", on_click=update_data).classes("mt-4")
