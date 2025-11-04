@@ -53,7 +53,6 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
             ui.label('Samarbeid internt').classes('text-lg font-bold')
             try:
                 samarbeid_intern_list = json.loads(project.samarabeid.samarbeid_intern)
-                print(samarbeid_intern_list)
             except (TypeError, json.JSONDecodeError):
                 samarbeid_intern_list = []
 
