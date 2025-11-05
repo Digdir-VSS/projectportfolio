@@ -1,14 +1,14 @@
 from typing import Any
 import struct
+from datetime import datetime
 import urllib
-import uuid
-from sqlmodel import Session, select
+from sqlmodel import SQLModel, Session, select, update, and_
 from sqlalchemy import create_engine, event, Engine
 from sqlalchemy.exc import OperationalError
 from azure.identity import ClientSecretCredential
 from tenacity import retry, retry_if_exception_type, wait_exponential, stop_after_attempt
 from dotenv import load_dotenv
-from dataclasses import dataclass
+from dataclasses import dataclass, is_dataclass, asdict
 
 from utils.data_models import PortfolioProject, PortfolioProjectUI, Fremskritt, FremskrittUI, Resursbehov, ResursbehovUI, Samarabeid, SamarabeidUI, Problemstilling, ProblemstillingUI, Tiltak, TiltakUI, Risikovurdering, RisikovurderingUI, Malbilde,  MalbildeUI, DigitaliseringStrategi, DigitaliseringStrategiUI
 load_dotenv()
@@ -29,13 +29,31 @@ class ProjectData:
 def get_single_project_data(project_id: str, sql_models: dict):
     statement_dict = {}
     for schema_name, schema in sql_models.items():
-        statement_dict[schema_name] = select(schema).where(schema.prosjekt_id == project_id and schema.er_gjeldende == True)
+        statement_dict[schema_name] = select(schema).where(
+                schema.prosjekt_id == project_id, schema.er_gjeldende == True
+            )
     return statement_dict
    
+def ui_to_sqlmodel(ui_obj, sqlmodel_cls: type[SQLModel]) -> SQLModel:
+
+    if ui_obj is None:
+        return None
+
+    if not is_dataclass(ui_obj):
+        raise TypeError(f"Expected dataclass instance, got {type(ui_obj)}")
+
+    ui_dict = asdict(ui_obj)
+
+    # Filter out any keys that are not defined in the SQLModel class
+    sqlmodel_fields = {name for name in sqlmodel_cls.__fields__}
+    filtered_data = {k: v for k, v in ui_dict.items() if k in sqlmodel_fields}
+
+    return sqlmodel_cls(**filtered_data)   
 
 class DBConnector:
     engine: Engine
-    sql_model_names: dict
+    sql_models: dict
+    ui_models: dict
 
     def __init__(self, engine: Engine, sql_models: dict[str, Any], ui_models: dict[str, Any]):
         self.engine = engine
@@ -69,15 +87,13 @@ class DBConnector:
         ui_models = {"fremskritt": FremskrittUI, "samarabeid": SamarabeidUI, "portfolioproject": PortfolioProjectUI, "problemstilling": ProblemstillingUI, "tiltak": TiltakUI, "risikovurdering": RisikovurderingUI, "malbilde": MalbildeUI, "resursbehov": ResursbehovUI, "digitaliseringstrategi": DigitaliseringStrategiUI}
         return cls(engine, sql_models, ui_models)
     
-    def create_empty_project(self, email, user_name, prosjekt_id):#email,user_name=user_name, pid=prosjekt_id
+    def create_empty_project(self, email, prosjekt_id):
         empty_populated_schemas = {}
-        dict_of_schemas = self.ui_models
+        dict_of_schemas = self.ui_models.copy()
         dict_of_schemas.pop("portfolioproject")
-        print(self.ui_models)
-        print(dict_of_schemas)
         for name, schema in dict_of_schemas.items():
-            empty_populated_schemas[name] = schema(prosjekt_id=prosjekt_id, endret_av=user_name)
-        empty_populated_schemas["portfolioproject"] = PortfolioProject(epost_kontakt=email, prosjekt_id=prosjekt_id, endret_av=user_name)
+            empty_populated_schemas[name] = schema(prosjekt_id=prosjekt_id)
+        empty_populated_schemas["portfolioproject"] = PortfolioProjectUI(epost_kontakt=email, prosjekt_id=prosjekt_id)
         return ProjectData(**empty_populated_schemas)
 
     @retry(retry=retry_if_exception_type(OperationalError),
@@ -141,6 +157,34 @@ class DBConnector:
     wait=wait_exponential(multiplier=1, min=1, max=10),
     stop=stop_after_attempt(3),
     reraise=True)
-    def update_project(self, new, diffs, user_name):
+    def update_project(self, project: ProjectData, e_mail: str):
         with Session(self.engine) as session:
-            apply_changes(diffs, session, new=new, endret_av=user_name)
+            prosjekt_id = project.portfolioproject.prosjekt_id if project.portfolioproject else None
+
+            for model_name, ui_model in self.ui_models.items():
+                ui_obj = getattr(project, model_name)
+                if ui_obj is None:
+                    continue
+
+                sql_cls = self.sql_models[model_name]
+                print(ui_obj)
+                print(sql_cls)
+                sql_obj = ui_to_sqlmodel(ui_obj, sql_cls)
+
+                # Step 1: deactivate previous rows for same prosjekt_id
+                session.exec(
+                    update(sql_cls)
+                    .where(sql_cls.prosjekt_id == prosjekt_id)
+                    .values(er_gjeldende=False)
+                )
+
+                # Step 2: set audit fields and mark as current
+                sql_obj.er_gjeldende = True
+                sql_obj.sist_endret = datetime.utcnow()
+                sql_obj.endret_av = e_mail
+
+                # Step 3: add to session
+                session.add(sql_obj)
+
+            # Commit once at the end
+            session.commit()
