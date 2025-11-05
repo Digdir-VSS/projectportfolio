@@ -160,9 +160,24 @@ class DBConnector:
     stop=stop_after_attempt(3),
     reraise=True)
     def update_project(self, project: ProjectData, e_mail: str):
-        with Session(self.engine) as session:
-            prosjekt_id = project.portfolioproject.prosjekt_id if project.portfolioproject else None
+        prosjekt_id = project.portfolioproject.prosjekt_id if project.portfolioproject else None
+        now = datetime.utcnow()
 
+        with Session(self.engine) as session:
+            conn = session.connection()
+
+            # Deactivate all previous entries in bulk
+            updates = [
+                update(sql_cls)
+                .where(sql_cls.prosjekt_id == prosjekt_id)
+                .values(er_gjeldende=False)
+                for sql_cls in self.sql_models.values()
+            ]
+            for stmt in updates:
+                conn.execute(stmt)
+
+            # Bulk insert new rows
+            objs = []
             for model_name, ui_model in self.ui_models.items():
                 ui_obj = getattr(project, model_name)
                 if ui_obj is None:
@@ -170,21 +185,10 @@ class DBConnector:
 
                 sql_cls = self.sql_models[model_name]
                 sql_obj = ui_to_sqlmodel(ui_obj, sql_cls)
-
-                # Step 1: deactivate previous rows for same prosjekt_id
-                session.exec(
-                    update(sql_cls)
-                    .where(sql_cls.prosjekt_id == prosjekt_id)
-                    .values(er_gjeldende=False)
-                )
-
-                # Step 2: set audit fields and mark as current
                 sql_obj.er_gjeldende = True
-                sql_obj.sist_endret = datetime.utcnow()
+                sql_obj.sist_endret = now
                 sql_obj.endret_av = e_mail
+                objs.append(sql_obj)
 
-                # Step 3: add to session
-                session.add(sql_obj)
-
-            # Commit once at the end
+            session.add_all(objs)
             session.commit()
