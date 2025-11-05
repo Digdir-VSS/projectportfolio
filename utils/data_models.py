@@ -29,13 +29,13 @@ class PortfolioProject(SQLModel, table=True):
     epost_kontakt: str | None = None
     sist_endret: datetime | None = None
     endret_av: str | None = None
-    er_gjeldende: bool | None = None
+    er_gjeldende: bool = False
 
 
 @binding.bindable_dataclass
 class PortfolioProjectUI:
-    prosjekt_sk_id: uuid.UUID = field(default_factory=uuid.uuid4)
-    prosjekt_id: uuid.UUID = field(default_factory=uuid.uuid4)
+    prosjekt_sk_id: uuid.UUID = uuid.uuid4()
+    prosjekt_id: uuid.UUID | None = None
     navn: str = ''
     oppstart: datetime | None = None
     avdeling: str = ''
@@ -58,15 +58,15 @@ class DigitaliseringStrategi(SQLModel, table=True):
     sammenheng_digital_strategi: str | None = None
     sist_endret: datetime | None = None
     endret_av: str | None = None
-    er_gjeldende: bool | None = None
+    er_gjeldende: bool = False
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
 @binding.bindable_dataclass
 class DigitaliseringStrategiUI:
-    digitalisering_strategi_id: uuid.UUID = field(default_factory=uuid.uuid4)
-    prosjekt_id: uuid.UUID = field(default_factory=uuid.uuid4)
+    digitalisering_strategi_id: uuid.UUID = uuid.uuid4()
+    prosjekt_id: uuid.UUID | None = None
     sammenheng_digital_strategi: str = ''
     sist_endret: datetime | None = None
     endret_av: str = ''
@@ -91,7 +91,7 @@ class Finansiering(SQLModel, table=True):
     risiko_av_estimat_tall: float | None = None
     sist_endret: datetime | None = None
     endret_av: str | None = None
-    er_gjeldende: bool | None = None
+    er_gjeldende: bool = False
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
@@ -109,15 +109,15 @@ class Fremskritt(SQLModel, table=True):
     planlagt_ferdig: datetime | None = None
     sist_endret: datetime | None = None
     endret_av: str | None = None
-    er_gjeldende: bool | None = None
+    er_gjeldende: bool = False
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
 @binding.bindable_dataclass
 class FremskrittUI:
-    fremskritt_id: uuid.UUID = field(default_factory=uuid.uuid4)
-    prosjekt_id: uuid.UUID = field(default_factory=uuid.uuid4)
+    fremskritt_id: uuid.UUID = uuid.uuid4()
+    prosjekt_id: uuid.UUID | None = None
     fremskritt: str = ''
     fase: str = ''
     planlagt_ferdig: datetime | None = None
@@ -144,15 +144,15 @@ class Malbilde(SQLModel, table=True):
     malbilde_4_vurdering: str | None = None
     sist_endret: datetime | None = None
     endret_av: str | None = None
-    er_gjeldende: bool | None = None
+    er_gjeldende: bool = False
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
 @binding.bindable_dataclass
 class MalbildeUI:
-    malbilde_id: uuid.UUID = field(default_factory=uuid.uuid4)
-    prosjekt_id: uuid.UUID = field(default_factory=uuid.uuid4)
+    malbilde_id: uuid.UUID = uuid.uuid4()
+    prosjekt_id: uuid.UUID | None = None
     malbilde_1_beskrivelse: str = ''
     malbilde_1_vurdering: str = ''
     malbilde_2_beskrivelse: str = ''
@@ -163,7 +163,7 @@ class MalbildeUI:
     malbilde_4_vurdering: str = ''
     sist_endret: datetime | None = None
     endret_av: str = ''
-    er_gjeldende: bool | None = None
+    er_gjeldende: bool = True
 
 class Problemstilling(SQLModel, table=True):
     __tablename__ = "Problemstilling"
@@ -176,19 +176,19 @@ class Problemstilling(SQLModel, table=True):
     problem: str | None = None
     sist_endret: datetime | None = None
     endret_av: str | None = None
-    er_gjeldende: bool | None = None
+    er_gjeldende: bool = False
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
 @binding.bindable_dataclass
 class ProblemstillingUI:
-    problem_stilling_id: uuid.UUID = field(default_factory=uuid.uuid4)
-    prosjekt_id: uuid.UUID = field(default_factory=uuid.uuid4)
+    problem_stilling_id: uuid.UUID = uuid.uuid4()
+    prosjekt_id: uuid.UUID | None = None
     problem: str = ''
     sist_endret: datetime | None = None
     endret_av: str = ''
-    er_gjeldende: bool | None = None
+    er_gjeldende: bool = True
 
 class Rapportering(SQLModel, table=True):
     __tablename__ = "Rapportering"
@@ -209,7 +209,7 @@ class Rapportering(SQLModel, table=True):
     viktige_endringer: float | None = None
     sist_endret: datetime | None = None
     endret_av: str | None = None
-    er_gjeldende: bool | None = None
+    er_gjeldende: bool = False
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
@@ -232,15 +232,15 @@ class Resursbehov(SQLModel, table=True):
     kompetanse_tilgjengelig: str | None = None
     sist_endret: datetime | None = None
     endret_av: str | None = None
-    er_gjeldende: bool | None = None
+    er_gjeldende: bool = False
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
 @binding.bindable_dataclass
 class ResursbehovUI:
-    ressursbehov_id: uuid.UUID = field(default_factory=uuid.uuid4)
-    prosjekt_id: uuid.UUID = field(default=uuid.uuid4)
+    ressursbehov_id: uuid.UUID = uuid.uuid4()
+    prosjekt_id: uuid.UUID | None = None
     estimert_budsjet_forklaring: str = ''
     estimert_budsjet_behov: float | None = None
     antall_mandsverk_intern: float | None = None
@@ -252,7 +252,7 @@ class ResursbehovUI:
     kompetanse_tilgjengelig: str = ''
     sist_endret: datetime | None = None
     endret_av: str = ''
-    er_gjeldende: bool | None = None
+    er_gjeldende: bool = True
 
 class Risikovurdering(SQLModel, table=True):
     __tablename__ = "Risikovurdering"
@@ -265,19 +265,19 @@ class Risikovurdering(SQLModel, table=True):
     vurdering: str | None = None
     sist_endret: datetime | None = None
     endret_av: str | None = None
-    er_gjeldende: bool | None = None
+    er_gjeldende: bool = False
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
 @binding.bindable_dataclass
 class RisikovurderingUI:
-    risiko_vurdering_id: uuid.UUID = field(default=uuid.uuid4)
-    prosjekt_id: uuid.UUID = field(default=uuid.uuid4)
+    risiko_vurdering_id: uuid.UUID = uuid.uuid4()
+    prosjekt_id: uuid.UUID | None = None
     vurdering: str = ''
     sist_endret: datetime | None = None
     endret_av: str  = ''
-    er_gjeldende: bool | None = None
+    er_gjeldende: bool = True
 
 class Samarabeid(SQLModel, table=True):
     __tablename__ = "Samarbeid"
@@ -292,21 +292,21 @@ class Samarabeid(SQLModel, table=True):
     avhengigheter_andre: str | None = None
     sist_endret: datetime | None = None
     endret_av: str | None = None
-    er_gjeldende: bool | None = None
+    er_gjeldende: bool = False
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
 @binding.bindable_dataclass
 class SamarabeidUI:
-    samarbeid_id: uuid.UUID = field(default=uuid.uuid4),
-    prosjekt_id : uuid.UUID = field(default=uuid.uuid4),
+    samarbeid_id: uuid.UUID = uuid.uuid4() 
+    prosjekt_id : uuid.UUID | None = None
     samarbeid_intern: str = ''
     samarbeid_eksternt: str = ''
     avhengigheter_andre: str = ''
     sist_endret: datetime | None = None
     endret_av: str = ''
-    er_gjeldende: bool | None = None
+    er_gjeldende: bool = True
 
 class Tiltak(SQLModel, table=True):
     __tablename__ = "Tiltak"
@@ -319,19 +319,19 @@ class Tiltak(SQLModel, table=True):
     tiltak_beskrivelse: str | None = None
     sist_endret: datetime | None = None
     endret_av: str | None = None
-    er_gjeldende: bool | None = None
+    er_gjeldende: bool = False
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
 @binding.bindable_dataclass
 class TiltakUI:
-    tiltak_id: uuid.UUID = field(default=uuid.uuid4),
-    prosjekt_id : uuid.UUID = field(default=uuid.uuid4),
+    tiltak_id: uuid.UUID = uuid.uuid4()
+    prosjekt_id : uuid.UUID | None = None
     tiltak_beskrivelse: str = ''
     sist_endret: datetime | None = None
     endret_av: str = ''
-    er_gjeldende: bool | None = None
+    er_gjeldende: bool = True
 
 class UnderstøtteTildelingsbrev(SQLModel, table=True):
     __tablename__ = "UnderstøtteTildelingsbrev"
@@ -349,7 +349,7 @@ class UnderstøtteTildelingsbrev(SQLModel, table=True):
     mål_3: float | None = None
     sist_endret: datetime | None = None
     endret_av: str | None = None
-    er_gjeldende: bool | None = None
+    er_gjeldende: bool = False
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
@@ -367,7 +367,7 @@ class Vurdering(SQLModel, table=True):
     risiko_vurdering: str | None = None
     sist_endret: datetime | None = None
     endret_av: str | None = None
-    er_gjeldende: bool | None = None
+    er_gjeldende: bool = False
     mscw: str | None = None
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
