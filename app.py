@@ -7,15 +7,13 @@ import os
 from dotenv import load_dotenv
 from msal import ConfidentialClientApplication
 
-from utils.project_loader import ProjectData
-from utils.db_connection import DBConnector
+from utils.db_connection import DBConnector, ProjectData
 from pages.login_page import register_login_pages
 from pages.dashboard import dashboard
 from pages.single_project import project_detail as digdir_overordnet_info_page
-from pages.utils import layout, validate_token
+from pages.utils import layout
 import uuid
-import json
-import datetime
+
 load_dotenv()
 
 # Client ID and secret correspond to your Entra Application registration
