@@ -34,8 +34,9 @@ def to_date_str(value):
     return str(value)
 
 brukere = load_users()
+
 brukere_list = list(brukere.keys())
-avdelinger = ['BOD','DSS' ,'KOM','FEL','STL' ,'TUU', 'VIS']
+avdelinger = ['BOD','DSS' ,'KOM','FEL','STL' ,'TUU', 'VIS', 'KI Norge']
 def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user_name: str, new: bool = False):
     if new:
         project = db_connector.create_empty_project(email=email, prosjekt_id=prosjekt_id)
@@ -116,17 +117,65 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
             ui.label('Risiko hvis tiltaket ikke gjennomføres').classes('text-lg font-bold')
             ui.textarea(value=project.risikovurdering.vurdering).classes('w-full bg-white rounded-lg').bind_value(project.risikovurdering, "vurdering")
 
- 
+    with ui.grid(columns=4).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
+            ui.label("3. Tilknytning til strategier").classes('col-span-1 row-span-1 col-start-1 row-start-2 text-lg font-bold underline mt-4 mb-2')
+
+            ui.label("Beskriv hvordan tiltaket understøtter målbildet").classes('col-span-1 row-span-1 col-start-1 row-start-3 text-lg font-bold')
+            ui.label("1 Vi fremmer samordning og prioritering for en mer effektiv offentlig sektor").classes('col-span-2 row-span-1 col-start-1 row-start-4 text-lg')
+            inputs['malbilde_1_beskrivelse'] = ui.textarea(value=project.malbilde_1_beskrivelse).classes('col-span-2 row-span-2 col-start-1 row-start-5 bg-white rounded-lg')
+            ui.label("2 Vi leder an i ansvarlig og innovativ bruk av data og kunstig intelligens").classes('col-span-2 row-span-1 col-start-3 row-start-4 text-lg')
+            inputs['malbilde_2_beskrivelse'] = ui.textarea(value=project.malbilde_2_beskrivelse).classes('col-span-2 row-span-2 col-start-3 row-start-5 bg-white rounded-lg')
+            ui.label("3 Vi sikrer trygg tilgang til digitale tjenester for alle").classes('col-span-2 row-span-1 col-start-1 row-start-7 text-lg')
+            inputs['malbilde_3_beskrivelse'] = ui.textarea(value=project.malbilde_3_beskrivelse).classes('col-span-2 row-span-2 col-start-1 row-start-8 bg-white rounded-lg')
+            ui.label("4 Vi løser komplekse utfordringer sammen og tilpasser oss en verden i rask endring").classes('col-span-2 row-span-1 col-start-3 row-start-7 text-lg')
+            inputs['malbilde_4_beskrivelse'] = ui.textarea(value=project.malbilde_4_beskrivelse).classes('col-span-2 row-span-2 col-start-3 row-start-8 bg-white rounded-lg')
+            digitaliserings_strategi_digdir = {
+                "6": "6: få på plass veiledning om regelverksutvikling innen digitalisering, KI og datadeling",
+                "11a": "11a: forsterke arbeidet med sammenhengende tjenester, i samarbeid med KS",
+                "11g": "11g: videreføre arbeidet med livshendelser - Dødsfall og arv",
+                "12": "12: utrede en felles digital inngang til innbyggere og andre brukere til informasjon og til digitale offentlige tjenester",
+                "13": "13: etablere en utprøvingsarena for utforsking av regulatoriske og teknologiske utfordringer i arbeidet med sammenhengende tjenester",
+                "15": "15: videreutvikle virkemidler for digitalisering og innovasjon i offentlig sektor",
+                "41": "41: etablere en nasjonal arkitektur for et felles digitalt økosystem, i samarbeid med KS",
+                "42": "42: tilby alle en digital lommebok med eID på høyt nivå",
+                "43": "43: utvikle løsninger for digital representasjon, herunder for vergemål",
+                "51": "51: samordne råd- og veiledningsressurser innenfor digital sikkerhet bedre",
+                "74": "74: samordne og styrke veiledningen om deling og bruk av data, og arbeidet med orden i eget hus",
+                "75": "75: prioritere arbeidet med å gjøre tilgjengelig nasjonale datasett som er viktige for offentlig sektor og samfunnet",
+                "76": "76: legge til rette for sektorovergripende samarbeid om standarder og formater for datautveksling for digitalisering av hele verdikjeder",
+                "87": "87: styrke veiledningsarbeidet for ansvarlig utvikling og bruk av KI, blant annet gjennom regulatoriske sandkasser",
+                "88": "88: sikre ansvarlig utvikling og bruk av KI i offentlig sektor",
+                "114": "114: følge opp Handlingsplan for auka inkludering i eit digitalt samfunn",
+                "115": "115: styrke innsatsen for å øke den digitale kompetansen hos seniorer",
+                "116": "116: styrke arbeidet med brukskvalitet, klarspråk og universell utforming i offentlige digitale tjenester",
+                "118": "118: sikre økt brukerinvolvering ved utvikling av digitale tjenester"
+            }
+            reverse_digdir = {v: k for k, v in digitaliserings_strategi_digdir.items()}
+            with ui.element("div").classes('col-span-4 row-span-2 col-start-1 row-start-10'):
+                ui.label('Tilknyttet tiltak i Digitaliseringsstrategien').classes('text-lg font-bold')
+                try:
+                    selected_keys = ast.literal_eval(project.sammenheng_med_digitaliseringsstrategien_mm)
+                except (ValueError, SyntaxError):
+                    selected_keys = project.sammenheng_med_digitaliseringsstrategien_mm = []
+                # selected_keys = project.sammenheng_med_digitaliseringsstrategien_mm or []
+                selected_labels = [digitaliserings_strategi_digdir[i] for i in selected_keys if i in digitaliserings_strategi_digdir]
+
+                inputs['sammenheng_med_digitaliseringsstrategien_mm'] = ui.select(list(digitaliserings_strategi_digdir.values()), 
+                                                                                multiple=True, 
+                                                                                value=selected_labels).classes('w-full bg-white rounded-lg')
+            with ui.element("div").classes('col-span-4 row-span-2 col-start-1 row-start-12'):
+                ui.label('Eventuelt kommentar').classes('text-lg font-bold')
+                ui.textarea(value=None).classes('w-full bg-white rounded-lg')
 
     with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
-        ui.label("3. Resursbehov").classes('col-span-1 row-span-1 col-start-1 row-start-2 text-lg font-bold underline mt-4 mb-2')
+        ui.label("4. Ressursbehov").classes('col-span-1 row-span-1 col-start-1 row-start-2 text-lg font-bold underline mt-4 mb-2')
 
         with ui.element("div").classes('col-span-2 row-span-2 col-start-1 row-start-3'):
             ui.label("Hvilke kompetanser trenges for tiltaket?").classes('text-lg font-bold')
             ui.textarea().classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "kompetanse_som_trengs")
 
         with ui.element("div").classes('col-span-1 row-span-1 col-start-3 row-start-3'):
-            ui.label("Kompetanse internt").classes('text-lg font-bold')
+            ui.label("Er kompetanser tilgjengelige internt").classes('text-lg font-bold')
             kompetanse_internt_list = ["Ja","Ja, men det er ikke tilstrekkelig kapasitet","Delvis","Nei"]
             #selected_kompetanse = project.resursbehov.kompetanse_tilgjengelig  if project.resursbehov.kompetanse_tilgjengelig in kompetanse_internt_list else None
             ui.select(kompetanse_internt_list).classes('w-full bg-white rounded-lg').bind_value( project.resursbehov, "kompetanse_tilgjengelig")

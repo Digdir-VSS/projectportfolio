@@ -9,8 +9,8 @@ from azure.keyvault.secrets import SecretClient
 from typing import Optional
 from uuid import UUID
 from collections import Counter
-from typing import List, Any
 from dotenv import load_dotenv
+import json
 load_dotenv()
 
 def normalize_value(val):
