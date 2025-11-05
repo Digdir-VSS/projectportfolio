@@ -5,6 +5,7 @@ import ast
 import json
 from utils.azure_users import load_users
 from utils.db_connection import DBConnector
+import ast, asyncio
 
 def to_list(value):
     """Safely parse a JSON list or return [] if invalid."""
@@ -202,6 +203,13 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
 
 
     async def update_data():
+        with ui.dialog() as dialog, ui.card():
+            ui.label("Lagrer endringer... Vennligst vent ⏳")
+            ui.spinner(size="lg", color="primary")
+        dialog.open()
+
+        await asyncio.sleep(0.1)  # let UI render spinner before heavy work starts
+
 
         if project.portfolioproject.oppstart:
             if isinstance(project.portfolioproject.oppstart, (datetime, date)):
@@ -235,7 +243,8 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
                 project.portfolioproject.epost_kontakt = str(kontakt_epost)
 
         await run.io_bound(db_connector.update_project, project, email) 
-        ui.navigate.to(f"/oppdater_prosjekt")
         ui.notify('Changes saved to database!')
+        ui.navigate.to(f"/oppdater_prosjekt")
+        dialog.close()
 
     ui.button("💾 Save", on_click=update_data).classes("mt-4")
