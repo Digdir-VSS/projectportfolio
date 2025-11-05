@@ -43,7 +43,6 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
         if not project:
             ui.label('Project not found or you do not have access to it.')
             return
-    print(project)
     ui.markdown(f"## *Porteføljeinitiativ: {project.portfolioproject.navn}*").classes('text-xl font-bold')
     with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
         ui.label("1. Grunninformasjon").classes('col-span-1 row-span-1 col-start-1 row-start-3 text-lg font-bold underline mt-4 mb-2')
@@ -93,18 +92,6 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
             if isinstance(oppstart, (datetime, date)):
                 setattr(project.portfolioproject, "oppstart", to_date_str(oppstart))
             ui.input().bind_value(project.portfolioproject, "oppstart").props("outlined dense type=date clearable color=primary").classes("w-full")
-            #ui.date().props('mask=YYYY-MM-DD').classes('bg-white rounded-lg').bind_value(project.portfolioproject, "oppstart")
-            #oppstart_date = str(project.portfolioproject.oppstart.date()) if project.portfolioproject.oppstart else None
-            #with ui.input(value=oppstart_date, placeholder='Velg dato').classes('bg-white rounded-lg') as oppstart_input:
-                #with oppstart_input.add_slot('append'):
-                #    ui.icon('edit_calendar').on('click', lambda: oppstart_menu.open()).classes('cursor-pointer')
-                #with ui.menu().props('no-parent-event') as oppstart_menu:
-                #    oppstart_date = ui.date(value=oppstart_date).props('mask=YYYY-MM-DD')
-                #    oppstart_date.bind_value(oppstart_input, 'value')
-                #    with ui.row().classes('justify-end'):
-                #        ui.button('Lukk', on_click=oppstart_menu.close).props('flat')
-
-                #project.portfolioproject.oppstart  = oppstart_date
             
         with ui.element("div").classes('col-span-1 row-span-1 col-start-5 row-start-5'):
             ui.label("Planlagt ferdig").classes('text-lg font-bold')
@@ -112,19 +99,7 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
             if isinstance(ferdig_date, (datetime, date)):
                 setattr(project.fremskritt, "planlagt_ferdig", to_date_str(ferdig_date))
             ui.input().bind_value(project.fremskritt, "planlagt_ferdig").props("outlined dense type=date clearable color=primary").classes("w-full")
-
-            #ferdig_date = str(project.fremskritt.planlagt_ferdig.date()) if project.fremskritt.planlagt_ferdig else None
-            #with ui.input(value=ferdig_date,  placeholder='Velg dato').classes('bg-white rounded-lg') as ferdig_input:
-            #    with ferdig_input.add_slot('append'):
-            #        ui.icon('edit_calendar').on('click', lambda: ferdig_menu.open()).classes('cursor-pointer')
-            #    with ui.menu().props('no-parent-event') as ferdig_menu:
-            #        ferdig_date = ui.date(value=ferdig_date).props('mask=YYYY-MM-DD')
-            #        ferdig_date.bind_value(ferdig_input, 'value')
-            #        with ui.row().classes('justify-end'):
-            #            ui.button('Lukk', on_click=ferdig_menu.close).props('flat')
-            #
-            #project.fremskritt.planlagt_ferdig = ferdig_date
-
+            
     with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
         ui.label("2. Begrunnelse").classes('col-span-1 row-span-1 col-start-1 row-start-2 text-lg font-bold underline mt-4 mb-2')
 
@@ -178,11 +153,11 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
         with ui.element("div").classes('col-span-2 row-span-1 col-start-4 row-start-3'):
             ui.label('Estimert budsjett behov').classes('text-lg font-bold')
             ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "estimert_budsjet_behov")
-            # , validation=lambda value: "Må være et tall" if not isinstance(value, int) else None
+
         with ui.element("div").classes('col-span-2 row-span-1 col-start-4 row-start-4'):
             ui.label("Hvor sikkert er estimatet").classes('text-lg font-bold')
             estimat_liste = ["Relativt sikkert","Noe usikkert","Svært usikkert"]
-            selected_estimat = project.resursbehov.risiko_av_estimat if project.resursbehov.risiko_av_estimat in estimat_liste else None
+
             ui.select(estimat_liste).classes('w-full bg-white rounded-lg').bind_value(project.resursbehov,"risiko_av_estimat")
 
         with ui.element("div").classes('col-span-2 row-span-2 col-start-4 row-start-5'):
@@ -227,14 +202,13 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
 
 
     async def update_data():
-        # make sure oppstart is a string (YYYY-MM-DD)
+
         if project.portfolioproject.oppstart:
             if isinstance(project.portfolioproject.oppstart, (datetime, date)):
                 project.portfolioproject.oppstart = project.portfolioproject.oppstart.strftime("%Y-%m-%d")
             else:
                 project.portfolioproject.oppstart = str(project.portfolioproject.oppstart)
 
-        # make sure planlagt_ferdig is a string
         if project.fremskritt.planlagt_ferdig:
             if isinstance(project.fremskritt.planlagt_ferdig, (datetime, date)):
                 project.fremskritt.planlagt_ferdig = project.fremskritt.planlagt_ferdig.strftime("%Y-%m-%d")

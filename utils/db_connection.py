@@ -33,10 +33,6 @@ def get_single_project_data(project_id: str, sql_models: dict):
         statement_dict[schema_name] = select(schema).where(
                 schema.prosjekt_id == project_id, schema.er_gjeldende == True
             )
-        print(select(schema).where(
-                schema.prosjekt_id == project_id, schema.er_gjeldende == True
-            ))
-    print(statement_dict)
     return statement_dict
    
 def ui_to_sqlmodel(ui_obj, sqlmodel_cls: type[SQLModel]) -> SQLModel:
@@ -142,7 +138,6 @@ class DBConnector:
             stmt_dict = get_single_project_data(project_id, self.sql_models)
             for sql_model_name, sql_statement in stmt_dict.items():
                 result = session.exec(sql_statement).first()
-                print(result)
                 if result:
                     sql_model_dict[sql_model_name] = result
                 else: 
@@ -174,8 +169,6 @@ class DBConnector:
                     continue
 
                 sql_cls = self.sql_models[model_name]
-                print(ui_obj)
-                print(sql_cls)
                 sql_obj = ui_to_sqlmodel(ui_obj, sql_cls)
 
                 # Step 1: deactivate previous rows for same prosjekt_id
