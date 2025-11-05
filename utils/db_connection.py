@@ -1,8 +1,9 @@
 from typing import Any
+from uuid import UUID
 import struct
 from datetime import datetime
 import urllib
-from sqlmodel import SQLModel, Session, select, update, and_
+from sqlmodel import SQLModel, Session, select, update
 from sqlalchemy import create_engine, event, Engine
 from sqlalchemy.exc import OperationalError
 from azure.identity import ClientSecretCredential
@@ -32,6 +33,10 @@ def get_single_project_data(project_id: str, sql_models: dict):
         statement_dict[schema_name] = select(schema).where(
                 schema.prosjekt_id == project_id, schema.er_gjeldende == True
             )
+        print(select(schema).where(
+                schema.prosjekt_id == project_id, schema.er_gjeldende == True
+            ))
+    print(statement_dict)
     return statement_dict
    
 def ui_to_sqlmodel(ui_obj, sqlmodel_cls: type[SQLModel]) -> SQLModel:
@@ -132,10 +137,12 @@ class DBConnector:
     reraise=True)
     def get_single_project(self, project_id: str):
         sql_model_dict = {}
+        project_id = UUID(project_id)
         with Session(self.engine) as session:
             stmt_dict = get_single_project_data(project_id, self.sql_models)
             for sql_model_name, sql_statement in stmt_dict.items():
                 result = session.exec(sql_statement).first()
+                print(result)
                 if result:
                     sql_model_dict[sql_model_name] = result
                 else: 
