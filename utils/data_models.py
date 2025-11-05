@@ -31,6 +31,7 @@ class PortfolioProject(SQLModel, table=True):
     endret_av: str | None = None
     er_gjeldende: bool | None = None
 
+
 @binding.bindable_dataclass
 class PortfolioProjectUI:
     prosjekt_sk_id: uuid.UUID = field(default_factory=uuid.uuid4)
@@ -115,7 +116,7 @@ class Fremskritt(SQLModel, table=True):
 
 @binding.bindable_dataclass
 class FremskrittUI:
-    digitalisering_strategi_id: uuid.UUID = field(default_factory=uuid.uuid4)
+    fremskritt_id: uuid.UUID = field(default_factory=uuid.uuid4)
     prosjekt_id: uuid.UUID = field(default_factory=uuid.uuid4)
     fremskritt: str = ''
     fase: str = ''
