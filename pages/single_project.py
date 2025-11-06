@@ -210,48 +210,70 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
             ui.label('Forklaring estimat').classes('text-lg font-bold')
             ui.textarea(value=project.resursbehov.estimert_budsjet_forklaring).classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "estimert_budsjet_forklaring")
     async def update_data():
-        with ui.dialog() as dialog, ui.card():
-            ui.label("Lagrer endringer... Vennligst vent ⏳")
-            ui.spinner(size="lg", color="primary")
-        dialog.open()
-
-        await asyncio.sleep(0.1)  # let UI render spinner before heavy work starts
-
-
-        if project.portfolioproject.oppstart:
-            if isinstance(project.portfolioproject.oppstart, (datetime, date)):
-                project.portfolioproject.oppstart = project.portfolioproject.oppstart.strftime("%Y-%m-%d")
-            else:
-                project.portfolioproject.oppstart = str(project.portfolioproject.oppstart)
-
-        if project.fremskritt.planlagt_ferdig:
-            if isinstance(project.fremskritt.planlagt_ferdig, (datetime, date)):
-                project.fremskritt.planlagt_ferdig = project.fremskritt.planlagt_ferdig.strftime("%Y-%m-%d")
-            else:
-                project.fremskritt.planlagt_ferdig = str(project.fremskritt.planlagt_ferdig)
-
-        if not project.resursbehov.risiko_av_estimat:
-            project.resursbehov.risiko_av_estimat = ""
+        # Validate required fields
         if not project.portfolioproject.kontaktpersoner:
             ui.notify("❌ Du må fylle inn kontaktperson.", type="warning", position="top", close_button="OK")
             return
-        project.portfolioproject.epost_kontakt = str([brukere[project.portfolioproject.tiltakseier]])
         if not project.portfolioproject.navn or project.portfolioproject.navn.strip() == "":
             ui.notify("❌ Du må fylle inn tiltaksnavn.", type="warning", position="top", close_button="OK")
             return
-        if len(project.portfolioproject.kontaktpersoner) > 0 and isinstance(project.portfolioproject.kontaktpersoner[0], str):
-            kontakt_epost = [brukere.get(i) for i in project.portfolioproject.kontaktpersoner]
-            project.portfolioproject.kontaktpersoner = str(project.portfolioproject.kontaktpersoner)
-            epost_list = ast.literal_eval(project.portfolioproject.epost_kontakt)
-            if epost_list[0] not in kontakt_epost:
-                epost_list.extend(kontakt_epost)
-                project.portfolioproject.epost_kontakt = str(epost_list)
-            else:
-                project.portfolioproject.epost_kontakt = str(kontakt_epost)
         
-        await run.io_bound(db_connector.update_project, project, email) 
-        ui.notify('Changes saved to database!')
-        ui.navigate.to(f"/oppdater_prosjekt")
-        dialog.close()
+        dialog = ui.dialog()
+        with dialog, ui.card():
+            ui.label("💾 Lagrer endringer... Vennligst vent ⏳")
+            ui.spinner(size="lg", color="primary")
+
+        dialog.open()
+        await asyncio.sleep(0.1)  # Allow UI to render spinner
+
+        try:
+            # --- Data normalization ---
+            if project.portfolioproject.oppstart:
+                if isinstance(project.portfolioproject.oppstart, (datetime, date)):
+                    project.portfolioproject.oppstart = project.portfolioproject.oppstart.strftime("%Y-%m-%d")
+                else:
+                    project.portfolioproject.oppstart = str(project.portfolioproject.oppstart)
+
+            if project.fremskritt.planlagt_ferdig:
+                if isinstance(project.fremskritt.planlagt_ferdig, (datetime, date)):
+                    project.fremskritt.planlagt_ferdig = project.fremskritt.planlagt_ferdig.strftime("%Y-%m-%d")
+                else:
+                    project.fremskritt.planlagt_ferdig = str(project.fremskritt.planlagt_ferdig)
+
+            if not project.resursbehov.risiko_av_estimat:
+                project.resursbehov.risiko_av_estimat = ""
+
+            # --- Handle epost and kontaktpersoner ---
+            if project.portfolioproject.tiltakseier:
+                project.portfolioproject.epost_kontakt = str([brukere[project.portfolioproject.tiltakseier]])
+
+            if len(project.portfolioproject.kontaktpersoner) > 0 and isinstance(project.portfolioproject.kontaktpersoner[0], str):
+                kontakt_epost = [brukere.get(i) for i in project.portfolioproject.kontaktpersoner]
+                project.portfolioproject.kontaktpersoner = str(project.portfolioproject.kontaktpersoner)
+                if project.portfolioproject.tiltakseier:
+                    project.portfolioproject.epost_kontakt = str([brukere[project.portfolioproject.tiltakseier]])
+                    epost_list = ast.literal_eval(project.portfolioproject.epost_kontakt)
+                else:
+                    epost_list = []
+                if epost_list and epost_list[0] not in kontakt_epost:
+                    epost_list.extend(kontakt_epost)
+                else:
+                    epost_list = kontakt_epost
+                project.portfolioproject.epost_kontakt = str(epost_list)
+
+            # --- Save project (run in background thread if heavy) ---
+            await run.io_bound(db_connector.update_project, project, email)
+
+            ui.notify("✅ Endringer lagret i databasen!", type="positive", position="top")
+
+            # Slight pause to let the user see success message before redirect
+            await asyncio.sleep(0.5)
+            ui.navigate.to("/oppdater_prosjekt")
+
+        except Exception as e:
+            ui.notify(f"❌ Feil under lagring: {e}", type="negative", position="top")
+
+        finally:
+            dialog.close()
 
     ui.button("💾 Save", on_click=update_data).classes("mt-4")
