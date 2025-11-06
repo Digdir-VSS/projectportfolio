@@ -44,20 +44,20 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
         if not project:
             ui.label('Project not found or you do not have access to it.')
             return
-    ui.markdown(f"## *Porteføljeinitiativ: {project.portfolioproject.navn}*").classes('text-xl font-bold')
+    ui.markdown(f"## *Porteføljeinitiativ:* **{project.portfolioproject.navn}**").classes('text-xl font-bold')
     with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
         ui.label("1. Grunninformasjon").classes('col-span-1 row-span-1 col-start-1 row-start-3 text-lg font-bold underline mt-4 mb-2')
         with ui.element("div").classes('col-span-2 row-span-1 col-start-2 row-start-3'):
             ui.label("Navn på tiltak").classes('text-lg font-bold')
             ui.input(value=project.portfolioproject.navn).classes('w-full bg-white rounded-lg').bind_value(project.portfolioproject, "navn")
         with ui.element("div").classes('col-span-3 row-span-1 col-start-1 row-start-4'):
-            ui.label("Tiltakseier").classes('text-lg font-bold')
+            ui.label("Tiltakseier (linjeleder)").classes('text-lg font-bold')
             ui.select(brukere_list, with_input=True, multiple=False, validation= lambda value: "Du må velge en tiltakseier" if value == None else None).props(
                     "outlined dense clearable options-dense color=primary").classes(
                         "w-full bg-white rounded-lg").props('use-chips').bind_value(project.portfolioproject, "tiltakseier")
  
         with ui.element("div").classes('col-span-3 row-span-1 col-start-1 row-start-5'):
-            ui.label("Kontaktpersoner").classes('text-lg font-bold')
+            ui.label("Kontaktperson").classes('text-lg font-bold')
             ui.select(brukere_list, with_input=True, multiple=True).props(
                     "clearable options-dense color=primary").classes("w-full bg-white rounded-lg").props('use-chips').bind_value(project.portfolioproject, "kontaktpersoner", forward=to_json, backward=to_list)
 
@@ -79,7 +79,7 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
             ui.input().classes('w-full bg-white rounded-lg').bind_value(project.samarabeid, "samarbeid_eksternt")
 
         with ui.element("div").classes('col-span-3 row-span-2 col-start-4 row-start-6'):
-            ui.label("Avhengigheter andre").classes('text-lg font-bold')
+            ui.label("Avhengigheter andre oppgaver").classes('text-lg font-bold')
             ui.textarea().classes('w-full bg-white rounded-lg').bind_value(project.samarabeid, "avhengigheter_andre")
 
         with ui.element("div").classes('col-span-1 row-span-1 col-start-4 row-start-4'):
@@ -104,119 +104,22 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
     with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
         ui.label("2. Begrunnelse").classes('col-span-1 row-span-1 col-start-1 row-start-2 text-lg font-bold underline mt-4 mb-2')
 
-        with ui.element("div").classes('col-span-5 row-span-2 col-start-1 row-start-3'):
+        with ui.element("div").classes('col-span-5 row-span-3 col-start-1 row-start-3'):
             ui.label('Problemstilling').classes('text-lg font-bold')
             ui.textarea(value=project.problemstilling.problem).classes('w-full bg-white rounded-lg').bind_value(project.problemstilling, "problem")
 
-        with ui.element("div").classes('col-span-5 row-span-2 col-start-1 row-start-5'):
-            ui.label("Beskrivelse av prosjekt").classes('text-lg font-bold')
+        with ui.element("div").classes('col-span-5 row-span-3 col-start-1 row-start-6'):
+            ui.label("Beskrivelse av tiltak").classes('text-lg font-bold')
             ui.textarea(value=project.tiltak.tiltak_beskrivelse).classes('w-full bg-white rounded-lg').bind_value(project.tiltak, "tiltak_beskrivelse")
 
-        with ui.element("div").classes('col-span-5 row-span-2 col-start-1 row-start-7'):
+        with ui.element("div").classes('col-span-5 row-span-2 col-start-1 row-start-9'):
             ui.label('Risiko hvis tiltaket ikke gjennomføres').classes('text-lg font-bold')
             ui.textarea(value=project.risikovurdering.vurdering).classes('w-full bg-white rounded-lg').bind_value(project.risikovurdering, "vurdering")
-
+  
     with ui.grid(columns=4).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
-            ui.label("3. Tilknytning til strategier").classes('col-span-1 row-span-1 col-start-1 row-start-2 text-lg font-bold underline mt-4 mb-2')
+        ui.label("3. Tilknytning til strategier").classes('col-span-1 row-span-1 col-start-1 row-start-2 text-lg font-bold underline mt-4 mb-2')
 
-            ui.label("Beskriv hvordan tiltaket understøtter målbildet").classes('col-span-1 row-span-1 col-start-1 row-start-3 text-lg font-bold')
-            ui.label("1 Vi fremmer samordning og prioritering for en mer effektiv offentlig sektor").classes('col-span-2 row-span-1 col-start-1 row-start-4 text-lg')
-            inputs['malbilde_1_beskrivelse'] = ui.textarea(value=project.malbilde_1_beskrivelse).classes('col-span-2 row-span-2 col-start-1 row-start-5 bg-white rounded-lg')
-            ui.label("2 Vi leder an i ansvarlig og innovativ bruk av data og kunstig intelligens").classes('col-span-2 row-span-1 col-start-3 row-start-4 text-lg')
-            inputs['malbilde_2_beskrivelse'] = ui.textarea(value=project.malbilde_2_beskrivelse).classes('col-span-2 row-span-2 col-start-3 row-start-5 bg-white rounded-lg')
-            ui.label("3 Vi sikrer trygg tilgang til digitale tjenester for alle").classes('col-span-2 row-span-1 col-start-1 row-start-7 text-lg')
-            inputs['malbilde_3_beskrivelse'] = ui.textarea(value=project.malbilde_3_beskrivelse).classes('col-span-2 row-span-2 col-start-1 row-start-8 bg-white rounded-lg')
-            ui.label("4 Vi løser komplekse utfordringer sammen og tilpasser oss en verden i rask endring").classes('col-span-2 row-span-1 col-start-3 row-start-7 text-lg')
-            inputs['malbilde_4_beskrivelse'] = ui.textarea(value=project.malbilde_4_beskrivelse).classes('col-span-2 row-span-2 col-start-3 row-start-8 bg-white rounded-lg')
-            digitaliserings_strategi_digdir = {
-                "6": "6: få på plass veiledning om regelverksutvikling innen digitalisering, KI og datadeling",
-                "11a": "11a: forsterke arbeidet med sammenhengende tjenester, i samarbeid med KS",
-                "11g": "11g: videreføre arbeidet med livshendelser - Dødsfall og arv",
-                "12": "12: utrede en felles digital inngang til innbyggere og andre brukere til informasjon og til digitale offentlige tjenester",
-                "13": "13: etablere en utprøvingsarena for utforsking av regulatoriske og teknologiske utfordringer i arbeidet med sammenhengende tjenester",
-                "15": "15: videreutvikle virkemidler for digitalisering og innovasjon i offentlig sektor",
-                "41": "41: etablere en nasjonal arkitektur for et felles digitalt økosystem, i samarbeid med KS",
-                "42": "42: tilby alle en digital lommebok med eID på høyt nivå",
-                "43": "43: utvikle løsninger for digital representasjon, herunder for vergemål",
-                "51": "51: samordne råd- og veiledningsressurser innenfor digital sikkerhet bedre",
-                "74": "74: samordne og styrke veiledningen om deling og bruk av data, og arbeidet med orden i eget hus",
-                "75": "75: prioritere arbeidet med å gjøre tilgjengelig nasjonale datasett som er viktige for offentlig sektor og samfunnet",
-                "76": "76: legge til rette for sektorovergripende samarbeid om standarder og formater for datautveksling for digitalisering av hele verdikjeder",
-                "87": "87: styrke veiledningsarbeidet for ansvarlig utvikling og bruk av KI, blant annet gjennom regulatoriske sandkasser",
-                "88": "88: sikre ansvarlig utvikling og bruk av KI i offentlig sektor",
-                "114": "114: følge opp Handlingsplan for auka inkludering i eit digitalt samfunn",
-                "115": "115: styrke innsatsen for å øke den digitale kompetansen hos seniorer",
-                "116": "116: styrke arbeidet med brukskvalitet, klarspråk og universell utforming i offentlige digitale tjenester",
-                "118": "118: sikre økt brukerinvolvering ved utvikling av digitale tjenester"
-            }
-            reverse_digdir = {v: k for k, v in digitaliserings_strategi_digdir.items()}
-            with ui.element("div").classes('col-span-4 row-span-2 col-start-1 row-start-10'):
-                ui.label('Tilknyttet tiltak i Digitaliseringsstrategien').classes('text-lg font-bold')
-                try:
-                    selected_keys = ast.literal_eval(project.sammenheng_med_digitaliseringsstrategien_mm)
-                except (ValueError, SyntaxError):
-                    selected_keys = project.sammenheng_med_digitaliseringsstrategien_mm = []
-                # selected_keys = project.sammenheng_med_digitaliseringsstrategien_mm or []
-                selected_labels = [digitaliserings_strategi_digdir[i] for i in selected_keys if i in digitaliserings_strategi_digdir]
-
-                inputs['sammenheng_med_digitaliseringsstrategien_mm'] = ui.select(list(digitaliserings_strategi_digdir.values()), 
-                                                                                multiple=True, 
-                                                                                value=selected_labels).classes('w-full bg-white rounded-lg')
-            with ui.element("div").classes('col-span-4 row-span-2 col-start-1 row-start-12'):
-                ui.label('Eventuelt kommentar').classes('text-lg font-bold')
-                ui.textarea(value=None).classes('w-full bg-white rounded-lg')
-
-    with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
-        ui.label("4. Ressursbehov").classes('col-span-1 row-span-1 col-start-1 row-start-2 text-lg font-bold underline mt-4 mb-2')
-
-        with ui.element("div").classes('col-span-2 row-span-2 col-start-1 row-start-3'):
-            ui.label("Hvilke kompetanser trenges for tiltaket?").classes('text-lg font-bold')
-            ui.textarea().classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "kompetanse_som_trengs")
-
-        with ui.element("div").classes('col-span-1 row-span-1 col-start-3 row-start-3'):
-            ui.label("Er kompetanser tilgjengelige internt").classes('text-lg font-bold')
-            kompetanse_internt_list = ["Ja","Ja, men det er ikke tilstrekkelig kapasitet","Delvis","Nei"]
-            #selected_kompetanse = project.resursbehov.kompetanse_tilgjengelig  if project.resursbehov.kompetanse_tilgjengelig in kompetanse_internt_list else None
-            ui.select(kompetanse_internt_list).classes('w-full bg-white rounded-lg').bind_value( project.resursbehov, "kompetanse_tilgjengelig")
-        
-        ui.label("Estimert antall månedsverk for fasen").classes('text-lg font-bold col-span-1 row-span-1 col-start-1 row-start-5')
-
-        with ui.element("div").classes('col-span-1 row-span-1 col-start-1 row-start-6'):
-            ui.label("Interne").classes('text-lg font-bold')
-            if isinstance(project.resursbehov.antall_mandsverk_intern, float) or isinstance(project.resursbehov.antall_mandsverk_intern, str) or isinstance(project.resursbehov.antall_mandsverk_intern, int):
-                project.resursbehov.antall_mandsverk_intern = int(project.resursbehov.antall_mandsverk_intern)
-            else:
-                project.resursbehov.antall_mandsverk_intern = None
-            ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "antall_mandsverk_intern")
-        with ui.element("div").classes('col-span-1 row-span-1 col-start-2 row-start-6'):
-            ui.label("Eksterne").classes('text-lg font-bold')
-            if isinstance(project.resursbehov.antall_mandsverk_ekstern, float) or isinstance(project.resursbehov.antall_mandsverk_ekstern, str) or isinstance(project.resursbehov.antall_mandsverk_intern, int):
-                project.resursbehov.antall_mandsverk_ekstern = int(project.resursbehov.antall_mandsverk_ekstern)
-            else:
-                project.resursbehov.antall_mandsverk_ekstern = None
-            ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "antall_mandsverk_ekstern")
-
-        
-        ui.label("Estimert finansieringsbehov (eksl. interne ressurser)").classes('text-lg font-bold col-span-1 row-span-1 col-start-4 row-start-2')
-
-        with ui.element("div").classes('col-span-2 row-span-1 col-start-4 row-start-3'):
-            ui.label('Estimert budsjett behov').classes('text-lg font-bold')
-            ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "estimert_budsjet_behov")
-
-        with ui.element("div").classes('col-span-2 row-span-1 col-start-4 row-start-4'):
-            ui.label("Hvor sikkert er estimatet").classes('text-lg font-bold')
-            estimat_liste = ["Relativt sikkert","Noe usikkert","Svært usikkert"]
-
-            ui.select(estimat_liste).classes('w-full bg-white rounded-lg').bind_value(project.resursbehov,"risiko_av_estimat")
-
-        with ui.element("div").classes('col-span-2 row-span-2 col-start-4 row-start-5'):
-            ui.label('Forklaring estimat').classes('text-lg font-bold')
-            ui.textarea(value=project.resursbehov.estimert_budsjet_forklaring).classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "estimert_budsjet_forklaring")
-
-    with ui.grid(columns=4).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
-        ui.label("4. Tilknytning til andre strategier").classes('col-span-1 row-span-1 col-start-1 row-start-2 text-lg font-bold underline mt-4 mb-2')
-
-        ui.label("Målbilde").classes('col-span-1 row-span-1 col-start-1 row-start-3 text-lg font-bold')
+        ui.label("Beskriv hvordan tiltaket understøtter målbildet").classes('col-span-4 row-span-1 col-start-1 row-start-3 text-lg font-bold')
         ui.label("1 Vi fremmer samordning og prioritering for en mer effektiv offentlig sektor").classes('col-span-2 row-span-1 col-start-1 row-start-4 text-lg')
         ui.textarea().classes('col-span-2 row-span-2 col-start-1 row-start-5 bg-white rounded-lg').bind_value(project.malbilde, "malbilde_1_beskrivelse")
         ui.label("2 Vi leder an i ansvarlig og innovativ bruk av data og kunstig intelligens").classes('col-span-2 row-span-1 col-start-3 row-start-4 text-lg')
@@ -239,6 +142,8 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
             "74": "74: samordne og styrke veiledningen om deling og bruk av data, og arbeidet med orden i eget hus",
             "75": "75: prioritere arbeidet med å gjøre tilgjengelig nasjonale datasett som er viktige for offentlig sektor og samfunnet",
             "76": "76: legge til rette for sektorovergripende samarbeid om standarder og formater for datautveksling for digitalisering av hele verdikjeder",
+            "87": "87: styrke veiledningsarbeidet for ansvarlig utvikling og bruk av KI, blant annet gjennom regulatoriske sandkasser",
+            "88": "88: sikre ansvarlig utvikling og bruk av KI i offentlig sektor",
             "114": "114: følge opp Handlingsplan for auka inkludering i eit digitalt samfunn",
             "115": "115: styrke innsatsen for å øke den digitale kompetansen hos seniorer",
             "116": "116: styrke arbeidet med brukskvalitet, klarspråk og universell utforming i offentlige digitale tjenester",
@@ -246,10 +151,64 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
         }
         reverse_digdir = {v: k for k, v in digitaliserings_strategi_digdir.items()}
         with ui.element("div").classes('col-span-4 row-span-2 col-start-1 row-start-10'):
-            ui.label('Sammenheng med Digitaliseringsstrategien').classes('text-lg font-bold')
+            ui.label('Tilknyttet tiltak i Digitaliseringsstrategien').classes('text-lg font-bold')
             ui.select(list(digitaliserings_strategi_digdir.values()), multiple=True).classes('w-full bg-white rounded-lg').bind_value(project.digitaliseringstrategi, "sammenheng_digital_strategi", forward=to_json, backward=to_list)
+        with ui.element("div").classes('col-span-4 row-span-2 col-start-1 row-start-12'):
+                ui.label('Eventuelt kommentar').classes('text-lg font-bold')
+                ui.textarea(value=None).classes('w-full bg-white rounded-lg')
 
+    with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
+        ui.label("4. Ressursbehov").classes('col-span-1 row-span-1 col-start-1 row-start-2 text-lg font-bold underline mt-4 mb-2')
 
+        with ui.element("div").classes('col-span-2 row-span-2 col-start-1 row-start-3'):
+            ui.label("Hvilke kompetanser trenges for tiltaket?").classes('text-lg font-bold')
+            ui.textarea().classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "kompetanse_som_trengs")
+
+        with ui.element("div").classes('col-span-1 row-span-1 col-start-3 row-start-3'):
+            ui.label("Er kompetanser tilgjengelige internt").classes('text-lg font-bold')
+            kompetanse_internt_list = ["Ja","Ja, men det er ikke tilstrekkelig kapasitet","Delvis","Nei"]
+            #selected_kompetanse = project.resursbehov.kompetanse_tilgjengelig  if project.resursbehov.kompetanse_tilgjengelig in kompetanse_internt_list else None
+            ui.select(kompetanse_internt_list).classes('w-full bg-white rounded-lg').bind_value( project.resursbehov, "kompetanse_tilgjengelig")
+        
+        ui.label("Estimert antall månedsverk for fasen").classes('text-lg font-bold col-span-3 row-span-1 col-start-1 row-start-5')
+
+        with ui.element("div").classes('col-span-1 row-span-1 col-start-1 row-start-6'):
+            ui.label("Interne").classes('text-lg font-bold')
+            if isinstance(project.resursbehov.antall_mandsverk_intern, float) or isinstance(project.resursbehov.antall_mandsverk_intern, str) or isinstance(project.resursbehov.antall_mandsverk_intern, int):
+                try: 
+                    project.resursbehov.antall_mandsverk_intern = int(project.resursbehov.antall_mandsverk_intern)
+                except:
+                    project.resursbehov.antall_mandsverk_intern = 0
+            else:
+                project.resursbehov.antall_mandsverk_intern = None
+            ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "antall_mandsverk_intern")
+        with ui.element("div").classes('col-span-1 row-span-1 col-start-2 row-start-6'):
+            ui.label("Eksterne").classes('text-lg font-bold')
+            if isinstance(project.resursbehov.antall_mandsverk_ekstern, float) or isinstance(project.resursbehov.antall_mandsverk_ekstern, str) or isinstance(project.resursbehov.antall_mandsverk_intern, int):
+                try:
+                    project.resursbehov.antall_mandsverk_ekstern = int(project.resursbehov.antall_mandsverk_ekstern)
+                except:
+                    project.resursbehov.antall_mandsverk_ekstern = 0
+            else:
+                project.resursbehov.antall_mandsverk_ekstern = None
+            ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "antall_mandsverk_ekstern")
+
+        
+        ui.label("Estimert finansieringsbehov (eksl. interne ressurser)").classes('text-lg font-bold col-span-2 row-span-1 col-start-4 row-start-2')
+
+        with ui.element("div").classes('col-span-2 row-span-1 col-start-4 row-start-3'):
+            ui.label('Estimert budsjett behov').classes('text-lg font-bold')
+            ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "estimert_budsjet_behov")
+
+        with ui.element("div").classes('col-span-2 row-span-1 col-start-4 row-start-4'):
+            ui.label("Hvor sikkert er estimatet").classes('text-lg font-bold')
+            estimat_liste = ["Relativt sikkert","Noe usikkert","Svært usikkert"]
+
+            ui.select(estimat_liste).classes('w-full bg-white rounded-lg').bind_value(project.resursbehov,"risiko_av_estimat")
+
+        with ui.element("div").classes('col-span-2 row-span-2 col-start-4 row-start-5'):
+            ui.label('Forklaring estimat').classes('text-lg font-bold')
+            ui.textarea(value=project.resursbehov.estimert_budsjet_forklaring).classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "estimert_budsjet_forklaring")
     async def update_data():
         with ui.dialog() as dialog, ui.card():
             ui.label("Lagrer endringer... Vennligst vent ⏳")
@@ -273,8 +232,8 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
 
         if not project.resursbehov.risiko_av_estimat:
             project.resursbehov.risiko_av_estimat = ""
-        if not project.portfolioproject.tiltakseier or project.portfolioproject.tiltakseier.strip() == "":
-            ui.notify("❌ Du må fylle inn tiltakseier.", type="warning", position="top", close_button="OK")
+        if not project.portfolioproject.kontaktpersoner:
+            ui.notify("❌ Du må fylle inn kontaktperson.", type="warning", position="top", close_button="OK")
             return
         project.portfolioproject.epost_kontakt = str([brukere[project.portfolioproject.tiltakseier]])
         if not project.portfolioproject.navn or project.portfolioproject.navn.strip() == "":
@@ -289,7 +248,7 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
                 project.portfolioproject.epost_kontakt = str(epost_list)
             else:
                 project.portfolioproject.epost_kontakt = str(kontakt_epost)
-
+        
         await run.io_bound(db_connector.update_project, project, email) 
         ui.notify('Changes saved to database!')
         ui.navigate.to(f"/oppdater_prosjekt")
