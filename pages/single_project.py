@@ -1,13 +1,37 @@
 from nicegui import ui, run
-from typing import Any
-from utils.project_loader import diff_projects, ProjectData, get_engine, apply_changes, update_project_from_diffs, get_single_project_data, create_empty_project
-from uuid import UUID
-from datetime import datetime
+from utils.project_loader import diff_projects
+from datetime import datetime, date
 import ast
 import json
 from utils.azure_users import load_users
 from utils.db_connection import DBConnector
+import ast, asyncio
 
+def to_list(value):
+    """Safely parse a JSON list or return [] if invalid."""
+    if value is None:
+        return []
+    if isinstance(value, list):  # Already deserialized
+        return value
+    value = str(value).strip()
+    if not value or value.lower() in ("null", "none"):
+        return []
+    try:
+        return json.loads(value)
+    except json.JSONDecodeError:
+        return []
+
+def to_json(value: list[str] | None):
+    """Convert UI list back to JSON string for the dataclass."""
+    return json.dumps(value or [],  ensure_ascii=False)
+
+def to_date_str(value):
+    """Convert datetime/date to ISO date string (YYYY-MM-DD) for NiceGUI."""
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value.date().isoformat()
+    return str(value)
 
 brukere = load_users()
 
@@ -15,112 +39,83 @@ brukere_list = list(brukere.keys())
 avdelinger = ['BOD','DSS' ,'KOM','FEL','STL' ,'TUU', 'VIS', 'KI Norge']
 def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user_name: str, new: bool = False):
     if new:
-        project = create_empty_project(email,user_name=user_name, pid=prosjekt_id)
+        project = db_connector.create_empty_project(email=email, prosjekt_id=prosjekt_id)
     else:
-        prosjet_list = db_connector.get_single_project(prosjekt_id)
-        if not prosjet_list:
+        project = db_connector.get_single_project(prosjekt_id)
+        if not project:
             ui.label('Project not found or you do not have access to it.')
             return
-        project =  prosjet_list.model_copy(deep=True)
-
-
-
-    ui.markdown(f"## *Porteføljeinitiativ: {project.navn_tiltak}*").classes('text-xl font-bold')
-    inputs: dict[str, Any] = {}
-    # show all fields as key/value
+    ui.markdown(f"## *Porteføljeinitiativ: {project.portfolioproject.navn}*").classes('text-xl font-bold')
     with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
         ui.label("1. Grunninformasjon").classes('col-span-1 row-span-1 col-start-1 row-start-3 text-lg font-bold underline mt-4 mb-2')
         with ui.element("div").classes('col-span-2 row-span-1 col-start-2 row-start-3'):
             ui.label("Navn på tiltak").classes('text-lg font-bold')
-            inputs['navn_tiltak'] = ui.input(value=project.navn_tiltak).classes('w-full bg-white rounded-lg')
+            ui.input(value=project.portfolioproject.navn).classes('w-full bg-white rounded-lg').bind_value(project.portfolioproject, "navn")
         with ui.element("div").classes('col-span-3 row-span-1 col-start-1 row-start-4'):
             ui.label("Tiltakseier").classes('text-lg font-bold')
-            inputs['tiltakseier'] = ui.select(brukere_list, with_input=True, multiple=False,value=project.tiltakseier, validation= lambda value: "Du må velge en tiltakseier" if value == None else None).props(
+            ui.select(brukere_list, with_input=True, multiple=False, validation= lambda value: "Du må velge en tiltakseier" if value == None else None).props(
                     "outlined dense clearable options-dense color=primary").classes(
-                        "w-full bg-white rounded-lg").props('use-chips')
+                        "w-full bg-white rounded-lg").props('use-chips').bind_value(project.portfolioproject, "tiltakseier")
  
         with ui.element("div").classes('col-span-3 row-span-1 col-start-1 row-start-5'):
             ui.label("Kontaktpersoner").classes('text-lg font-bold')
-            kontakt_person = ast.literal_eval(project.kontaktperson) if "[" in project.kontaktperson else None
-            inputs['kontaktperson'] = ui.select(brukere_list, with_input=True, multiple=True,value=kontakt_person).props(
-                    "clearable options-dense color=primary").classes("w-full bg-white rounded-lg").props('use-chips')
-
+            ui.select(brukere_list, with_input=True, multiple=True).props(
+                    "clearable options-dense color=primary").classes("w-full bg-white rounded-lg").props('use-chips').bind_value(project.portfolioproject, "kontaktpersoner", forward=to_json, backward=to_list)
 
         with ui.element("div").classes('col-span-3 row-span-1 col-start-1 row-start-6'):
             ui.label('Hovedavdeling').classes('text-lg font-bold')
-            inputs['avdeling'] = ui.radio(
+            ui.radio(
                 avdelinger,  # <-- your real avdelinger
-                value=project.avdeling
-            ).props("inline")
+            ).props("inline").bind_value(project.portfolioproject, "avdeling")
         with ui.element("div").classes('col-span-2 row-span-1 col-start-1 row-start-7'):
             ui.label('Samarbeid internt').classes('text-lg font-bold')
-            try:
-                samarbeid_intern_list = json.loads(project.samarbeid_intern)
-            except (TypeError, json.JSONDecodeError):
-                samarbeid_intern_list = []
 
-            inputs["samarbeid_intern"] = ui.select(
+            ui.select(
                 avdelinger,
                 multiple=True,
-                value=samarbeid_intern_list
-            ).props("use-chips").classes("w-full bg-white rounded-lg")
+            ).props("use-chips").classes("w-full bg-white rounded-lg").bind_value(project.samarabeid, "samarbeid_intern", forward=to_json, backward=to_list)
 
         with ui.element("div").classes('col-span-1 row-span-1 col-start-3 row-start-7'):
             ui.label('Samarbeid eksternt').classes('text-lg font-bold')
-            inputs["samarbeid_eksternt"] = ui.input(value=project.samarbeid_eksternt).classes('w-full bg-white rounded-lg')
+            ui.input().classes('w-full bg-white rounded-lg').bind_value(project.samarabeid, "samarbeid_eksternt")
 
         with ui.element("div").classes('col-span-3 row-span-2 col-start-4 row-start-6'):
-            ui.label("Avhengigheter andre oppgaver").classes('text-lg font-bold')
-            inputs['avhengigheter_andre'] = ui.textarea(value=project.avhengigheter_andre).classes('w-full bg-white rounded-lg')
+            ui.label("Avhengigheter andre").classes('text-lg font-bold')
+            ui.textarea().classes('w-full bg-white rounded-lg').bind_value(project.samarabeid, "avhengigheter_andre")
 
         with ui.element("div").classes('col-span-1 row-span-1 col-start-4 row-start-4'):
             ui.label("Hvilken fase skal startes").classes('text-lg font-bold')
-            inputs['fase_tiltak'] = ui.select(
+            ui.select(
                 ['Konsept', 'Planlegging', 'Gjennomføring','Problem/ide'],
-                value=project.fase_tiltak
-                ).classes('w-full bg-white rounded-lg')
+                ).classes('w-full bg-white rounded-lg').bind_value(project.fremskritt, "fase")
         with ui.element("div").classes('col-span-1 row-span-1 col-start-4 row-start-5'):
             ui.label('Start').classes('text-lg font-bold')
-            oppstart_date = str(project.oppstart_tid.date()) if project.oppstart_tid else None
-            with ui.input(value=oppstart_date, placeholder='Velg dato').classes('bg-white rounded-lg') as oppstart_input:
-                with oppstart_input.add_slot('append'):
-                    ui.icon('edit_calendar').on('click', lambda: oppstart_menu.open()).classes('cursor-pointer')
-                with ui.menu().props('no-parent-event') as oppstart_menu:
-                    oppstart_date = ui.date(value=oppstart_date).props('mask=YYYY-MM-DD')
-                    oppstart_date.bind_value(oppstart_input, 'value')
-                    with ui.row().classes('justify-end'):
-                        ui.button('Lukk', on_click=oppstart_menu.close).props('flat')
-
-                inputs['oppstart_tid'] = oppstart_input
+            oppstart = getattr(project.portfolioproject, "oppstart", None)
+            if isinstance(oppstart, (datetime, date)):
+                setattr(project.portfolioproject, "oppstart", to_date_str(oppstart))
+            ui.input().bind_value(project.portfolioproject, "oppstart").props("outlined dense type=date clearable color=primary").classes("w-full")
             
         with ui.element("div").classes('col-span-1 row-span-1 col-start-5 row-start-5'):
             ui.label("Planlagt ferdig").classes('text-lg font-bold')
-            ferdig_date = str(project.ferdig_tid.date()) if project.ferdig_tid else None
-            with ui.input(value=ferdig_date,  placeholder='Velg dato').classes('bg-white rounded-lg') as ferdig_input:
-                with ferdig_input.add_slot('append'):
-                    ui.icon('edit_calendar').on('click', lambda: ferdig_menu.open()).classes('cursor-pointer')
-                with ui.menu().props('no-parent-event') as ferdig_menu:
-                    ferdig_date = ui.date(value=ferdig_date).props('mask=YYYY-MM-DD')
-                    ferdig_date.bind_value(ferdig_input, 'value')
-                    with ui.row().classes('justify-end'):
-                        ui.button('Lukk', on_click=ferdig_menu.close).props('flat')
-
-            inputs['ferdig_tid'] = ferdig_input
-
+            ferdig_date = getattr(project.fremskritt, "planlagt_ferdig", None)
+            if isinstance(ferdig_date, (datetime, date)):
+                setattr(project.fremskritt, "planlagt_ferdig", to_date_str(ferdig_date))
+            ui.input().bind_value(project.fremskritt, "planlagt_ferdig").props("outlined dense type=date clearable color=primary").classes("w-full")
+            
     with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
         ui.label("2. Begrunnelse").classes('col-span-1 row-span-1 col-start-1 row-start-2 text-lg font-bold underline mt-4 mb-2')
 
         with ui.element("div").classes('col-span-5 row-span-2 col-start-1 row-start-3'):
             ui.label('Problemstilling').classes('text-lg font-bold')
-            inputs['problemstilling'] = ui.textarea(value=project.problemstilling).classes('w-full bg-white rounded-lg')
+            ui.textarea(value=project.problemstilling.problem).classes('w-full bg-white rounded-lg').bind_value(project.problemstilling, "problem")
 
         with ui.element("div").classes('col-span-5 row-span-2 col-start-1 row-start-5'):
-            ui.label("Beskrivelse av tiltak").classes('text-lg font-bold')
-            inputs['beskrivelse'] = ui.textarea(value=project.beskrivelse).classes('w-full bg-white rounded-lg')
+            ui.label("Beskrivelse av prosjekt").classes('text-lg font-bold')
+            ui.textarea(value=project.tiltak.tiltak_beskrivelse).classes('w-full bg-white rounded-lg').bind_value(project.tiltak, "tiltak_beskrivelse")
 
         with ui.element("div").classes('col-span-5 row-span-2 col-start-1 row-start-7'):
             ui.label('Risiko hvis tiltaket ikke gjennomføres').classes('text-lg font-bold')
-            inputs['risiko'] = ui.textarea(value=project.risiko).classes('w-full bg-white rounded-lg')
+            ui.textarea(value=project.risikovurdering.vurdering).classes('w-full bg-white rounded-lg').bind_value(project.risikovurdering, "vurdering")
 
     with ui.grid(columns=4).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
             ui.label("3. Tilknytning til strategier").classes('col-span-1 row-span-1 col-start-1 row-start-2 text-lg font-bold underline mt-4 mb-2')
@@ -177,133 +172,128 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
 
         with ui.element("div").classes('col-span-2 row-span-2 col-start-1 row-start-3'):
             ui.label("Hvilke kompetanser trenges for tiltaket?").classes('text-lg font-bold')
-            inputs['kompetanse_behov'] = ui.textarea(value=project.kompetanse_behov).classes('w-full bg-white rounded-lg')
+            ui.textarea().classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "kompetanse_som_trengs")
 
         with ui.element("div").classes('col-span-1 row-span-1 col-start-3 row-start-3'):
             ui.label("Er kompetanser tilgjengelige internt").classes('text-lg font-bold')
             kompetanse_internt_list = ["Ja","Ja, men det er ikke tilstrekkelig kapasitet","Delvis","Nei"]
-            selected_kompetanse = project.kompetanse_internt if project.kompetanse_internt in kompetanse_internt_list else None
-            inputs['kompetanse_internt'] = ui.select(kompetanse_internt_list, value=selected_kompetanse).classes('w-full bg-white rounded-lg')
+            #selected_kompetanse = project.resursbehov.kompetanse_tilgjengelig  if project.resursbehov.kompetanse_tilgjengelig in kompetanse_internt_list else None
+            ui.select(kompetanse_internt_list).classes('w-full bg-white rounded-lg').bind_value( project.resursbehov, "kompetanse_tilgjengelig")
         
         ui.label("Estimert antall månedsverk for fasen").classes('text-lg font-bold col-span-1 row-span-1 col-start-1 row-start-5')
 
         with ui.element("div").classes('col-span-1 row-span-1 col-start-1 row-start-6'):
             ui.label("Interne").classes('text-lg font-bold')
-            manedsverk_intern = project.månedsverk_interne if type(project.månedsverk_interne) == int else None
-            inputs['månedsverk_interne'] = ui.input(value=manedsverk_intern).props('type=number min=0').classes('w-full bg-white rounded-lg')
+            if isinstance(project.resursbehov.antall_mandsverk_intern, float) or isinstance(project.resursbehov.antall_mandsverk_intern, str) or isinstance(project.resursbehov.antall_mandsverk_intern, int):
+                project.resursbehov.antall_mandsverk_intern = int(project.resursbehov.antall_mandsverk_intern)
+            else:
+                project.resursbehov.antall_mandsverk_intern = None
+            ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "antall_mandsverk_intern")
         with ui.element("div").classes('col-span-1 row-span-1 col-start-2 row-start-6'):
             ui.label("Eksterne").classes('text-lg font-bold')
-            manedsverk_ekstern = project.månedsverk_eksterne if type(project.månedsverk_eksterne) == int else None
-            inputs['månedsverk_eksterne'] = ui.input(value=manedsverk_ekstern).props('type=number min=0').classes('w-full bg-white rounded-lg')
+            if isinstance(project.resursbehov.antall_mandsverk_ekstern, float) or isinstance(project.resursbehov.antall_mandsverk_ekstern, str) or isinstance(project.resursbehov.antall_mandsverk_intern, int):
+                project.resursbehov.antall_mandsverk_ekstern = int(project.resursbehov.antall_mandsverk_ekstern)
+            else:
+                project.resursbehov.antall_mandsverk_ekstern = None
+            ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "antall_mandsverk_ekstern")
 
         
         ui.label("Estimert finansieringsbehov (eksl. interne ressurser)").classes('text-lg font-bold col-span-1 row-span-1 col-start-4 row-start-2')
 
         with ui.element("div").classes('col-span-2 row-span-1 col-start-4 row-start-3'):
             ui.label('Estimert budsjett behov').classes('text-lg font-bold')
-            # def format_number(e):
-            
-            #     try:
-            #         num = float(e.value)
-            #         formatted = f"{num:,.0f}".replace(",", " ")
-            #         e.sender.value = formatted  # updates the number field
-            #     except (TypeError, ValueError):
-            #         pass  # ignore empty or invalid input
+            ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "estimert_budsjet_behov")
 
-            inputs['estimert_behov_utover_driftsrammen'] = ui.number(value=project.estimert_behov_utover_driftsrammen, precision=0, min=0).classes('w-full bg-white rounded-lg')
-            # , validation=lambda value: "Må være et tall" if not isinstance(value, int) else None
         with ui.element("div").classes('col-span-2 row-span-1 col-start-4 row-start-4'):
             ui.label("Hvor sikkert er estimatet").classes('text-lg font-bold')
             estimat_liste = ["Relativt sikkert","Noe usikkert","Svært usikkert"]
-            selected_estimat = project.hvor_sikkert_estimatene if project.hvor_sikkert_estimatene in estimat_liste else None
-            inputs['hvor_sikkert_estimatene'] = ui.select(estimat_liste, value=selected_estimat).classes('w-full bg-white rounded-lg')
+
+            ui.select(estimat_liste).classes('w-full bg-white rounded-lg').bind_value(project.resursbehov,"risiko_av_estimat")
 
         with ui.element("div").classes('col-span-2 row-span-2 col-start-4 row-start-5'):
             ui.label('Forklaring estimat').classes('text-lg font-bold')
-            inputs['estimert_behov_forklaring'] = ui.textarea(value=project.estimert_behov_forklaring).classes('w-full bg-white rounded-lg')
+            ui.textarea(value=project.resursbehov.estimert_budsjet_forklaring).classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "estimert_budsjet_forklaring")
 
+    with ui.grid(columns=4).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
+        ui.label("4. Tilknytning til andre strategier").classes('col-span-1 row-span-1 col-start-1 row-start-2 text-lg font-bold underline mt-4 mb-2')
 
-    def get_input_value(inp):
-        """
-        Extracts the value from various NiceGUI UI elements.
-        Handles text, select, checkbox, and date inputs.
-        """
-        # Handle Select
-        if hasattr(inp, "value"):
-            # Normal text, select, or textarea input
-            val = inp.value
-            if val is not None:
-                return val.strip() if isinstance(val, str) else val
-
-        # Handle text-only label-based inputs (some types expose .label instead)
-        if hasattr(inp, "label") and not hasattr(inp, "value"):
-            val = inp.label
-            if val is not None:
-                return val.strip() if isinstance(val, str) else val
-
-        # Handle nested Date input inside an Input
-        if hasattr(inp, "default_slot_children"):
-            for child in inp.default_slot_children:
-                # The nested date picker lives inside this slot
-                if hasattr(child, "value") and hasattr(child, "mask") and "YYYY" in getattr(child, "mask", ""):
-                    return child.value  # Return actual selected date
-
-        # Handle checkbox (returns bool)
-        if hasattr(inp, "checked"):
-            return inp.checked
-
-        return None
+        ui.label("Målbilde").classes('col-span-1 row-span-1 col-start-1 row-start-3 text-lg font-bold')
+        ui.label("1 Vi fremmer samordning og prioritering for en mer effektiv offentlig sektor").classes('col-span-2 row-span-1 col-start-1 row-start-4 text-lg')
+        ui.textarea().classes('col-span-2 row-span-2 col-start-1 row-start-5 bg-white rounded-lg').bind_value(project.malbilde, "malbilde_1_beskrivelse")
+        ui.label("2 Vi leder an i ansvarlig og innovativ bruk av data og kunstig intelligens").classes('col-span-2 row-span-1 col-start-3 row-start-4 text-lg')
+        ui.textarea().classes('col-span-2 row-span-2 col-start-3 row-start-5 bg-white rounded-lg').bind_value(project.malbilde, "malbilde_2_beskrivelse")
+        ui.label("3 Vi sikrer trygg tilgang til digitale tjenester for alle").classes('col-span-2 row-span-1 col-start-1 row-start-7 text-lg')
+        ui.textarea().classes('col-span-2 row-span-2 col-start-1 row-start-8 bg-white rounded-lg').bind_value(project.malbilde, "malbilde_3_beskrivelse")
+        ui.label("4 Vi løser komplekse utfordringer sammen og tilpasser oss en verden i rask endring").classes('col-span-2 row-span-1 col-start-3 row-start-7 text-lg')
+        ui.textarea().classes('col-span-2 row-span-2 col-start-3 row-start-8 bg-white rounded-lg').bind_value(project.malbilde, "malbilde_4_beskrivelse")
+        digitaliserings_strategi_digdir = {
+            "6": "6: få på plass veiledning om regelverksutvikling innen digitalisering, KI og datadeling",
+            "11a": "11a: forsterke arbeidet med sammenhengende tjenester, i samarbeid med KS",
+            "11g": "11g: videreføre arbeidet med livshendelser - Dødsfall og arv",
+            "12": "12: utrede en felles digital inngang til innbyggere og andre brukere til informasjon og til digitale offentlige tjenester",
+            "13": "13: etablere en utprøvingsarena for utforsking av regulatoriske og teknologiske utfordringer i arbeidet med sammenhengende tjenester",
+            "15": "15: videreutvikle virkemidler for digitalisering og innovasjon i offentlig sektor",
+            "41": "41: etablere en nasjonal arkitektur for et felles digitalt økosystem, i samarbeid med KS",
+            "42": "42: tilby alle en digital lommebok med eID på høyt nivå",
+            "43": "43: utvikle løsninger for digital representasjon, herunder for vergemål",
+            "51": "51: samordne råd- og veiledningsressurser innenfor digital sikkerhet bedre",
+            "74": "74: samordne og styrke veiledningen om deling og bruk av data, og arbeidet med orden i eget hus",
+            "75": "75: prioritere arbeidet med å gjøre tilgjengelig nasjonale datasett som er viktige for offentlig sektor og samfunnet",
+            "76": "76: legge til rette for sektorovergripende samarbeid om standarder og formater for datautveksling for digitalisering av hele verdikjeder",
+            "114": "114: følge opp Handlingsplan for auka inkludering i eit digitalt samfunn",
+            "115": "115: styrke innsatsen for å øke den digitale kompetansen hos seniorer",
+            "116": "116: styrke arbeidet med brukskvalitet, klarspråk og universell utforming i offentlige digitale tjenester",
+            "118": "118: sikre økt brukerinvolvering ved utvikling av digitale tjenester"
+        }
+        reverse_digdir = {v: k for k, v in digitaliserings_strategi_digdir.items()}
+        with ui.element("div").classes('col-span-4 row-span-2 col-start-1 row-start-10'):
+            ui.label('Sammenheng med Digitaliseringsstrategien').classes('text-lg font-bold')
+            ui.select(list(digitaliserings_strategi_digdir.values()), multiple=True).classes('w-full bg-white rounded-lg').bind_value(project.digitaliseringstrategi, "sammenheng_digital_strategi", forward=to_json, backward=to_list)
 
 
     async def update_data():
-        updated_data = {field: get_input_value(inp) for field, inp in inputs.items()}
+        with ui.dialog() as dialog, ui.card():
+            ui.label("Lagrer endringer... Vennligst vent ⏳")
+            ui.spinner(size="lg", color="primary")
+        dialog.open()
 
-        updated_data["prosjekt_id"] = UUID(prosjekt_id)
-        edited_project = project.model_copy(update=updated_data)
-        if edited_project.samarbeid_intern:
-            edited_project.samarbeid_intern = json.dumps(edited_project.samarbeid_intern)
-        if edited_project.oppstart_tid:
-            edited_project.oppstart_tid = datetime.strptime(edited_project.oppstart_tid , "%Y-%m-%d")
-        if edited_project.ferdig_tid:
-            edited_project.ferdig_tid = datetime.strptime(edited_project.ferdig_tid , "%Y-%m-%d")
-        if not edited_project.hvor_sikkert_estimatene:
-            edited_project.hvor_sikkert_estimatene = ""
-        if len(edited_project.sammenheng_med_digitaliseringsstrategien_mm) > 0 and isinstance(edited_project.sammenheng_med_digitaliseringsstrategien_mm[0], str):
-            # reverse_digdir = {v: k for k, v in digitaliserings_strategi_digdir.items()}
-            edited_project.sammenheng_med_digitaliseringsstrategien_mm = str([reverse_digdir[label] for label in edited_project.sammenheng_med_digitaliseringsstrategien_mm if label in reverse_digdir])
-        if not edited_project.kontaktperson:
-            ui.notify("❌ Du må fylle inn kontaktperson.", type="warning", position="top", close_button="OK")
+        await asyncio.sleep(0.1)  # let UI render spinner before heavy work starts
+
+
+        if project.portfolioproject.oppstart:
+            if isinstance(project.portfolioproject.oppstart, (datetime, date)):
+                project.portfolioproject.oppstart = project.portfolioproject.oppstart.strftime("%Y-%m-%d")
+            else:
+                project.portfolioproject.oppstart = str(project.portfolioproject.oppstart)
+
+        if project.fremskritt.planlagt_ferdig:
+            if isinstance(project.fremskritt.planlagt_ferdig, (datetime, date)):
+                project.fremskritt.planlagt_ferdig = project.fremskritt.planlagt_ferdig.strftime("%Y-%m-%d")
+            else:
+                project.fremskritt.planlagt_ferdig = str(project.fremskritt.planlagt_ferdig)
+
+        if not project.resursbehov.risiko_av_estimat:
+            project.resursbehov.risiko_av_estimat = ""
+        if not project.portfolioproject.tiltakseier or project.portfolioproject.tiltakseier.strip() == "":
+            ui.notify("❌ Du må fylle inn tiltakseier.", type="warning", position="top", close_button="OK")
             return
-        if not edited_project.navn_tiltak or edited_project.navn_tiltak.strip() == "":
+        project.portfolioproject.epost_kontakt = str([brukere[project.portfolioproject.tiltakseier]])
+        if not project.portfolioproject.navn or project.portfolioproject.navn.strip() == "":
             ui.notify("❌ Du må fylle inn tiltaksnavn.", type="warning", position="top", close_button="OK")
             return
-        kontakt_epost = [brukere.get(i) for i in edited_project.kontaktperson]
-        edited_project.kontaktperson = str(edited_project.kontaktperson)
-        if edited_project.tiltakseier:
-            edited_project.eier_epost = str([brukere[edited_project.tiltakseier]])
-            epost_list = ast.literal_eval(edited_project.eier_epost)
+        if len(project.portfolioproject.kontaktpersoner) > 0 and isinstance(project.portfolioproject.kontaktpersoner[0], str):
+            kontakt_epost = [brukere.get(i) for i in project.portfolioproject.kontaktpersoner]
+            project.portfolioproject.kontaktpersoner = str(project.portfolioproject.kontaktpersoner)
+            epost_list = ast.literal_eval(project.portfolioproject.epost_kontakt)
             if epost_list[0] not in kontakt_epost:
                 epost_list.extend(kontakt_epost)
-                edited_project.eier_epost = str(epost_list)
-        else:
-            edited_project.eier_epost = str([])
+                project.portfolioproject.epost_kontakt = str(epost_list)
+            else:
+                project.portfolioproject.epost_kontakt = str(kontakt_epost)
 
-        # if len(edited_project.kontaktperson) > 0 and isinstance(edited_project.kontaktperson[0], str):
-            
-            # epost_list = ast.literal_eval(edited_project.eier_epost)
-            # if epost_list[0] not in kontakt_epost:
-            #     epost_list.extend(kontakt_epost)
-            #     edited_project.eier_epost = str(epost_list)
-            # else:
-            #     edited_project.eier_epost = str(kontakt_epost)
-        edited_project.endret_av = user_name
-
-        diffs = diff_projects([project],[edited_project])
-        if not diffs:
-            ui.notify('No changes made.')
-            return
-        await run.io_bound(db_connector.update_project, new, diffs, user_name) 
-        ui.navigate.to(f"/oppdater_prosjekt")
+        await run.io_bound(db_connector.update_project, project, email) 
         ui.notify('Changes saved to database!')
+        ui.navigate.to(f"/oppdater_prosjekt")
+        dialog.close()
 
     ui.button("💾 Save", on_click=update_data).classes("mt-4")
