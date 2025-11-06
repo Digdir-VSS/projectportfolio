@@ -1,5 +1,4 @@
 from nicegui import ui, run
-from utils.project_loader import diff_projects
 from datetime import datetime, date
 import ast
 import json
