@@ -209,17 +209,34 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
         with ui.element("div").classes('col-span-2 row-span-2 col-start-4 row-start-5'):
             ui.label('Forklaring estimat').classes('text-lg font-bold')
             ui.textarea(value=project.resursbehov.estimert_budsjet_forklaring).classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "estimert_budsjet_forklaring")
-    async def update_data():
-        # Validate required fields
-        if not project.portfolioproject.kontaktpersoner:
-            ui.notify("❌ Du må fylle inn kontaktperson.", type="warning", position="top", close_button="OK")
-            return
-        if not project.portfolioproject.navn or project.portfolioproject.navn.strip() == "":
+    
+    async def check_or_update():
+        kontaktpersoner = project.portfolioproject.kontaktpersoner
+        navn = project.portfolioproject.navn
+        if isinstance(kontaktpersoner, str):
+            try:
+                parsed = ast.literal_eval(kontaktpersoner)
+                if isinstance(parsed, list):
+                    kontaktpersoner = parsed
+                else:
+                    kontaktpersoner = []
+            except Exception:
+                kontaktpersoner = []
+        # Check navn_tiltak — handles None or empty string
+        if not navn or navn.strip() == "":
             ui.notify("❌ Du må fylle inn tiltaksnavn.", type="warning", position="top", close_button="OK")
             return
-        
-        dialog = ui.dialog()
-        with dialog, ui.card():
+        if not kontaktpersoner or (isinstance(kontaktpersoner, list) and len(kontaktpersoner) == 0) \
+        or (isinstance(kontaktpersoner, str) and kontaktpersoner.strip() == ""):
+            ui.notify("❌ Du må fylle inn kontaktperson.", type="warning", position="top", close_button="OK")
+            return
+
+
+
+        await update_data()
+
+    async def update_data():
+        with ui.dialog() as dialog:
             ui.label("💾 Lagrer endringer... Vennligst vent ⏳")
             ui.spinner(size="lg", color="primary")
 
@@ -267,7 +284,7 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
             ui.notify("✅ Endringer lagret i databasen!", type="positive", position="top")
 
             # Slight pause to let the user see success message before redirect
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.2)
             ui.navigate.to("/oppdater_prosjekt")
 
         except Exception as e:
@@ -276,4 +293,4 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
         finally:
             dialog.close()
 
-    ui.button("💾 Save", on_click=update_data).classes("mt-4")
+    ui.button("💾 Save", on_click=check_or_update).classes("mt-4")
