@@ -254,6 +254,33 @@ class ResursbehovUI:
     endret_av: str = ''
     er_gjeldende: bool = True
 
+class Ressursbruk(SQLModel, table=True):
+    __tablename__ = "Ressursbruk"
+    __table_args__ = {"schema": schema_name}
+
+    ressursbruk_id: uuid.UUID = Field(
+            default_factory=uuid.uuid4,
+            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True, default=uuid.uuid4),
+        )
+    year: int | None = None
+    predicted_resources: int | None = None
+    sist_endret: datetime | None = None
+    endret_av: str | None = None
+    er_gjeldende: bool = False
+    prosjekt_id : uuid.UUID = Field(
+        foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
+    )
+
+@binding.bindable_dataclass
+class RessursbrukUI:
+    ressursbruk_id: uuid.UUID = uuid.uuid4()
+    prosjekt_id: uuid.UUID | None = None
+    year: int | None = None
+    predicted_resources: int | None = None
+    sist_endret: datetime | None = None
+    endret_av: str = ''
+    er_gjeldende: bool = True
+
 class Risikovurdering(SQLModel, table=True):
     __tablename__ = "Risikovurdering"
     __table_args__ = {"schema": schema_name}

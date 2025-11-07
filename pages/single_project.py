@@ -4,6 +4,7 @@ import ast
 import json
 from utils.azure_users import load_users
 from utils.db_connection import DBConnector
+from utils.data_models import RessursbrukUI
 import ast, asyncio
 
 def to_list(value):
@@ -44,6 +45,7 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
         if not project:
             ui.label('Project not found or you do not have access to it.')
             return
+    print("Project ressursbruk",project.ressursbruk,"type:", type(project.ressursbruk))
     ui.markdown(f"## *Porteføljeinitiativ:* **{project.portfolioproject.navn}**").classes('text-xl font-bold')
     with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
         ui.label("1. Grunninformasjon").classes('col-span-1 row-span-1 col-start-1 row-start-3 text-lg font-bold underline mt-4 mb-2')
@@ -209,7 +211,28 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
         with ui.element("div").classes('col-span-2 row-span-2 col-start-4 row-start-5'):
             ui.label('Forklaring estimat').classes('text-lg font-bold')
             ui.textarea(value=project.resursbehov.estimert_budsjet_forklaring).classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "estimert_budsjet_forklaring")
-    
+        
+        with ui.element("div").classes('col-span-5 row-span-2 col-start-1 row-start-8'):
+            ui.label('Forventet ressursbruk (årsverk)').classes('text-lg font-bold')
+            
+            # Horizontal container for the year inputs
+            with ui.element("div").classes("flex flex-wrap space-x-8 mt-2"):
+                for year in [2026, 2027, 2028]:
+                    # Ensure the dict always has a RessursbrukUI object for this year
+                    if year not in project.ressursbruk:
+                        project.ressursbruk[year] = RessursbrukUI(year=year, predicted_resources=None)
+                    
+                    # Container for each year (vertical inside horizontal)
+                    with ui.element("div").classes("flex flex-col items-center"):
+                        ui.label(f"{year}").classes('font-medium')
+                        ui.input(
+                            placeholder="Antall årsverk",
+                        ).props('type=number min=0 step=0.1') \
+                        .classes('w-24 bg-white rounded-lg') \
+                        .bind_value(project.ressursbruk[year], 'predicted_resources')
+
+
+
     async def check_or_update():
         kontaktpersoner = project.portfolioproject.kontaktpersoner
         navn = project.portfolioproject.navn
