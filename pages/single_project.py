@@ -202,18 +202,18 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
             ui.label('Estimert budsjett behov').classes('text-lg font-bold')
             ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "estimert_budsjet_behov")
 
-        with ui.element("div").classes('col-span-2 row-span-1 col-start-4 row-start-4'):
+        with ui.element("div").classes('col-span-1 row-span-1 col-start-3 row-start-4'):
             ui.label("Hvor sikkert er estimatet").classes('text-lg font-bold')
             estimat_liste = ["Relativt sikkert","Noe usikkert","Svært usikkert"]
 
             ui.select(estimat_liste).classes('w-full bg-white rounded-lg').bind_value(project.resursbehov,"risiko_av_estimat")
 
-        with ui.element("div").classes('col-span-2 row-span-2 col-start-4 row-start-5'):
+        with ui.element("div").classes('col-span-3 row-span-1 col-start-3 row-start-6'):
             ui.label('Forklaring estimat').classes('text-lg font-bold')
             ui.textarea(value=project.resursbehov.estimert_budsjet_forklaring).classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "estimert_budsjet_forklaring")
         
-        with ui.element("div").classes('col-span-5 row-span-2 col-start-1 row-start-8'):
-            ui.label('Forventet ressursbruk (årsverk)').classes('text-lg font-bold')
+        with ui.element("div").classes('col-span-2 row-span-2 col-start-4 row-start-4'):
+            ui.label('Forventet fordeling av budsjett').classes('text-lg font-bold')
             
             # Horizontal container for the year inputs
             with ui.element("div").classes("flex flex-wrap space-x-8 mt-2"):
@@ -226,7 +226,7 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
                     with ui.element("div").classes("flex flex-col items-center"):
                         ui.label(f"{year}").classes('font-medium')
                         ui.input(
-                            placeholder="Antall årsverk",
+                            placeholder="Budsjett i kr",
                         ).props('type=number min=0 step=1') \
                         .classes('w-24 bg-white rounded-lg') \
                         .bind_value(project.ressursbruk[year], 'predicted_resources')
