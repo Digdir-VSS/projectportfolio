@@ -1,5 +1,5 @@
 from typing import Any
-from uuid import UUID
+from uuid import UUID, uuid4
 import struct
 from datetime import datetime
 import urllib
@@ -203,6 +203,34 @@ class DBConnector:
             ressursbruk={r.year: RessursbrukUI(**r.dict()) for r in sql_model_dict["ressursbruk"]},  # 👈 list of UI objects
         )
         return project_data
+    def has_changes(existing_obj, new_obj) -> bool:
+        """Return True if there are meaningful differences between existing and new object fields."""
+        if not existing_obj:
+            return True  # Entirely new record
+
+        ignored_fields = {
+            "sist_endret",
+            "endret_av",
+            "er_gjeldende",
+            "prosjekt_id",
+            "ressursbruk_id",
+        }
+
+        for field_name, new_val in vars(new_obj).items():
+            if field_name.startswith("_") or field_name in ignored_fields:
+                continue
+            if not hasattr(existing_obj, field_name):
+                continue
+
+            old_val = getattr(existing_obj, field_name)
+
+            # Normalize datatypes (e.g., None vs empty string, float vs int)
+            if (old_val is None or old_val == "") and (new_val is None or new_val == ""):
+                continue
+            if str(old_val) != str(new_val):
+                return True
+
+        return False
     @retry(retry=retry_if_exception_type(OperationalError),
     wait=wait_exponential(multiplier=1, min=1, max=10),
     stop=stop_after_attempt(3),
@@ -273,6 +301,7 @@ class DBConnector:
                         sql_obj.er_gjeldende = True
                         sql_obj.sist_endret = now
                         sql_obj.endret_av = e_mail
+                        sql_obj.ressursbruk_id = str(uuid4())
                         objs.append(sql_obj)
                 else:
                     sql_obj = ui_to_sqlmodel(ui_obj, sql_cls)

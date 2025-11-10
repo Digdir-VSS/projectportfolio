@@ -45,7 +45,7 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
         if not project:
             ui.label('Project not found or you do not have access to it.')
             return
-    print("Project ressursbruk",project.ressursbruk,"type:", type(project.ressursbruk))
+    # print("Project ressursbruk",project.ressursbruk,"type:", type(project.ressursbruk))
     ui.markdown(f"## *Porteføljeinitiativ:* **{project.portfolioproject.navn}**").classes('text-xl font-bold')
     with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
         ui.label("1. Grunninformasjon").classes('col-span-1 row-span-1 col-start-1 row-start-3 text-lg font-bold underline mt-4 mb-2')
@@ -227,7 +227,7 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
                         ui.label(f"{year}").classes('font-medium')
                         ui.input(
                             placeholder="Antall årsverk",
-                        ).props('type=number min=0 step=0.1') \
+                        ).props('type=number min=0 step=1') \
                         .classes('w-24 bg-white rounded-lg') \
                         .bind_value(project.ressursbruk[year], 'predicted_resources')
 
