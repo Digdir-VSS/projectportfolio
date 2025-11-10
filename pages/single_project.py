@@ -157,7 +157,7 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
             ui.select(list(digitaliserings_strategi_digdir.values()), multiple=True).classes('w-full bg-white rounded-lg').bind_value(project.digitaliseringstrategi, "sammenheng_digital_strategi", forward=to_json, backward=to_list)
         with ui.element("div").classes('col-span-4 row-span-2 col-start-1 row-start-12'):
                 ui.label('Eventuelt kommentar').classes('text-lg font-bold')
-                ui.textarea(value=None).classes('w-full bg-white rounded-lg')
+                ui.textarea().bind_value(project.digitaliseringstrategi, "digital_strategi_kommentar").classes('w-full bg-white rounded-lg')
 
     with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
         ui.label("4. Ressursbehov").classes('col-span-1 row-span-1 col-start-1 row-start-2 text-lg font-bold underline mt-4 mb-2')

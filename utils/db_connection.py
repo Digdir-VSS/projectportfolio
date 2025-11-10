@@ -110,7 +110,10 @@ class DBConnector:
         dict_of_schemas = self.ui_models.copy()
         dict_of_schemas.pop("portfolioproject")
         for name, schema in dict_of_schemas.items():
-            empty_populated_schemas[name] = schema(prosjekt_id=prosjekt_id)
+            if name == "ressursbruk":
+                empty_populated_schemas[name] = {}
+            else:
+                empty_populated_schemas[name] = schema(prosjekt_id=prosjekt_id)
         empty_populated_schemas["portfolioproject"] = PortfolioProjectUI(epost_kontakt=email, prosjekt_id=prosjekt_id)
         return ProjectData(**empty_populated_schemas)
 
