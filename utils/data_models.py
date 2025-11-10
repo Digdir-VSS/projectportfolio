@@ -56,6 +56,7 @@ class DigitaliseringStrategi(SQLModel, table=True):
             sa_column=Column(UNIQUEIDENTIFIER, primary_key=True, default=uuid.uuid4),
         )
     sammenheng_digital_strategi: str | None = None
+    digital_strategi_kommentar: str | None = None
     sist_endret: datetime | None = None
     endret_av: str | None = None
     er_gjeldende: bool = False
@@ -68,6 +69,7 @@ class DigitaliseringStrategiUI:
     digitalisering_strategi_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
     sammenheng_digital_strategi: str = ''
+    digital_strategi_kommentar: str = ''
     sist_endret: datetime | None = None
     endret_av: str = ''
     er_gjeldende: bool = True
