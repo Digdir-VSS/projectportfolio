@@ -6,6 +6,8 @@ from utils.azure_users import load_users
 from utils.db_connection import DBConnector
 from utils.data_models import RessursbrukUI
 import ast, asyncio
+import copy
+from dataclasses import asdict, is_dataclass
 
 def to_list(value):
     """Safely parse a JSON list or return [] if invalid."""
@@ -32,7 +34,11 @@ def to_date_str(value):
     if isinstance(value, datetime):
         return value.date().isoformat()
     return str(value)
-
+def to_datetime(value):
+    if isinstance(value, str):
+        return datetime.strptime(value,"%Y-%m-%d")
+    else:
+        return value
 brukere = load_users()
 
 brukere_list = list(brukere.keys())
@@ -45,7 +51,7 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
         if not project:
             ui.label('Project not found or you do not have access to it.')
             return
-    # print("Project ressursbruk",project.ressursbruk,"type:", type(project.ressursbruk))
+    original_project = copy.deepcopy(project)
     ui.markdown(f"## *Porteføljeinitiativ:* **{project.portfolioproject.navn}**").classes('text-xl font-bold')
     with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
         ui.label("1. Grunninformasjon").classes('col-span-1 row-span-1 col-start-1 row-start-3 text-lg font-bold underline mt-4 mb-2')
@@ -91,17 +97,11 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
                 ).classes('w-full bg-white rounded-lg').bind_value(project.fremskritt, "fase")
         with ui.element("div").classes('col-span-1 row-span-1 col-start-4 row-start-5'):
             ui.label('Start').classes('text-lg font-bold')
-            oppstart = getattr(project.portfolioproject, "oppstart", None)
-            if isinstance(oppstart, (datetime, date)):
-                setattr(project.portfolioproject, "oppstart", to_date_str(oppstart))
-            ui.input().bind_value(project.portfolioproject, "oppstart").props("outlined dense type=date clearable color=primary").classes("w-full")
+            ui.input().bind_value(project.portfolioproject, "oppstart", backward=to_date_str, forward=to_datetime).props("outlined dense type=date clearable color=primary").classes("w-full")
             
         with ui.element("div").classes('col-span-1 row-span-1 col-start-5 row-start-5'):
             ui.label("Planlagt ferdig").classes('text-lg font-bold')
-            ferdig_date = getattr(project.fremskritt, "planlagt_ferdig", None)
-            if isinstance(ferdig_date, (datetime, date)):
-                setattr(project.fremskritt, "planlagt_ferdig", to_date_str(ferdig_date))
-            ui.input().bind_value(project.fremskritt, "planlagt_ferdig").props("outlined dense type=date clearable color=primary").classes("w-full")
+            ui.input().bind_value(project.fremskritt, "planlagt_ferdig",backward=to_date_str,forward=to_datetime).props("outlined dense type=date clearable color=primary").classes("w-full")
             
     with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
         ui.label("2. Begrunnelse").classes('col-span-1 row-span-1 col-start-1 row-start-2 text-lg font-bold underline mt-4 mb-2')
@@ -111,7 +111,7 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
             ui.textarea(value=project.problemstilling.problem).classes('w-full bg-white rounded-lg').bind_value(project.problemstilling, "problem")
 
         with ui.element("div").classes('col-span-5 row-span-3 col-start-1 row-start-6'):
-            ui.label("Beskrivelse av tiltak").classes('text-lg font-bold')
+            ui.label("Beskrivelse av tiltaket og hovedleveranser for denne fasen").classes('text-lg font-bold')
             ui.textarea(value=project.tiltak.tiltak_beskrivelse).classes('w-full bg-white rounded-lg').bind_value(project.tiltak, "tiltak_beskrivelse")
 
         with ui.element("div").classes('col-span-5 row-span-2 col-start-1 row-start-9'):
@@ -152,15 +152,15 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
             "118": "118: sikre økt brukerinvolvering ved utvikling av digitale tjenester"
         }
         reverse_digdir = {v: k for k, v in digitaliserings_strategi_digdir.items()}
-        with ui.element("div").classes('col-span-4 row-span-2 col-start-1 row-start-10'):
+        with ui.element("div").classes('col-span-4 row-span-3 col-start-1 row-start-10'):
             ui.label('Tilknyttet tiltak i Digitaliseringsstrategien').classes('text-lg font-bold')
             ui.select(list(digitaliserings_strategi_digdir.values()), multiple=True).classes('w-full bg-white rounded-lg').bind_value(project.digitaliseringstrategi, "sammenheng_digital_strategi", forward=to_json, backward=to_list)
-        with ui.element("div").classes('col-span-4 row-span-2 col-start-1 row-start-12'):
-                ui.label('Eventuelt kommentar').classes('text-lg font-bold')
+        with ui.element("div").classes('col-span-4 row-span-2 col-start-1 row-start-13'):
+                ui.label('Eventuell beskrivelse av kobling til Digitaliseringsstrategien').classes('text-lg font-bold')
                 ui.textarea().bind_value(project.digitaliseringstrategi, "digital_strategi_kommentar").classes('w-full bg-white rounded-lg')
 
     with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
-        ui.label("4. Ressursbehov").classes('col-span-1 row-span-1 col-start-1 row-start-2 text-lg font-bold underline mt-4 mb-2')
+        ui.label("4. Ressursbehov").classes('col-span-5 row-span-1 col-start-1 row-start-2 text-lg font-bold underline mt-4 mb-2')
 
         with ui.element("div").classes('col-span-2 row-span-2 col-start-1 row-start-3'):
             ui.label("Hvilke kompetanser trenges for tiltaket?").classes('text-lg font-bold')
@@ -172,48 +172,35 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
             #selected_kompetanse = project.resursbehov.kompetanse_tilgjengelig  if project.resursbehov.kompetanse_tilgjengelig in kompetanse_internt_list else None
             ui.select(kompetanse_internt_list).classes('w-full bg-white rounded-lg').bind_value( project.resursbehov, "kompetanse_tilgjengelig")
         
-        ui.label("Estimert antall månedsverk for fasen").classes('text-lg font-bold col-span-3 row-span-1 col-start-1 row-start-5')
 
-        with ui.element("div").classes('col-span-1 row-span-1 col-start-1 row-start-6'):
+        ui.label("Estimert antall månedsverk for fasen").classes('text-lg font-bold col-span-2 row-span-2 col-start-4 row-start-2')
+
+        with ui.element("div").classes('col-span-1 row-span-1 col-start-4 row-start-3'):
             ui.label("Interne").classes('text-lg font-bold')
-            if isinstance(project.resursbehov.antall_mandsverk_intern, float) or isinstance(project.resursbehov.antall_mandsverk_intern, str) or isinstance(project.resursbehov.antall_mandsverk_intern, int):
-                try: 
-                    project.resursbehov.antall_mandsverk_intern = int(project.resursbehov.antall_mandsverk_intern)
-                except:
-                    project.resursbehov.antall_mandsverk_intern = 0
-            else:
-                project.resursbehov.antall_mandsverk_intern = None
-            ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "antall_mandsverk_intern")
-        with ui.element("div").classes('col-span-1 row-span-1 col-start-2 row-start-6'):
+            ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "antall_mandsverk_intern",forward=lambda x: int(x) if x not in (None,"") else None)
+        with ui.element("div").classes('col-span-1 row-span-1 col-start-5 row-start-3'):
             ui.label("Eksterne").classes('text-lg font-bold')
-            if isinstance(project.resursbehov.antall_mandsverk_ekstern, float) or isinstance(project.resursbehov.antall_mandsverk_ekstern, str) or isinstance(project.resursbehov.antall_mandsverk_intern, int):
-                try:
-                    project.resursbehov.antall_mandsverk_ekstern = int(project.resursbehov.antall_mandsverk_ekstern)
-                except:
-                    project.resursbehov.antall_mandsverk_ekstern = 0
-            else:
-                project.resursbehov.antall_mandsverk_ekstern = None
-            ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "antall_mandsverk_ekstern")
+            ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "antall_mandsverk_ekstern",forward=lambda x: int(x) if x not in (None,"") else None)
 
-        
-        ui.label("Estimert finansieringsbehov (eksl. interne ressurser)").classes('text-lg font-bold col-span-2 row-span-1 col-start-4 row-start-2')
+    with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
+        ui.label("5. Finansieringsbehov (ekskl. interne ressurser)​").classes('col-span-5 row-span-1 col-start-1 row-start-2 text-lg font-bold underline mt-4 mb-2')
 
-        with ui.element("div").classes('col-span-2 row-span-1 col-start-4 row-start-3'):
-            ui.label('Estimert budsjett behov').classes('text-lg font-bold')
-            ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "estimert_budsjet_behov")
+        with ui.element("div").classes('col-span-2 row-span-1 col-start-1 row-start-3'):
+            ui.label('Estimert budsjettbehov i kr').classes('text-lg font-bold')
+            ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "estimert_budsjet_behov",forward=lambda x: int(x) if x not in (None,"") else None)
 
-        with ui.element("div").classes('col-span-1 row-span-1 col-start-3 row-start-4'):
+        with ui.element("div").classes('col-span-1 row-span-1 col-start-1 row-start-4'):
             ui.label("Hvor sikkert er estimatet").classes('text-lg font-bold')
             estimat_liste = ["Relativt sikkert","Noe usikkert","Svært usikkert"]
 
             ui.select(estimat_liste).classes('w-full bg-white rounded-lg').bind_value(project.resursbehov,"risiko_av_estimat")
 
-        with ui.element("div").classes('col-span-3 row-span-1 col-start-3 row-start-6'):
+        with ui.element("div").classes('col-span-4 row-span-2 col-start-2 row-start-4'):
             ui.label('Forklaring estimat').classes('text-lg font-bold')
             ui.textarea(value=project.resursbehov.estimert_budsjet_forklaring).classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "estimert_budsjet_forklaring")
         
-        with ui.element("div").classes('col-span-2 row-span-2 col-start-4 row-start-4'):
-            ui.label('Forventet fordeling av budsjett').classes('text-lg font-bold')
+        with ui.element("div").classes('col-span-3 row-span-2 col-start-3 row-start-3'):
+            ui.label('Fordeling av budsjett pr år').classes('text-lg font-bold')
             
             # Horizontal container for the year inputs
             with ui.element("div").classes("flex flex-wrap space-x-8 mt-2"):
@@ -223,16 +210,88 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
                         project.ressursbruk[year] = RessursbrukUI(year=year, predicted_resources=None)
                     
                     # Container for each year (vertical inside horizontal)
-                    with ui.element("div").classes("flex flex-col items-center"):
+                    with ui.element("div").classes("flex flex-row items-center"):
                         ui.label(f"{year}").classes('font-medium')
-                        ui.input(
-                            placeholder="Budsjett i kr",
-                        ).props('type=number min=0 step=1') \
+                        ui.input().props('type=number min=0 step=1 input-style="text-align: right;"') \
                         .classes('w-24 bg-white rounded-lg') \
-                        .bind_value(project.ressursbruk[year], 'predicted_resources')
+                        .bind_value(project.ressursbruk[year], 'predicted_resources',forward=lambda x: int(x) if x not in (None,"") else None)
+
+    async def prune_unchanged_fields() -> "ProjectData":
+        """Compare original and modified ProjectData, and remove unchanged submodels."""
+        IGNORED_FIELDS = {
+            "sist_endret",
+            "endret_av",
+            "er_gjeldende",
+            "prosjekt_id",
+            "ressursbruk_id",
+        }
+
+        def clean_dict(d):
+            """Convert dataclass to dict and remove ignored fields."""
+            if is_dataclass(d):
+                d = asdict(d)
+            return {k: v for k, v in d.items() if k not in IGNORED_FIELDS}
+
+        # Iterate through each submodel (e.g. fremskritt, tiltak, etc.)
+        for field_name, original_value in original_project.__dict__.items():
+            modified_value = getattr(project, field_name, None)
+
+            # Skip if the modified field doesn't exist
+            if modified_value is None:
+                continue
+
+            # Handle ressursbruk separately (it's a dict of year → RessursbrukUI)
+            if field_name == "ressursbruk":
+                new_dict = {}
+                original_ressurs = getattr(original_project, field_name, {}) or {}
+
+                for year, modified_year_obj in modified_value.items():
+                    original_year_obj = original_ressurs.get(year)
 
 
+                    if original_year_obj is None:
+                        new_dict[year] = modified_year_obj
+                        continue
+                    
+                    orig_clean = clean_dict(original_year_obj)
+                    mod_clean = clean_dict(modified_year_obj)
+                    if orig_clean != mod_clean:
+                        new_dict[year] = modified_year_obj
+                # If nothing changed for any year, clear the entire dict
+                if not new_dict:
+                    setattr(project, field_name, None)
+                else:
+                    setattr(project, field_name, new_dict)
+                continue
 
+            # Compare regular dataclass models
+            if is_dataclass(modified_value) and is_dataclass(original_value):
+                if clean_dict(original_value) == clean_dict(modified_value):
+                    setattr(project, field_name, None)
+
+        if project.portfolioproject:
+            kontakt_list = ast.literal_eval(project.portfolioproject.kontaktpersoner)
+
+            if project.portfolioproject.tiltakseier:
+                if project.portfolioproject.tiltakseier not in kontakt_list:
+                    kontakt_list.append(project.portfolioproject.tiltakseier)
+            kontakt_epost = [brukere.get(i) for i in kontakt_list]
+            project.portfolioproject.epost_kontakt = str(kontakt_epost)
+
+        with ui.dialog() as dialog:
+            ui.label("💾 Lagrer endringer... Vennligst vent ⏳")
+            ui.spinner(size="lg", color="primary")
+        try:
+            dialog.open()
+            await asyncio.sleep(0.1)  # Allow UI to render spinner
+            await run.io_bound(db_connector.update_project, project, prosjekt_id, email)
+
+            ui.notify("✅ Endringer lagret i databasen!", type="positive", position="top")
+
+            await asyncio.sleep(1)
+            ui.navigate.to(f"/project/{prosjekt_id}")
+        finally:
+            dialog.close()
     async def check_or_update():
         kontaktpersoner = project.portfolioproject.kontaktpersoner
         navn = project.portfolioproject.navn
@@ -254,66 +313,7 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
             ui.notify("❌ Du må fylle inn kontaktperson.", type="warning", position="top", close_button="OK")
             return
 
-
-
-        await update_data()
-
-    async def update_data():
-        with ui.dialog() as dialog:
-            ui.label("💾 Lagrer endringer... Vennligst vent ⏳")
-            ui.spinner(size="lg", color="primary")
-
-        dialog.open()
-        await asyncio.sleep(0.1)  # Allow UI to render spinner
-
-        try:
-            # --- Data normalization ---
-            if project.portfolioproject.oppstart:
-                if isinstance(project.portfolioproject.oppstart, (datetime, date)):
-                    project.portfolioproject.oppstart = project.portfolioproject.oppstart.strftime("%Y-%m-%d")
-                else:
-                    project.portfolioproject.oppstart = str(project.portfolioproject.oppstart)
-
-            if project.fremskritt.planlagt_ferdig:
-                if isinstance(project.fremskritt.planlagt_ferdig, (datetime, date)):
-                    project.fremskritt.planlagt_ferdig = project.fremskritt.planlagt_ferdig.strftime("%Y-%m-%d")
-                else:
-                    project.fremskritt.planlagt_ferdig = str(project.fremskritt.planlagt_ferdig)
-
-            if not project.resursbehov.risiko_av_estimat:
-                project.resursbehov.risiko_av_estimat = ""
-
-            # --- Handle epost and kontaktpersoner ---
-            if project.portfolioproject.tiltakseier:
-                project.portfolioproject.epost_kontakt = str([brukere[project.portfolioproject.tiltakseier]])
-
-            if len(project.portfolioproject.kontaktpersoner) > 0 and isinstance(project.portfolioproject.kontaktpersoner[0], str):
-                kontakt_epost = [brukere.get(i) for i in project.portfolioproject.kontaktpersoner]
-                project.portfolioproject.kontaktpersoner = str(project.portfolioproject.kontaktpersoner)
-                if project.portfolioproject.tiltakseier:
-                    project.portfolioproject.epost_kontakt = str([brukere[project.portfolioproject.tiltakseier]])
-                    epost_list = ast.literal_eval(project.portfolioproject.epost_kontakt)
-                else:
-                    epost_list = []
-                if epost_list and epost_list[0] not in kontakt_epost:
-                    epost_list.extend(kontakt_epost)
-                else:
-                    epost_list = kontakt_epost
-                project.portfolioproject.epost_kontakt = str(epost_list)
-
-            # --- Save project (run in background thread if heavy) ---
-            await run.io_bound(db_connector.update_project, project, email)
-
-            ui.notify("✅ Endringer lagret i databasen!", type="positive", position="top")
-
-            # Slight pause to let the user see success message before redirect
-            await asyncio.sleep(0.2)
-            ui.navigate.to("/oppdater_prosjekt")
-
-        except Exception as e:
-            ui.notify(f"❌ Feil under lagring: {e}", type="negative", position="top")
-
-        finally:
-            dialog.close()
+        await prune_unchanged_fields()
 
     ui.button("💾 Save", on_click=check_or_update).classes("mt-4")
+

@@ -28,13 +28,6 @@ class ProjectData:
     digitaliseringstrategi: DigitaliseringStrategiUI | None
     ressursbruk: Dict[int, RessursbrukUI] = field(default_factory=dict)
 
-# def get_single_project_data(project_id: str, sql_models: dict):
-#     statement_dict = {}
-#     for schema_name, schema in sql_models.items():
-#         statement_dict[schema_name] = select(schema).where(
-#                 schema.prosjekt_id == project_id, schema.er_gjeldende == True
-#             )
-#     return statement_dict
 def get_single_project_data(project_id: str, sql_models: dict):
     statement_dict = {}
     for schema_name, schema in sql_models.items():
@@ -151,29 +144,7 @@ class DBConnector:
     wait=wait_exponential(multiplier=1, min=1, max=10),
     stop=stop_after_attempt(3),
     reraise=True)
-    # def get_single_project(self, project_id: str):
-    #     sql_model_dict = {}
-    #     project_id = UUID(project_id)
-    #     with Session(self.engine) as session:
-    #         stmt_dict = get_single_project_data(project_id, self.sql_models)
-    #         for sql_model_name, sql_statement in stmt_dict.items():
-    #             result = session.exec(sql_statement).first()
-    #             if result:
-    #                 sql_model_dict[sql_model_name] = result
-    #             else: 
-    #                 sql_model_dict[sql_model_name] = self.sql_models[sql_model_name](prosjekt_id=project_id)
-    #     project_data = ProjectData(
-    #         fremskritt=FremskrittUI(**sql_model_dict["fremskritt"].dict()),
-    #         resursbehov=ResursbehovUI(**sql_model_dict["resursbehov"].dict()),
-    #         samarabeid=SamarabeidUI(**sql_model_dict["samarabeid"].dict()),
-    #         portfolioproject=PortfolioProjectUI(**sql_model_dict["portfolioproject"].dict()),
-    #         tiltak=TiltakUI(**sql_model_dict["tiltak"].dict()),
-    #         problemstilling=ProblemstillingUI(**sql_model_dict["problemstilling"].dict()),
-    #         risikovurdering=RisikovurderingUI(**sql_model_dict["risikovurdering"].dict()),
-    #         malbilde=MalbildeUI(**sql_model_dict["malbilde"].dict()),
-    #         digitaliseringstrategi=DigitaliseringStrategiUI(**sql_model_dict["digitaliseringstrategi"].dict()),
-    #     )
-    #     return project_data
+    
     def get_single_project(self, project_id: str):
         sql_model_dict = {}
         project_id = UUID(project_id)
@@ -238,57 +209,13 @@ class DBConnector:
     wait=wait_exponential(multiplier=1, min=1, max=10),
     stop=stop_after_attempt(3),
     reraise=True)
-    # def update_project(self, project: ProjectData, e_mail: str):
-    #     prosjekt_id = project.portfolioproject.prosjekt_id if project.portfolioproject else None
-    #     now = datetime.utcnow()
-
-    #     with Session(self.engine) as session:
-    #         conn = session.connection()
-
-    #         # Deactivate all previous entries in bulk
-    #         updates = [
-    #             update(sql_cls)
-    #             .where(sql_cls.prosjekt_id == prosjekt_id)
-    #             .values(er_gjeldende=False)
-    #             for sql_cls in self.sql_models.values()
-    #         ]
-    #         for stmt in updates:
-    #             conn.execute(stmt)
-
-    #         # Bulk insert new rows
-    #         objs = []
-    #         for model_name, ui_model in self.ui_models.items():
-    #             ui_obj = getattr(project, model_name)
-    #             if ui_obj is None:
-    #                 continue
-
-    #             sql_cls = self.sql_models[model_name]
-    #             sql_obj = ui_to_sqlmodel(ui_obj, sql_cls)
-    #             sql_obj.er_gjeldende = True
-    #             sql_obj.sist_endret = now
-    #             sql_obj.endret_av = e_mail
-    #             objs.append(sql_obj)
-
-    #         session.add_all(objs)
-    #         session.commit()
-    def update_project(self, project: ProjectData, e_mail: str):
-        prosjekt_id = project.portfolioproject.prosjekt_id if project.portfolioproject else None
+    
+    def update_project(self, project: ProjectData, prosjekt_id: UUID, e_mail: str):
         now = datetime.utcnow()
 
         with Session(self.engine) as session:
-            conn = session.connection()
-
-            # deactivate previous
-            updates = [
-                update(sql_cls)
-                .where(sql_cls.prosjekt_id == prosjekt_id)
-                .values(er_gjeldende=False)
-                for sql_cls in self.sql_models.values()
-            ]
-            for stmt in updates:
-                conn.execute(stmt)
-
             objs = []
+
             for model_name, ui_model in self.ui_models.items():
                 ui_obj = getattr(project, model_name)
                 if ui_obj is None:
@@ -296,22 +223,42 @@ class DBConnector:
 
                 sql_cls = self.sql_models[model_name]
 
+                # --- Handle ressursbruk specially (dict of years) ---
                 if model_name == "ressursbruk":
-                    # Handle dictionary of RessursbrukUI objects
                     for year, res_obj in ui_obj.items():
+                        # Deactivate previous row only for this year
+                        session.execute(
+                            update(sql_cls)
+                            .where(sql_cls.prosjekt_id == str(prosjekt_id).lower())
+                            .where(sql_cls.year == year)
+                            .where(sql_cls.er_gjeldende == True)
+                            .values(er_gjeldende=False)
+                        )
+
                         sql_obj = ui_to_sqlmodel(res_obj, sql_cls)
-                        sql_obj.prosjekt_id = prosjekt_id  # ensure prosjekt_id is set
+                        sql_obj.prosjekt_id = str(prosjekt_id).lower()
                         sql_obj.er_gjeldende = True
                         sql_obj.sist_endret = now
                         sql_obj.endret_av = e_mail
-                        sql_obj.ressursbruk_id = str(uuid4())
+                        sql_obj.ressursbruk_id = str(uuid4())  # always new ID
                         objs.append(sql_obj)
+
                 else:
+                    # Deactivate previous record(s) for this specific model only
+                    session.execute(
+                        update(sql_cls)
+                        .where(sql_cls.prosjekt_id == str(prosjekt_id).lower())
+                        .where(sql_cls.er_gjeldende == True)
+                        .values(er_gjeldende=False)
+                    )
+
                     sql_obj = ui_to_sqlmodel(ui_obj, sql_cls)
+                    sql_obj.prosjekt_id = str(prosjekt_id).lower()
                     sql_obj.er_gjeldende = True
                     sql_obj.sist_endret = now
                     sql_obj.endret_av = e_mail
                     objs.append(sql_obj)
 
+            # ✅ Use session for both update + insert to ensure atomicity
             session.add_all(objs)
             session.commit()
