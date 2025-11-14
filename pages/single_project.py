@@ -4,11 +4,11 @@ import ast
 import json
 from utils.azure_users import load_users
 from utils.db_connection import DBConnector
-from utils.data_models import RessursbrukUI, PortfolioProject
+from utils.data_models import RessursbrukUI
 import ast, asyncio
 import copy
 from dataclasses import asdict, is_dataclass
-from typing import get_type_hints
+
 def to_list(value):
     """Safely parse a JSON list or return [] if invalid."""
     if value is None:
@@ -51,7 +51,6 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
         if not project:
             ui.label('Project not found or you do not have access to it.')
             return
-    # print("Project ressursbruk",project.ressursbruk,"type:", type(project.ressursbruk))
     original_project = copy.deepcopy(project)
     ui.markdown(f"## *Porteføljeinitiativ:* **{project.portfolioproject.navn}**").classes('text-xl font-bold')
     with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
@@ -217,90 +216,6 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
                         .classes('w-24 bg-white rounded-lg') \
                         .bind_value(project.ressursbruk[year], 'predicted_resources',forward=lambda x: int(x) if x not in (None,"") else None)
 
-
-
-    async def check_or_update():
-        kontaktpersoner = project.portfolioproject.kontaktpersoner
-        navn = project.portfolioproject.navn
-        if isinstance(kontaktpersoner, str):
-            try:
-                parsed = ast.literal_eval(kontaktpersoner)
-                if isinstance(parsed, list):
-                    kontaktpersoner = parsed
-                else:
-                    kontaktpersoner = []
-            except Exception:
-                kontaktpersoner = []
-        # Check navn_tiltak — handles None or empty string
-        if not navn or navn.strip() == "":
-            ui.notify("❌ Du må fylle inn tiltaksnavn.", type="warning", position="top", close_button="OK")
-            return
-        if not kontaktpersoner or (isinstance(kontaktpersoner, list) and len(kontaktpersoner) == 0) \
-        or (isinstance(kontaktpersoner, str) and kontaktpersoner.strip() == ""):
-            ui.notify("❌ Du må fylle inn kontaktperson.", type="warning", position="top", close_button="OK")
-            return
-
-
-
-        await prune_unchanged_fields()
-
-    # async def update_data():
-    #     with ui.dialog() as dialog:
-    #         ui.label("💾 Lagrer endringer... Vennligst vent ⏳")
-    #         ui.spinner(size="lg", color="primary")
-
-    #     dialog.open()
-    #     await asyncio.sleep(0.1)  # Allow UI to render spinner
-
-    #     try:
-    #         # --- Data normalization ---
-    #         if project.portfolioproject.oppstart:
-    #             if isinstance(project.portfolioproject.oppstart, (datetime, date)):
-    #                 project.portfolioproject.oppstart = project.portfolioproject.oppstart.strftime("%Y-%m-%d")
-    #             else:
-    #                 project.portfolioproject.oppstart = str(project.portfolioproject.oppstart)
-
-    #         if project.fremskritt.planlagt_ferdig:
-    #             if isinstance(project.fremskritt.planlagt_ferdig, (datetime, date)):
-    #                 project.fremskritt.planlagt_ferdig = project.fremskritt.planlagt_ferdig.strftime("%Y-%m-%d")
-    #             else:
-    #                 project.fremskritt.planlagt_ferdig = str(project.fremskritt.planlagt_ferdig)
-
-    #         if not project.resursbehov.risiko_av_estimat:
-    #             project.resursbehov.risiko_av_estimat = ""
-
-    #         # --- Handle epost and kontaktpersoner ---
-    #         if project.portfolioproject.tiltakseier:
-    #             project.portfolioproject.epost_kontakt = str([brukere[project.portfolioproject.tiltakseier]])
-
-    #         if len(project.portfolioproject.kontaktpersoner) > 0 and isinstance(project.portfolioproject.kontaktpersoner[0], str):
-    #             kontakt_epost = [brukere.get(i) for i in project.portfolioproject.kontaktpersoner]
-    #             project.portfolioproject.kontaktpersoner = str(project.portfolioproject.kontaktpersoner)
-    #             if project.portfolioproject.tiltakseier:
-    #                 project.portfolioproject.epost_kontakt = str([brukere[project.portfolioproject.tiltakseier]])
-    #                 epost_list = ast.literal_eval(project.portfolioproject.epost_kontakt)
-    #             else:
-    #                 epost_list = []
-    #             if epost_list and epost_list[0] not in kontakt_epost:
-    #                 epost_list.extend(kontakt_epost)
-    #             else:
-    #                 epost_list = kontakt_epost
-    #             project.portfolioproject.epost_kontakt = str(epost_list)
-
-    #         # --- Save project (run in background thread if heavy) ---
-    #         await run.io_bound(db_connector.update_project, project, email)
-
-    #         ui.notify("✅ Endringer lagret i databasen!", type="positive", position="top")
-
-    #         # Slight pause to let the user see success message before redirect
-    #         await asyncio.sleep(0.2)
-    #         ui.navigate.to("/oppdater_prosjekt")
-
-    #     except Exception as e:
-    #         ui.notify(f"❌ Feil under lagring: {e}", type="negative", position="top")
-
-    #     finally:
-    #         dialog.close()
     async def prune_unchanged_fields() -> "ProjectData":
         """Compare original and modified ProjectData, and remove unchanged submodels."""
         IGNORED_FIELDS = {
@@ -318,7 +233,6 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
             return {k: v for k, v in d.items() if k not in IGNORED_FIELDS}
 
         # Iterate through each submodel (e.g. fremskritt, tiltak, etc.)
-        print("Pruning unchanged fields...",original_project, project)
         for field_name, original_value in original_project.__dict__.items():
             modified_value = getattr(project, field_name, None)
 
@@ -340,9 +254,7 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
                         continue
                     
                     orig_clean = clean_dict(original_year_obj)
-                    print(orig_clean, "original ressursbruk year", year)
                     mod_clean = clean_dict(modified_year_obj)
-                    print(mod_clean, "modified ressursbruk year", year)
                     if orig_clean != mod_clean:
                         new_dict[year] = modified_year_obj
                 # If nothing changed for any year, clear the entire dict
@@ -357,7 +269,6 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
                 if clean_dict(original_value) == clean_dict(modified_value):
                     setattr(project, field_name, None)
 
-        print(project)
         if project.portfolioproject:
             kontakt_list = ast.literal_eval(project.portfolioproject.kontaktpersoner)
 
@@ -378,10 +289,31 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
             ui.notify("✅ Endringer lagret i databasen!", type="positive", position="top")
 
             await asyncio.sleep(1)
-            print(prosjekt_id)
             ui.navigate.to(f"/project/{prosjekt_id}")
         finally:
             dialog.close()
+    async def check_or_update():
+        kontaktpersoner = project.portfolioproject.kontaktpersoner
+        navn = project.portfolioproject.navn
+        if isinstance(kontaktpersoner, str):
+            try:
+                parsed = ast.literal_eval(kontaktpersoner)
+                if isinstance(parsed, list):
+                    kontaktpersoner = parsed
+                else:
+                    kontaktpersoner = []
+            except Exception:
+                kontaktpersoner = []
+        # Check navn_tiltak — handles None or empty string
+        if not navn or navn.strip() == "":
+            ui.notify("❌ Du må fylle inn tiltaksnavn.", type="warning", position="top", close_button="OK")
+            return
+        if not kontaktpersoner or (isinstance(kontaktpersoner, list) and len(kontaktpersoner) == 0) \
+        or (isinstance(kontaktpersoner, str) and kontaktpersoner.strip() == ""):
+            ui.notify("❌ Du må fylle inn kontaktperson.", type="warning", position="top", close_button="OK")
+            return
+
+        await prune_unchanged_fields()
 
     ui.button("💾 Save", on_click=check_or_update).classes("mt-4")
 
