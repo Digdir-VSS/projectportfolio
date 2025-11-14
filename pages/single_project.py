@@ -35,7 +35,7 @@ def to_date_str(value):
         return value.date().isoformat()
     return str(value)
 def to_datetime(value):
-    if type(value) == str:
+    if isinstance(value, str):
         return datetime.strptime(value,"%Y-%m-%d")
     else:
         return value
@@ -98,19 +98,11 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
                 ).classes('w-full bg-white rounded-lg').bind_value(project.fremskritt, "fase")
         with ui.element("div").classes('col-span-1 row-span-1 col-start-4 row-start-5'):
             ui.label('Start').classes('text-lg font-bold')
-            oppstart = getattr(project.portfolioproject, "oppstart", None)
-            if isinstance(oppstart, (datetime, date)):
-                setattr(project.portfolioproject, "oppstart", to_date_str(oppstart))
-            ui.input().bind_value(project.portfolioproject, "oppstart", forward=to_datetime).props("outlined dense type=date clearable color=primary").classes("w-full")
+            ui.input().bind_value(project.portfolioproject, "oppstart", backward=to_date_str, forward=to_datetime).props("outlined dense type=date clearable color=primary").classes("w-full")
             
         with ui.element("div").classes('col-span-1 row-span-1 col-start-5 row-start-5'):
             ui.label("Planlagt ferdig").classes('text-lg font-bold')
-            ferdig_date = getattr(project.fremskritt, "planlagt_ferdig", None)
-            print(ferdig_date, type(ferdig_date))
-            if isinstance(ferdig_date, (datetime, date)):
-                setattr(project.fremskritt, "planlagt_ferdig", to_date_str(ferdig_date))
-            print(project.fremskritt.planlagt_ferdig, type(project.fremskritt.planlagt_ferdig))
-            ui.input().bind_value(project.fremskritt, "planlagt_ferdig",forward=to_datetime).props("outlined dense type=date clearable color=primary").classes("w-full")
+            ui.input().bind_value(project.fremskritt, "planlagt_ferdig",backward=to_date_str,forward=to_datetime).props("outlined dense type=date clearable color=primary").classes("w-full")
             
     with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
         ui.label("2. Begrunnelse").classes('col-span-1 row-span-1 col-start-1 row-start-2 text-lg font-bold underline mt-4 mb-2')
@@ -186,20 +178,9 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
 
         with ui.element("div").classes('col-span-1 row-span-1 col-start-4 row-start-3'):
             ui.label("Interne").classes('text-lg font-bold')
-
-            try: 
-                project.resursbehov.antall_mandsverk_intern = int(project.resursbehov.antall_mandsverk_intern)
-            except:
-                project.resursbehov.antall_mandsverk_intern = None
-
             ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "antall_mandsverk_intern",forward=lambda x: int(x) if x not in (None,"") else None)
         with ui.element("div").classes('col-span-1 row-span-1 col-start-5 row-start-3'):
             ui.label("Eksterne").classes('text-lg font-bold')
-            try:
-                project.resursbehov.antall_mandsverk_ekstern = int(project.resursbehov.antall_mandsverk_ekstern)
-            except:
-                project.resursbehov.antall_mandsverk_ekstern = None
-
             ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "antall_mandsverk_ekstern",forward=lambda x: int(x) if x not in (None,"") else None)
 
     with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
@@ -263,63 +244,63 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
 
         await prune_unchanged_fields()
 
-    async def update_data():
-        with ui.dialog() as dialog:
-            ui.label("💾 Lagrer endringer... Vennligst vent ⏳")
-            ui.spinner(size="lg", color="primary")
+    # async def update_data():
+    #     with ui.dialog() as dialog:
+    #         ui.label("💾 Lagrer endringer... Vennligst vent ⏳")
+    #         ui.spinner(size="lg", color="primary")
 
-        dialog.open()
-        await asyncio.sleep(0.1)  # Allow UI to render spinner
+    #     dialog.open()
+    #     await asyncio.sleep(0.1)  # Allow UI to render spinner
 
-        try:
-            # --- Data normalization ---
-            if project.portfolioproject.oppstart:
-                if isinstance(project.portfolioproject.oppstart, (datetime, date)):
-                    project.portfolioproject.oppstart = project.portfolioproject.oppstart.strftime("%Y-%m-%d")
-                else:
-                    project.portfolioproject.oppstart = str(project.portfolioproject.oppstart)
+    #     try:
+    #         # --- Data normalization ---
+    #         if project.portfolioproject.oppstart:
+    #             if isinstance(project.portfolioproject.oppstart, (datetime, date)):
+    #                 project.portfolioproject.oppstart = project.portfolioproject.oppstart.strftime("%Y-%m-%d")
+    #             else:
+    #                 project.portfolioproject.oppstart = str(project.portfolioproject.oppstart)
 
-            if project.fremskritt.planlagt_ferdig:
-                if isinstance(project.fremskritt.planlagt_ferdig, (datetime, date)):
-                    project.fremskritt.planlagt_ferdig = project.fremskritt.planlagt_ferdig.strftime("%Y-%m-%d")
-                else:
-                    project.fremskritt.planlagt_ferdig = str(project.fremskritt.planlagt_ferdig)
+    #         if project.fremskritt.planlagt_ferdig:
+    #             if isinstance(project.fremskritt.planlagt_ferdig, (datetime, date)):
+    #                 project.fremskritt.planlagt_ferdig = project.fremskritt.planlagt_ferdig.strftime("%Y-%m-%d")
+    #             else:
+    #                 project.fremskritt.planlagt_ferdig = str(project.fremskritt.planlagt_ferdig)
 
-            if not project.resursbehov.risiko_av_estimat:
-                project.resursbehov.risiko_av_estimat = ""
+    #         if not project.resursbehov.risiko_av_estimat:
+    #             project.resursbehov.risiko_av_estimat = ""
 
-            # --- Handle epost and kontaktpersoner ---
-            if project.portfolioproject.tiltakseier:
-                project.portfolioproject.epost_kontakt = str([brukere[project.portfolioproject.tiltakseier]])
+    #         # --- Handle epost and kontaktpersoner ---
+    #         if project.portfolioproject.tiltakseier:
+    #             project.portfolioproject.epost_kontakt = str([brukere[project.portfolioproject.tiltakseier]])
 
-            if len(project.portfolioproject.kontaktpersoner) > 0 and isinstance(project.portfolioproject.kontaktpersoner[0], str):
-                kontakt_epost = [brukere.get(i) for i in project.portfolioproject.kontaktpersoner]
-                project.portfolioproject.kontaktpersoner = str(project.portfolioproject.kontaktpersoner)
-                if project.portfolioproject.tiltakseier:
-                    project.portfolioproject.epost_kontakt = str([brukere[project.portfolioproject.tiltakseier]])
-                    epost_list = ast.literal_eval(project.portfolioproject.epost_kontakt)
-                else:
-                    epost_list = []
-                if epost_list and epost_list[0] not in kontakt_epost:
-                    epost_list.extend(kontakt_epost)
-                else:
-                    epost_list = kontakt_epost
-                project.portfolioproject.epost_kontakt = str(epost_list)
+    #         if len(project.portfolioproject.kontaktpersoner) > 0 and isinstance(project.portfolioproject.kontaktpersoner[0], str):
+    #             kontakt_epost = [brukere.get(i) for i in project.portfolioproject.kontaktpersoner]
+    #             project.portfolioproject.kontaktpersoner = str(project.portfolioproject.kontaktpersoner)
+    #             if project.portfolioproject.tiltakseier:
+    #                 project.portfolioproject.epost_kontakt = str([brukere[project.portfolioproject.tiltakseier]])
+    #                 epost_list = ast.literal_eval(project.portfolioproject.epost_kontakt)
+    #             else:
+    #                 epost_list = []
+    #             if epost_list and epost_list[0] not in kontakt_epost:
+    #                 epost_list.extend(kontakt_epost)
+    #             else:
+    #                 epost_list = kontakt_epost
+    #             project.portfolioproject.epost_kontakt = str(epost_list)
 
-            # --- Save project (run in background thread if heavy) ---
-            await run.io_bound(db_connector.update_project, project, email)
+    #         # --- Save project (run in background thread if heavy) ---
+    #         await run.io_bound(db_connector.update_project, project, email)
 
-            ui.notify("✅ Endringer lagret i databasen!", type="positive", position="top")
+    #         ui.notify("✅ Endringer lagret i databasen!", type="positive", position="top")
 
-            # Slight pause to let the user see success message before redirect
-            await asyncio.sleep(0.2)
-            ui.navigate.to("/oppdater_prosjekt")
+    #         # Slight pause to let the user see success message before redirect
+    #         await asyncio.sleep(0.2)
+    #         ui.navigate.to("/oppdater_prosjekt")
 
-        except Exception as e:
-            ui.notify(f"❌ Feil under lagring: {e}", type="negative", position="top")
+    #     except Exception as e:
+    #         ui.notify(f"❌ Feil under lagring: {e}", type="negative", position="top")
 
-        finally:
-            dialog.close()
+    #     finally:
+    #         dialog.close()
     async def prune_unchanged_fields() -> "ProjectData":
         """Compare original and modified ProjectData, and remove unchanged submodels."""
         IGNORED_FIELDS = {
@@ -401,37 +382,6 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
             ui.navigate.to(f"/project/{prosjekt_id}")
         finally:
             dialog.close()
-    # def check_data():
-
-    #     for field_name, original_value in project.__dict__.items():
-    #         modified_value = getattr(project, field_name, None)
-    #         if field_name == "ressursbruk":
-    #             original_value = getattr(original_project, field_name, None)
-    #             if original_value is None:
-    #                     continue
-    #             for year, mod_obj in modified_value.items():
-    #                 ori_obj = original_value.get(year)
-    #                 print(ori_obj)
-    #                 mod_dict = asdict(mod_obj)
-    #                 org_dict = asdict(ori_obj)
-    #                 print(mod_dict, "modified ressursbruk year", year)
-    #                 print(org_dict, "original ressursbruk year", year)
-    #                 # for key in mod_dict.keys():
-    #                 #     print(mod_dict[key]==org_dict[key], f"{field_name} year {year} field {key}")
-    #             continue
-    #         else:
-    #             mod_dict = asdict(modified_value)
-    #             print(mod_dict, field_name)
-            # ori_value = getattr(original_project, field_name, None)
-            # org_dict = asdict(ori_value)
-            # if field_name == "ressursbruk":
-            #     for year in [2026, 2027, 2028]:
-            #         mod_year = mod_dict.get(year)
-            #         org_year = org_dict.get(year)
-            #         print(mod_year==org_year, f"{field_name} year {year}")
-            # else:
-            #     print(mod_dict==org_dict, field_name)
 
     ui.button("💾 Save", on_click=check_or_update).classes("mt-4")
-    # ui.button("💾 Check changes", on_click=prune_unchanged_fields).classes("mt-4")
-    # ui.button("💾 Check data", on_click=check_data).classes("mt-4")
+
