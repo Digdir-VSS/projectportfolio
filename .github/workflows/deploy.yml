@@ -61,27 +61,28 @@ jobs:
         uses: azure/CLI@v1
         with:
           inlineScript: |
-            az account set --subscription ${{ secrets.SUBSCRIPTION_ID }}
+            az account set --subscription "${SUBSCRIPTION_ID}"
             az containerapp update \
               --name $CONTAINER_APP_NAME \
               --resource-group $RESOURCE_GROUP \
               --image $ACR_NAME.azurecr.io/$IMAGE_NAME:${{ github.sha }} \
               --revision-suffix "build-${{ github.run_number }}" \
               --set-env-vars \
-                BASE_APPLICATION_URL=${BASE_APPLICATION_URL} \
-                SCHEMA=${SCHEMA} \
-                TENANT_NAME=${TENANT_NAME} \
+                BASE_APPLICATION_URL="${BASE_APPLICATION_URL}" \
+                SCHEMA="${SCHEMA}" \
+                TENANT_NAME="${TENANT_NAME}" \
                 DRIVER="${DRIVER}" \
-                DATABASE=${DATABASE} \
-                STORAGE_SECRET=${STORAGE_SECRET} \
-                SUPER_USER=${SUPER_USER} \
-                SERVER=${SERVER} \
-                CLIENT_ID=${CLIENT_ID} \
-                CLIENT_SECRET_NAME=${CLIENT_SECRET_NAME} \
-                KEY_VAULT_URL=${KEY_VAULT_URL} \
-                FABRIC_CLIENT_ID=${FABRIC_CLIENT_ID} \
-                FABRIC_SECRET_NAME=${FABRIC_SECRET_NAME} \
-                TENANT_ID=${TENANT_ID} \
-                UUID_RUN=${{ github.run_id }} \
+                DATABASE="${DATABASE}" \
+                STORAGE_SECRET="${STORAGE_SECRET}" \
+                SUPER_USER="${SUPER_USER}" \
+                SERVER="${SERVER}" \
+                CLIENT_ID="${CLIENT_ID}" \
+                CLIENT_SECRET_NAME="${CLIENT_SECRET_NAME}" \
+                KEY_VAULT_URL="${KEY_VAULT_URL}" \
+                FABRIC_CLIENT_ID="${FABRIC_CLIENT_ID}" \
+                FABRIC_SECRET_NAME="${FABRIC_SECRET_NAME}" \
+                TENANT_ID="${TENANT_ID}" \
+                UUID_RUN="${{ github.run_id }}" \
               --cpu 1 \
               --memory 2Gi
+              
