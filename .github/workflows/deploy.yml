@@ -61,7 +61,6 @@ jobs:
         uses: azure/CLI@v1
         with:
           inlineScript: |
-            az account set --subscription "${SUBSCRIPTION_ID}"
             az containerapp update \
               --name $CONTAINER_APP_NAME \
               --resource-group $RESOURCE_GROUP \
