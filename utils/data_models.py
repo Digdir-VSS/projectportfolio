@@ -1,13 +1,16 @@
 import os
+from typing import Union, Annotated
 from sqlmodel import SQLModel, Field
 from sqlalchemy import Column
 from nicegui import binding
-from dataclasses import field
+from pydantic import BaseModel, BeforeValidator
 
 import uuid
 from sqlalchemy.dialects.mssql import UNIQUEIDENTIFIER
 from datetime import datetime
 from dotenv import load_dotenv
+
+from .validators import to_datetime
 
 load_dotenv()
 
@@ -32,12 +35,12 @@ class PortfolioProject(SQLModel, table=True):
     er_gjeldende: bool = False
 
 
-@binding.bindable_dataclass
-class PortfolioProjectUI:
+
+class PortfolioProjectUI(BaseModel):
     prosjekt_sk_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
     navn: str = ''
-    oppstart: datetime | None = None
+    oppstart: Annotated[Union[datetime, None], BeforeValidator(to_datetime)]
     avdeling: str = ''
     tiltakseier: str = ''
     kontaktpersoner: str = ''
@@ -64,8 +67,8 @@ class DigitaliseringStrategi(SQLModel, table=True):
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
-@binding.bindable_dataclass
-class DigitaliseringStrategiUI:
+
+class DigitaliseringStrategiUI(BaseModel):
     digitalisering_strategi_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
     sammenheng_digital_strategi: str = ''
@@ -116,13 +119,13 @@ class Fremskritt(SQLModel, table=True):
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
-@binding.bindable_dataclass
-class FremskrittUI:
+
+class FremskrittUI(BaseModel):
     fremskritt_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
-    fremskritt: str = ''
+    fremskritt: str | None = None
     fase: str = ''
-    planlagt_ferdig: datetime | None = None
+    planlagt_ferdig: Annotated[Union[datetime, None], BeforeValidator(to_datetime)]
     sist_endret: datetime | None = None
     endret_av: str = ''
     er_gjeldende: bool | None = None
@@ -151,18 +154,17 @@ class Malbilde(SQLModel, table=True):
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
-@binding.bindable_dataclass
-class MalbildeUI:
+class MalbildeUI(BaseModel):
     malbilde_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
     malbilde_1_beskrivelse: str = ''
-    malbilde_1_vurdering: str = ''
+    malbilde_1_vurdering: str | None = None
     malbilde_2_beskrivelse: str = ''
-    malbilde_2_vurdering: str = ''
+    malbilde_2_vurdering: str | None = None
     malbilde_3_beskrivelse: str = ''
-    malbilde_3_vurdering: str = ''
+    malbilde_3_vurdering: str | None = None
     malbilde_4_beskrivelse: str = ''
-    malbilde_4_vurdering: str = ''
+    malbilde_4_vurdering: str | None = None
     sist_endret: datetime | None = None
     endret_av: str = ''
     er_gjeldende: bool = True
@@ -183,8 +185,8 @@ class Problemstilling(SQLModel, table=True):
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
-@binding.bindable_dataclass
-class ProblemstillingUI:
+
+class ProblemstillingUI(BaseModel):
     problem_stilling_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
     problem: str = ''
@@ -239,8 +241,8 @@ class Resursbehov(SQLModel, table=True):
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
-@binding.bindable_dataclass
-class ResursbehovUI:
+
+class ResursbehovUI(BaseModel):
     ressursbehov_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
     estimert_budsjet_forklaring: str = ''
@@ -273,8 +275,8 @@ class Ressursbruk(SQLModel, table=True):
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
-@binding.bindable_dataclass
-class RessursbrukUI:
+
+class RessursbrukUI(BaseModel):
     ressursbruk_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
     year: int | None = None
@@ -299,8 +301,8 @@ class Risikovurdering(SQLModel, table=True):
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
-@binding.bindable_dataclass
-class RisikovurderingUI:
+
+class RisikovurderingUI(BaseModel):
     risiko_vurdering_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
     vurdering: str = ''
@@ -326,8 +328,8 @@ class Samarabeid(SQLModel, table=True):
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
-@binding.bindable_dataclass
-class SamarabeidUI:
+
+class SamarabeidUI(BaseModel):
     samarbeid_id: uuid.UUID = uuid.uuid4() 
     prosjekt_id : uuid.UUID | None = None
     samarbeid_intern: str = ''
@@ -353,8 +355,8 @@ class Tiltak(SQLModel, table=True):
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
-@binding.bindable_dataclass
-class TiltakUI:
+
+class TiltakUI(BaseModel):
     tiltak_id: uuid.UUID = uuid.uuid4()
     prosjekt_id : uuid.UUID | None = None
     tiltak_beskrivelse: str = ''
