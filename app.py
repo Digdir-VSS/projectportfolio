@@ -6,13 +6,14 @@ from azure.keyvault.secrets import SecretClient
 import os
 from dotenv import load_dotenv
 from msal import ConfidentialClientApplication
+import uuid
 
 from utils.db_connection import DBConnector, ProjectData
 from pages.login_page import register_login_pages
 from pages.dashboard import dashboard
 from pages.single_project import project_detail as digdir_overordnet_info_page
 from pages.utils import layout
-import uuid
+from static_variables import STEPS_DICT, AVDELINGER
 
 load_dotenv()
 
@@ -58,21 +59,7 @@ def require_login() -> dict[str, Any] | None:
         return None
     return claims
 
-steps_dict = {
-    "home": "Oversikt over dine prosjekter",
-    "oppdater_prosjekt": "Ny/ endre prosjekt",
-    "status_rapportering": "Rapportering av status",
-    "leveranse": "Om Digdirs leveranse"
-}
-field_mapping = {
-    "navn_tiltak": "Navn prosjekt",
-    "kontaktperson": "Kontaktperson",
-    "tiltakseier":"Tiltakseier",
-    "avdeling": "Hovedavdeling",
-    "fase_tiltak": "Fase",
-    "date_modified": "Sist endret",
-}
-avdelinger = ['BOD','DSS' ,'KOM','FEL','STL' ,'TUU', 'VIS']  # <-- your real avdelinger
+
 super_user = os.getenv("SUPER_USER")
 # keep a global cache of loaded projects for comparison
 ORIGINAL_PROJECTS: dict[str, list[ProjectData]] = {}
@@ -106,10 +93,9 @@ def main_page():
     if not user:
         return 
 
-    layout(active_step='home', title='Oversikt over dine prosjekter', steps=steps_dict)
+    layout(active_step='home', title='Oversikt over dine prosjekter', steps=STEPS_DICT)
     ui.label('This is the home page.')
     dashboard()
-
 
 
 @ui.page('/oppdater_prosjekt')
@@ -124,7 +110,7 @@ async def overordnet():
         ui.notify('No email claim found in login!')
         return
 
-    layout(active_step='oppdater_prosjekt', title='Rediger prosjekt', steps=steps_dict)
+    layout(active_step='oppdater_prosjekt', title='Rediger prosjekt', steps=STEPS_DICT)
     ui.label(f'Prosjekter for {user_name}').classes('text-lg font-bold mb-2')
     if email in super_user:
         ui.label('You are a super user and can edit all projects.')
@@ -132,10 +118,6 @@ async def overordnet():
     else:        
         projects = await run.io_bound(db_connector.get_projects, email)
     
-    # store original copy for later diff
-
-    
-    # create a table with editable fields
     if not projects:
         ui.label('No projects found for this user.')
         return
@@ -222,7 +204,7 @@ def project_detail(prosjekt_id: str):
     user = require_login()
     if not user:
         return 
-    layout(active_step='oppdater_prosjekt', title='Prosjekt detaljer', steps=steps_dict)
+    layout(active_step='oppdater_prosjekt', title='Prosjekt detaljer', steps=STEPS_DICT)
     user_name = user["name"]
     print(user_name)
     email = user["preferred_username"]
@@ -236,7 +218,7 @@ def project_detail(prosjekt_id: str):
     user = require_login()
     if not user:
         return 
-    layout(active_step='oppdater_prosjekt', title='Prosjekt detaljer', steps=steps_dict)
+    layout(active_step='oppdater_prosjekt', title='Prosjekt detaljer', steps=STEPS_DICT)
 
     email = user["preferred_username"]
     user_name = user["name"]
@@ -250,7 +232,7 @@ def digdir():
     user = require_login()
     if not user:
         return 
-    layout(active_step='status_rapportering',  title='Rapportering av status',steps=steps_dict)
+    layout(active_step='status_rapportering',  title='Rapportering av status',steps=STEPS_DICT)
     # digdir_aktivitet_page('aktivitet')
     email = user["preferred_username"]
     user_name = user["name"]
@@ -264,7 +246,7 @@ def leveranse():
     user = require_login()
     if not user:
         return 
-    layout(active_step='leveranse', title='Om Digdirs leveranse',steps=steps_dict)
+    layout(active_step='leveranse', title='Om Digdirs leveranse',steps=STEPS_DICT)
     # digdir_leveranse("leveranse")
 
 

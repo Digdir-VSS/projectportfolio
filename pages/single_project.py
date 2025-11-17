@@ -10,6 +10,7 @@ import copy
 from pydantic import BaseModel
 
 from utils.validators import to_json, to_list
+from static_variables import DIGITALISERINGS_STRATEGI,IGNORED_FIELDS
     
 brukere = load_users()
 
@@ -102,31 +103,10 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
         ui.textarea().classes('col-span-2 row-span-2 col-start-1 row-start-8 bg-white rounded-lg').bind_value(project.malbilde, "malbilde_3_beskrivelse")
         ui.label("4 Vi løser komplekse utfordringer sammen og tilpasser oss en verden i rask endring").classes('col-span-2 row-span-1 col-start-3 row-start-7 text-lg')
         ui.textarea().classes('col-span-2 row-span-2 col-start-3 row-start-8 bg-white rounded-lg').bind_value(project.malbilde, "malbilde_4_beskrivelse")
-        digitaliserings_strategi_digdir = {
-            "6": "6: få på plass veiledning om regelverksutvikling innen digitalisering, KI og datadeling",
-            "11a": "11a: forsterke arbeidet med sammenhengende tjenester, i samarbeid med KS",
-            "11g": "11g: videreføre arbeidet med livshendelser - Dødsfall og arv",
-            "12": "12: utrede en felles digital inngang til innbyggere og andre brukere til informasjon og til digitale offentlige tjenester",
-            "13": "13: etablere en utprøvingsarena for utforsking av regulatoriske og teknologiske utfordringer i arbeidet med sammenhengende tjenester",
-            "15": "15: videreutvikle virkemidler for digitalisering og innovasjon i offentlig sektor",
-            "41": "41: etablere en nasjonal arkitektur for et felles digitalt økosystem, i samarbeid med KS",
-            "42": "42: tilby alle en digital lommebok med eID på høyt nivå",
-            "43": "43: utvikle løsninger for digital representasjon, herunder for vergemål",
-            "51": "51: samordne råd- og veiledningsressurser innenfor digital sikkerhet bedre",
-            "74": "74: samordne og styrke veiledningen om deling og bruk av data, og arbeidet med orden i eget hus",
-            "75": "75: prioritere arbeidet med å gjøre tilgjengelig nasjonale datasett som er viktige for offentlig sektor og samfunnet",
-            "76": "76: legge til rette for sektorovergripende samarbeid om standarder og formater for datautveksling for digitalisering av hele verdikjeder",
-            "87": "87: styrke veiledningsarbeidet for ansvarlig utvikling og bruk av KI, blant annet gjennom regulatoriske sandkasser",
-            "88": "88: sikre ansvarlig utvikling og bruk av KI i offentlig sektor",
-            "114": "114: følge opp Handlingsplan for auka inkludering i eit digitalt samfunn",
-            "115": "115: styrke innsatsen for å øke den digitale kompetansen hos seniorer",
-            "116": "116: styrke arbeidet med brukskvalitet, klarspråk og universell utforming i offentlige digitale tjenester",
-            "118": "118: sikre økt brukerinvolvering ved utvikling av digitale tjenester"
-        }
-        reverse_digdir = {v: k for k, v in digitaliserings_strategi_digdir.items()}
+
         with ui.element("div").classes('col-span-4 row-span-3 col-start-1 row-start-10'):
             ui.label('Tilknyttet tiltak i Digitaliseringsstrategien').classes('text-lg font-bold')
-            ui.select(list(digitaliserings_strategi_digdir.values()), multiple=True).classes('w-full bg-white rounded-lg').bind_value(project.digitaliseringstrategi, "sammenheng_digital_strategi", forward=to_json, backward=to_list)
+            ui.select(DIGITALISERINGS_STRATEGI, multiple=True).classes('w-full bg-white rounded-lg').bind_value(project.digitaliseringstrategi, "sammenheng_digital_strategi", forward=to_json, backward=to_list)
         with ui.element("div").classes('col-span-4 row-span-2 col-start-1 row-start-13'):
                 ui.label('Eventuell beskrivelse av kobling til Digitaliseringsstrategien').classes('text-lg font-bold')
                 ui.textarea().bind_value(project.digitaliseringstrategi, "digital_strategi_kommentar").classes('w-full bg-white rounded-lg')
@@ -190,13 +170,7 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
 
     async def prune_unchanged_fields() -> ProjectData:
         """Compare original and modified ProjectData, and remove unchanged submodels."""
-        IGNORED_FIELDS = {
-            "sist_endret",
-            "endret_av",
-            "er_gjeldende",
-            "prosjekt_id",
-            "ressursbruk_id",
-        }
+
 
         def clean_dict(d):
             """Convert dataclass to dict and remove ignored fields."""
