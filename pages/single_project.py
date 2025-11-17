@@ -9,37 +9,7 @@ import ast, asyncio
 import copy
 from pydantic import BaseModel
 
-def to_list(value):
-    """Safely parse a JSON list or return [] if invalid."""
-    if value is None:
-        return []
-    if isinstance(value, list):  # Already deserialized
-        return value
-    value = str(value).strip()
-    if not value or value.lower() in ("null", "none"):
-        return []
-    try:
-        return json.loads(value)
-    except json.JSONDecodeError:
-        return []
-
-def to_json(value: list[str] | None):
-    """Convert UI list back to JSON string for the dataclass."""
-    return json.dumps(value or [],  ensure_ascii=False)
-
-def to_date_str(value):
-    """Convert datetime/date to ISO date string (YYYY-MM-DD) for NiceGUI."""
-    if value is None:
-        return None
-    if isinstance(value, datetime):
-        return value.date().isoformat()
-    return str(value)
-
-def to_datetime(value):
-    if isinstance(value, str):
-        return datetime.strptime(value,"%Y-%m-%d")
-    else:
-        return value
+from utils.validators import to_json, to_list
     
 brukere = load_users()
 
@@ -179,17 +149,17 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
 
         with ui.element("div").classes('col-span-1 row-span-1 col-start-4 row-start-3'):
             ui.label("Interne").classes('text-lg font-bold')
-            ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "antall_mandsverk_intern",forward=lambda x: int(x) if x not in (None,"") else None)
+            ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "antall_mandsverk_intern")
         with ui.element("div").classes('col-span-1 row-span-1 col-start-5 row-start-3'):
             ui.label("Eksterne").classes('text-lg font-bold')
-            ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "antall_mandsverk_ekstern",forward=lambda x: int(x) if x not in (None,"") else None)
+            ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "antall_mandsverk_ekstern")
 
     with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
         ui.label("5. Finansieringsbehov (ekskl. interne ressurser)​").classes('col-span-5 row-span-1 col-start-1 row-start-2 text-lg font-bold underline mt-4 mb-2')
 
         with ui.element("div").classes('col-span-2 row-span-1 col-start-1 row-start-3'):
             ui.label('Estimert budsjettbehov i kr').classes('text-lg font-bold')
-            ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "estimert_budsjet_behov",forward=lambda x: int(x) if x not in (None,"") else None)
+            ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "estimert_budsjet_behov")
 
         with ui.element("div").classes('col-span-1 row-span-1 col-start-1 row-start-4'):
             ui.label("Hvor sikkert er estimatet").classes('text-lg font-bold')
@@ -216,7 +186,7 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
                         ui.label(f"{year}").classes('font-medium')
                         ui.input().props('type=number min=0 step=1 input-style="text-align: right;"') \
                         .classes('w-24 bg-white rounded-lg') \
-                        .bind_value(project.ressursbruk[year], 'predicted_resources',forward=lambda x: int(x) if x not in (None,"") else None)
+                        .bind_value(project.ressursbruk[year], 'predicted_resources')
 
     async def prune_unchanged_fields() -> ProjectData:
         """Compare original and modified ProjectData, and remove unchanged submodels."""
