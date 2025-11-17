@@ -2,7 +2,6 @@ import os
 from typing import Union, Annotated
 from sqlmodel import SQLModel, Field
 from sqlalchemy import Column
-from nicegui import binding
 from pydantic import BaseModel, BeforeValidator
 
 import uuid
@@ -10,7 +9,7 @@ from sqlalchemy.dialects.mssql import UNIQUEIDENTIFIER
 from datetime import datetime
 from dotenv import load_dotenv
 
-from .validators import to_datetime
+from .validators import to_datetime, convert_to_int
 
 load_dotenv()
 
@@ -246,10 +245,10 @@ class ResursbehovUI(BaseModel):
     ressursbehov_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
     estimert_budsjet_forklaring: str = ''
-    estimert_budsjet_behov: int | None = None
-    antall_mandsverk_intern: int | None = None
-    antall_mandsverk_ekstern: int | None = None
-    antall_mandsverk_ekstern_betalt: int | None = None
+    estimert_budsjet_behov: Annotated[Union[int, None], BeforeValidator(convert_to_int)]
+    antall_mandsverk_intern: Annotated[Union[int, None], BeforeValidator(convert_to_int)]
+    antall_mandsverk_ekstern: Annotated[Union[int, None], BeforeValidator(convert_to_int)]
+    antall_mandsverk_ekstern_betalt:Annotated[Union[int, None], BeforeValidator(convert_to_int)]
     risiko_av_estimat: str = ''
     risiko_av_estimat_tall: int | None = None
     kompetanse_som_trengs: str = ''
@@ -280,7 +279,7 @@ class RessursbrukUI(BaseModel):
     ressursbruk_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
     year: int | None = None
-    predicted_resources: int | None = None
+    predicted_resources: Annotated[Union[int, None], BeforeValidator(convert_to_int)]
     sist_endret: datetime | None = None
     endret_av: str = ''
     er_gjeldende: bool = True
