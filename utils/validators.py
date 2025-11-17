@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 from typing import Union
 import json
 
@@ -32,4 +32,12 @@ def to_list(value):
 def to_json(value: list[str] | None):
     """Convert UI list back to JSON string for the dataclass."""
     return json.dumps(value or [],  ensure_ascii=False)
-    
+
+def to_date_str(value):
+    print(type(value))
+    """Convert datetime/date to ISO date string (YYYY-MM-DD) for NiceGUI."""
+    if not value:
+        return None
+    if isinstance(value, datetime):
+        return value.date().isoformat()
+    return str(value)
