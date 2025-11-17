@@ -62,7 +62,7 @@ steps_dict = {
     "home": "Oversikt over dine prosjekter",
     "oppdater_prosjekt": "Ny/ endre prosjekt",
     "status_rapportering": "Rapportering av status",
-    "leveranse": "Om Digdirs leveranse"
+    "vurdering": "Vurdering"
 }
 field_mapping = {
     "navn_tiltak": "Navn prosjekt",
@@ -107,7 +107,7 @@ def main_page():
         return 
 
     layout(active_step='home', title='Oversikt over dine prosjekter', steps=steps_dict)
-    ui.label('This is the home page.')
+    ui.label('Detter er hjemesiden. Her vil vi publisere en oversikt med informasjon om prosjektene.')
     dashboard()
 
 
@@ -127,22 +127,36 @@ async def overordnet():
     layout(active_step='oppdater_prosjekt', title='Rediger prosjekt', steps=steps_dict)
     ui.label(f'Prosjekter for {user_name}').classes('text-lg font-bold mb-2')
     if email in super_user:
-        ui.label('You are a super user and can edit all projects.')
+        ui.label('Du er logget inn som superbruker og ser alle prosjekter').classes('text-sm italic mb-4')
         projects = await run.io_bound(db_connector.get_projects, None)
     else:        
         projects = await run.io_bound(db_connector.get_projects, email)
     
-    # store original copy for later diff
+    def new_project():
+        # Create a blank ProjectData with default values
+        new_id = str(uuid.uuid4())
 
-    
+        # Store it in the same place so project_detail() can load it
+        ui.notify("New project created", type="positive")
+
+        # Navigate to the same project page as "edit"
+        ui.navigate.to(f"/project/new/{new_id}")
     # create a table with editable fields
-    if not projects:
-        ui.label('No projects found for this user.')
-        return
-    ORIGINAL_PROJECTS[email] = [p for p in projects]
     with ui.column().classes("w-full gap-2"):
+
+        # ALWAYS show the "New Project" button
         with ui.row().classes('gap-2'):
-            ui.button("➕ New Project", on_click=lambda: new_project()).props("color=secondary")
+            ui.button("➕ Ny prosjekt", on_click=lambda: new_project()).props("color=secondary")
+
+        # If no projects: show message and stop rendering the table only
+        if not projects:
+            ui.label('Ingen prosjekter funnet for denne brukeren')
+            return
+
+        ORIGINAL_PROJECTS[email] = [p for p in projects]
+    # with ui.column().classes("w-full gap-2"):
+    #     with ui.row().classes('gap-2'):
+    #         ui.button("➕ New Project", on_click=lambda: new_project()).props("color=secondary")
 
         visible_keys = [
             key for key in projects[0].keys()
@@ -206,15 +220,7 @@ async def overordnet():
             '''
         )
    
-    def new_project():
-        # Create a blank ProjectData with default values
-        new_id = str(uuid.uuid4())
 
-        # Store it in the same place so project_detail() can load it
-        ui.notify("New project created", type="positive")
-
-        # Navigate to the same project page as "edit"
-        ui.navigate.to(f"/project/new/{new_id}")
 
 @ui.page('/project/{prosjekt_id}')
 def project_detail(prosjekt_id: str):
@@ -259,12 +265,12 @@ def digdir():
         return
 
 
-@ui.page("/leveranse")
+@ui.page("/vurdering")
 def leveranse():
     user = require_login()
     if not user:
         return 
-    layout(active_step='leveranse', title='Om Digdirs leveranse',steps=steps_dict)
+    layout(active_step='vurdering', title='Vurdering',steps=steps_dict)
     # digdir_leveranse("leveranse")
 
 
