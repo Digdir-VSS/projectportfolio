@@ -2,20 +2,20 @@ from datetime import datetime
 from typing import Union
 import json
 
-def to_datetime(value: str):
+def to_datetime(value: str) -> datetime:
     if isinstance(value, str):
         return datetime.strptime(value,"%Y-%m-%d")
     else:
         return value
 
-def convert_to_int(number: Union[str, int, None]):
+def convert_to_int(number: Union[str, int, None]) -> Union[str, None]:
     if isinstance(number, str):
         return int(number)
     if isinstance(number, int):
         return number
     return None
 
-def to_list(value):
+def to_list(value) ->list[str]:
     """Safely parse a JSON list or return [] if invalid."""
     if value is None:
         return []
@@ -29,12 +29,11 @@ def to_list(value):
     except json.JSONDecodeError:
         return []
 
-def to_json(value: list[str] | None):
+def to_json(value: list[str] | None) -> str:
     """Convert UI list back to JSON string for the dataclass."""
     return json.dumps(value or [],  ensure_ascii=False)
 
-def to_date_str(value):
-    print(type(value))
+def to_date_str(value: Union[datetime, None]) -> Union[str, None]:
     """Convert datetime/date to ISO date string (YYYY-MM-DD) for NiceGUI."""
     if not value:
         return None
