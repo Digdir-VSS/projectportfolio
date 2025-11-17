@@ -9,8 +9,8 @@ import ast, asyncio
 import copy
 from pydantic import BaseModel
 
-from utils.validators import to_json, to_list
-from static_variables import DIGITALISERINGS_STRATEGI,IGNORED_FIELDS
+from utils.validators import to_json, to_list, to_date_str
+from static_variables import DIGITALISERINGS_STRATEGI,IGNORED_FIELDS, ESTIMAT_LISTE
     
 brukere = load_users()
 
@@ -70,11 +70,11 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
                 ).classes('w-full bg-white rounded-lg').bind_value(project.fremskritt, "fase")
         with ui.element("div").classes('col-span-1 row-span-1 col-start-4 row-start-5'):
             ui.label('Start').classes('text-lg font-bold')
-            ui.date().bind_value(project.portfolioproject, "oppstart").props("outlined dense clearable color=primary").classes("w-full")
+            ui.input().bind_value(project.portfolioproject, "oppstart", backward=to_date_str).props("outlined dense type=date clearable color=primary").classes("w-full")
             
         with ui.element("div").classes('col-span-1 row-span-1 col-start-5 row-start-5'):
             ui.label("Planlagt ferdig").classes('text-lg font-bold')
-            ui.date().bind_value(project.fremskritt, "planlagt_ferdig").props("outlined dense clearable color=primary").classes("w-full")
+            ui.input().bind_value(project.fremskritt, "planlagt_ferdig",backward=to_date_str).props("outlined dense type=date clearable color=primary").classes("w-full")
             
     with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
         ui.label("2. Begrunnelse").classes('col-span-1 row-span-1 col-start-1 row-start-2 text-lg font-bold underline mt-4 mb-2')
@@ -121,7 +121,6 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
         with ui.element("div").classes('col-span-1 row-span-1 col-start-3 row-start-3'):
             ui.label("Er kompetanser tilgjengelige internt").classes('text-lg font-bold')
             kompetanse_internt_list = ["Ja","Ja, men det er ikke tilstrekkelig kapasitet","Delvis","Nei"]
-            #selected_kompetanse = project.resursbehov.kompetanse_tilgjengelig  if project.resursbehov.kompetanse_tilgjengelig in kompetanse_internt_list else None
             ui.select(kompetanse_internt_list).classes('w-full bg-white rounded-lg').bind_value( project.resursbehov, "kompetanse_tilgjengelig")
         
 
@@ -143,9 +142,9 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
 
         with ui.element("div").classes('col-span-1 row-span-1 col-start-1 row-start-4'):
             ui.label("Hvor sikkert er estimatet").classes('text-lg font-bold')
-            estimat_liste = ["Relativt sikkert","Noe usikkert","Svært usikkert"]
+            
 
-            ui.select(estimat_liste).classes('w-full bg-white rounded-lg').bind_value(project.resursbehov,"risiko_av_estimat")
+            ui.select(ESTIMAT_LISTE).classes('w-full bg-white rounded-lg').bind_value(project.resursbehov,"risiko_av_estimat")
 
         with ui.element("div").classes('col-span-4 row-span-2 col-start-2 row-start-4'):
             ui.label('Forklaring estimat').classes('text-lg font-bold')
