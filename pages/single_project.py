@@ -3,11 +3,11 @@ from datetime import datetime, date
 import ast
 import json
 from utils.azure_users import load_users
-from utils.db_connection import DBConnector
+from utils.db_connection import DBConnector, ProjectData
 from utils.data_models import RessursbrukUI
 import ast, asyncio
 import copy
-from dataclasses import asdict, is_dataclass
+from pydantic import BaseModel
 
 def to_list(value):
     """Safely parse a JSON list or return [] if invalid."""
@@ -34,11 +34,13 @@ def to_date_str(value):
     if isinstance(value, datetime):
         return value.date().isoformat()
     return str(value)
+
 def to_datetime(value):
     if isinstance(value, str):
         return datetime.strptime(value,"%Y-%m-%d")
     else:
         return value
+    
 brukere = load_users()
 
 brukere_list = list(brukere.keys())
@@ -97,11 +99,11 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
                 ).classes('w-full bg-white rounded-lg').bind_value(project.fremskritt, "fase")
         with ui.element("div").classes('col-span-1 row-span-1 col-start-4 row-start-5'):
             ui.label('Start').classes('text-lg font-bold')
-            ui.input().bind_value(project.portfolioproject, "oppstart", backward=to_date_str, forward=to_datetime).props("outlined dense type=date clearable color=primary").classes("w-full")
+            ui.date().bind_value(project.portfolioproject, "oppstart").props("outlined dense clearable color=primary").classes("w-full")
             
         with ui.element("div").classes('col-span-1 row-span-1 col-start-5 row-start-5'):
             ui.label("Planlagt ferdig").classes('text-lg font-bold')
-            ui.input().bind_value(project.fremskritt, "planlagt_ferdig",backward=to_date_str,forward=to_datetime).props("outlined dense type=date clearable color=primary").classes("w-full")
+            ui.date().bind_value(project.fremskritt, "planlagt_ferdig").props("outlined dense clearable color=primary").classes("w-full")
             
     with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
         ui.label("2. Begrunnelse").classes('col-span-1 row-span-1 col-start-1 row-start-2 text-lg font-bold underline mt-4 mb-2')
@@ -216,7 +218,7 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
                         .classes('w-24 bg-white rounded-lg') \
                         .bind_value(project.ressursbruk[year], 'predicted_resources',forward=lambda x: int(x) if x not in (None,"") else None)
 
-    async def prune_unchanged_fields() -> "ProjectData":
+    async def prune_unchanged_fields() -> ProjectData:
         """Compare original and modified ProjectData, and remove unchanged submodels."""
         IGNORED_FIELDS = {
             "sist_endret",
@@ -228,8 +230,8 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
 
         def clean_dict(d):
             """Convert dataclass to dict and remove ignored fields."""
-            if is_dataclass(d):
-                d = asdict(d)
+            if isinstance(d, BaseModel):
+                d = d.model_dump()
             return {k: v for k, v in d.items() if k not in IGNORED_FIELDS}
 
         # Iterate through each submodel (e.g. fremskritt, tiltak, etc.)
@@ -265,7 +267,7 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
                 continue
 
             # Compare regular dataclass models
-            if is_dataclass(modified_value) and is_dataclass(original_value):
+            if isinstance(modified_value, BaseModel) and isinstance(original_value, BaseModel):
                 if clean_dict(original_value) == clean_dict(modified_value):
                     setattr(project, field_name, None)
 
