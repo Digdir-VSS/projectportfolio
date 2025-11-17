@@ -23,3 +23,4 @@ FIELD_MAPPING = {
     "date_modified": "Sist endret",
 }
 AVDELINGER = ['BOD','DSS' ,'KOM','FEL','STL' ,'TUU', 'VIS'] 
+ESTIMAT_LISTE= ["Relativt sikkert","Noe usikkert","Svært usikkert"]
