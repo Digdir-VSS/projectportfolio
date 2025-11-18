@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Union
+from typing import Union, Optional
 import json
 
 def to_datetime(value: str) -> datetime:
@@ -19,6 +19,27 @@ def convert_to_int(number: Union[str, int, None]) -> Union[int, None]:
             return number
     else:
         return None
+
+def convert_to_int_from_thousand_sign(text: Optional[str]) -> Optional[int]:
+    if text is None:
+        return None
+
+    text = text.strip()
+    if text == '':
+        return None
+
+    # Remove thousand separators (commas and spaces)
+    clean = text.replace(',', '').replace(' ', '')
+
+    try:
+        return int(clean)
+    except ValueError:
+        return None
+
+def add_thousand_split(number: Union[str, None]) -> Union[str, None]:
+    if number is None:
+        return None
+    return f'{int(number):,}'
 
 def to_list(value) ->list[str]:
     """Safely parse a JSON list or return [] if invalid."""
