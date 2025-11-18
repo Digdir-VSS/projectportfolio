@@ -45,3 +45,6 @@ def to_date_str(value: Union[datetime, None]) -> Union[str, None]:
     if isinstance(value, datetime):
         return value.date().isoformat()
     return str(value)
+
+def validate_budget_distribution(total: int, year_1: int, year_2: int, year_3: int) -> bool:
+    return total != sum((year_1, year_2, year_3))
