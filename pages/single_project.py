@@ -7,7 +7,7 @@ import ast, asyncio
 import copy
 from pydantic import BaseModel
 
-from utils.validators import to_json, to_list, to_date_str, convert_to_int
+from utils.validators import to_json, to_list, to_date_str, convert_to_int, add_thousand_split, convert_to_int_from_thousand_sign
 from static_variables import DIGITALISERINGS_STRATEGI,IGNORED_FIELDS, ESTIMAT_LISTE
     
 brukere = load_users()
@@ -136,7 +136,7 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
 
         with ui.element("div").classes('col-span-2 row-span-1 col-start-1 row-start-3'):
             ui.label('Estimert budsjettbehov i kr').classes('text-lg font-bold')
-            ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "estimert_budsjet_behov", forward=convert_to_int)
+            ui.input().props('inputmode=numeric').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "estimert_budsjet_behov", backward=add_thousand_split, forward=convert_to_int_from_thousand_sign)
 
         with ui.element("div").classes('col-span-1 row-span-1 col-start-1 row-start-4'):
             ui.label("Hvor sikkert er estimatet").classes('text-lg font-bold')
