@@ -1,7 +1,5 @@
 from nicegui import ui, run
-from datetime import datetime, date
 import ast
-import json
 from utils.azure_users import load_users
 from utils.db_connection import DBConnector, ProjectData
 from utils.data_models import RessursbrukUI
@@ -9,7 +7,7 @@ import ast, asyncio
 import copy
 from pydantic import BaseModel
 
-from utils.validators import to_json, to_list, to_date_str
+from utils.validators import to_json, to_list, to_date_str, convert_to_int
 from static_variables import DIGITALISERINGS_STRATEGI,IGNORED_FIELDS, ESTIMAT_LISTE
     
 brukere = load_users()
@@ -128,17 +126,17 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
 
         with ui.element("div").classes('col-span-1 row-span-1 col-start-4 row-start-3'):
             ui.label("Interne").classes('text-lg font-bold')
-            ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "antall_mandsverk_intern")
+            ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "antall_mandsverk_intern", forward=convert_to_int)
         with ui.element("div").classes('col-span-1 row-span-1 col-start-5 row-start-3'):
             ui.label("Eksterne").classes('text-lg font-bold')
-            ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "antall_mandsverk_ekstern")
+            ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "antall_mandsverk_ekstern", forward=convert_to_int)
 
     with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
         ui.label("5. Finansieringsbehov (ekskl. interne ressurser)​").classes('col-span-5 row-span-1 col-start-1 row-start-2 text-lg font-bold underline mt-4 mb-2')
 
         with ui.element("div").classes('col-span-2 row-span-1 col-start-1 row-start-3'):
             ui.label('Estimert budsjettbehov i kr').classes('text-lg font-bold')
-            ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "estimert_budsjet_behov")
+            ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "estimert_budsjet_behov", forward=convert_to_int)
 
         with ui.element("div").classes('col-span-1 row-span-1 col-start-1 row-start-4'):
             ui.label("Hvor sikkert er estimatet").classes('text-lg font-bold')
@@ -165,7 +163,7 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
                         ui.label(f"{year}").classes('font-medium')
                         ui.input().props('type=number min=0 step=1 input-style="text-align: right;"') \
                         .classes('w-24 bg-white rounded-lg') \
-                        .bind_value(project.ressursbruk[year], 'predicted_resources')
+                        .bind_value(project.ressursbruk[year], 'predicted_resources', forward=convert_to_int)
 
     async def prune_unchanged_fields() -> ProjectData:
         """Compare original and modified ProjectData, and remove unchanged submodels."""
