@@ -8,12 +8,17 @@ def to_datetime(value: str) -> datetime:
     else:
         return value
 
-def convert_to_int(number: Union[str, int, None]) -> Union[str, None]:
-    if isinstance(number, str):
-        return int(number)
-    if isinstance(number, int):
-        return number
-    return None
+def convert_to_int(number: Union[str, int, None]) -> Union[int, None]:
+    if number:
+        if isinstance(number, str):
+            if number.isdigit():
+                return int(number)
+            else:
+                return None
+        if isinstance(number, int):
+            return number
+    else:
+        return None
 
 def to_list(value) ->list[str]:
     """Safely parse a JSON list or return [] if invalid."""
