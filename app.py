@@ -154,9 +154,6 @@ async def overordnet():
             return
 
         ORIGINAL_PROJECTS[email] = [p for p in projects]
-    # with ui.column().classes("w-full gap-2"):
-    #     with ui.row().classes('gap-2'):
-    #         ui.button("➕ New Project", on_click=lambda: new_project()).props("color=secondary")
 
         visible_keys = [
             key for key in projects[0].keys()
@@ -266,7 +263,7 @@ def digdir():
 
 
 @ui.page("/vurdering")
-def leveranse():
+def vurdering():
     user = require_login()
     if not user:
         return 

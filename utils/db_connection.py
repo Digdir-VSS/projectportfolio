@@ -126,7 +126,6 @@ class DBConnector:
         with Session(self.engine) as session:
             if email:
                 email_in_list=f"%{email}%"
-                print(email_in_list)
                 stmt = select(*columns).where(PortfolioProject.er_gjeldende == True, PortfolioProject.epost_kontakt.like(email_in_list))
             else:
                 stmt = select(*columns).where(PortfolioProject.er_gjeldende == True)
