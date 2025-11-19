@@ -238,6 +238,9 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
     async def check_or_update():
         kontaktpersoner = project.portfolioproject.kontaktpersoner
         navn = project.portfolioproject.navn
+        if validate_budget_distribution(project.resursbehov.estimert_budsjet_behov, project.ressursbruk[2026].predicted_resources,project.ressursbruk[2027].predicted_resources,project.ressursbruk[2028].predicted_resources):
+            ui.notify("❌ Summen av ressursbehov for 2026–2028 stemmer ikke med totalbudsjettet.", type="warning", position="top", close_button="OK")
+            return
         if isinstance(kontaktpersoner, str):
             try:
                 parsed = ast.literal_eval(kontaktpersoner)
