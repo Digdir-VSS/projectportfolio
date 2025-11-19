@@ -93,7 +93,7 @@ def main_page():
         return 
 
     layout(active_step='home', title='Oversikt over dine prosjekter', steps=STEPS_DICT)
-    ui.label('This is the home page.')
+    ui.label('Detter er hjemesiden. Her vil vi publisere en oversikt med informasjon om prosjektene.')
     dashboard()
 
 
@@ -113,7 +113,7 @@ async def overordnet():
     layout(active_step='oppdater_prosjekt', title='Rediger prosjekt', steps=STEPS_DICT)
     ui.label(f'Prosjekter for {user_name}').classes('text-lg font-bold mb-2')
     if email in super_user:
-        ui.label('You are a super user and can edit all projects.')
+        ui.label('Du er logget inn som superbruker og ser alle prosjekter').classes('text-sm italic mb-4')
         projects = await run.io_bound(db_connector.get_projects, None)
     else:        
         projects = await run.io_bound(db_connector.get_projects, email)
@@ -247,7 +247,7 @@ def digdir():
         return
 
 
-@ui.page("/leveranse")
+@ui.page("/vurdering")
 def leveranse():
     user = require_login()
     if not user:
