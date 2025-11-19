@@ -161,9 +161,9 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
                     # Container for each year (vertical inside horizontal)
                     with ui.element("div").classes("flex flex-row items-center"):
                         ui.label(f"{year}").classes('font-medium')
-                        ui.input().props('type=number min=0 step=1 input-style="text-align: right;"') \
+                        ui.input().props('inputmode=numeric min=0 step=1 input-style="text-align: right;"') \
                         .classes('w-24 bg-white rounded-lg') \
-                        .bind_value(project.ressursbruk[year], 'predicted_resources', forward=convert_to_int)
+                        .bind_value(project.ressursbruk[year], 'predicted_resources', backward=add_thousand_split, forward=convert_to_int_from_thousand_sign)
 
     async def prune_unchanged_fields() -> ProjectData:
         """Compare original and modified ProjectData, and remove unchanged submodels."""
