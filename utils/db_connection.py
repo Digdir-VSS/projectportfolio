@@ -126,7 +126,9 @@ class DBConnector:
 
         with Session(self.engine) as session:
             if email:
-                stmt = select(*columns).where(PortfolioProject.er_gjeldende == True, PortfolioProject.epost_kontakt == email)
+                email_in_list=f"%{email}%"
+                print(email_in_list)
+                stmt = select(*columns).where(PortfolioProject.er_gjeldende == True, PortfolioProject.epost_kontakt.like(email_in_list))
             else:
                 stmt = select(*columns).where(PortfolioProject.er_gjeldende == True)
             results = session.exec(stmt).all()
@@ -210,7 +212,7 @@ class DBConnector:
     wait=wait_exponential(multiplier=1, min=1, max=10),
     stop=stop_after_attempt(3),
     reraise=True)
-    
+
     def update_project(self, project: ProjectData, prosjekt_id: UUID, e_mail: str):
         now = datetime.utcnow()
 

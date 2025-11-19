@@ -261,5 +261,5 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
 
         await prune_unchanged_fields()
 
-    ui.button("💾 Save", on_click=check_or_update).classes("mt-4")
+    ui.button("💾 Lagre", on_click=check_or_update).classes("mt-4")
 
