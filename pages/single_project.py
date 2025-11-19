@@ -7,7 +7,7 @@ import ast, asyncio
 import copy
 from pydantic import BaseModel
 
-from utils.validators import to_json, to_list, to_date_str, convert_to_int, add_thousand_split, convert_to_int_from_thousand_sign
+from utils.validators import to_json, to_list, to_date_str, convert_to_int, add_thousand_split, convert_to_int_from_thousand_sign, validate_budget_distribution
 from static_variables import DIGITALISERINGS_STRATEGI,IGNORED_FIELDS, ESTIMAT_LISTE
     
 brukere = load_users()
