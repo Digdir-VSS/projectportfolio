@@ -252,7 +252,7 @@ def leveranse():
     user = require_login()
     if not user:
         return 
-    layout(active_step='leveranse', title='Om Digdirs leveranse',steps=STEPS_DICT)
+    layout(active_step='vurdering', title='Vurdering',steps=STEPS_DICT)
     # digdir_leveranse("leveranse")
 
 
