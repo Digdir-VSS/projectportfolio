@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 from sqlalchemy.exc import OperationalError
-from utils.db_connection import DBConnector
+from backend.database.db_connection import DBConnector
 
 
 @pytest.fixture
