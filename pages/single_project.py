@@ -3,8 +3,8 @@ from datetime import datetime, date
 import ast
 import json
 from utils.azure_users import load_users
-from utils.db_connection import DBConnector
-from utils.data_models import RessursbrukUI
+from backend.database.db_connection import DBConnector
+from  backend.database.data_models import RessursbrukUI
 import ast, asyncio
 import copy
 from dataclasses import asdict, is_dataclass
