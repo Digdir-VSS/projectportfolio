@@ -39,7 +39,7 @@ class PortfolioProjectUI(BaseModel):
     prosjekt_sk_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
     navn: str = ''
-    oppstart: Annotated[Union[datetime, None], BeforeValidator(to_datetime)]
+    oppstart: Annotated[datetime | None, BeforeValidator(to_datetime)] = None
     avdeling: str = ''
     tiltakseier: str = ''
     kontaktpersoner: str = ''
@@ -124,7 +124,7 @@ class FremskrittUI(BaseModel):
     prosjekt_id: uuid.UUID | None = None
     fremskritt: str | None = None
     fase: str = ''
-    planlagt_ferdig: Annotated[Union[datetime, None], BeforeValidator(to_datetime)]
+    planlagt_ferdig: Annotated[datetime | None, BeforeValidator(to_datetime)] = None
     sist_endret: datetime | None = None
     endret_av: str = ''
     er_gjeldende: bool | None = None
@@ -245,10 +245,10 @@ class ResursbehovUI(BaseModel):
     ressursbehov_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
     estimert_budsjet_forklaring: str = ''
-    estimert_budsjet_behov: Annotated[Union[int, None], BeforeValidator(convert_to_int)]
-    antall_mandsverk_intern: Annotated[Union[int, None], BeforeValidator(convert_to_int)]
-    antall_mandsverk_ekstern: Annotated[Union[int, None], BeforeValidator(convert_to_int)]
-    antall_mandsverk_ekstern_betalt:Annotated[Union[int, None], BeforeValidator(convert_to_int)]
+    estimert_budsjet_behov: Annotated[int | None, BeforeValidator(convert_to_int)] = None
+    antall_mandsverk_intern: Annotated[int | None, BeforeValidator(convert_to_int)] = None
+    antall_mandsverk_ekstern: Annotated[int | None, BeforeValidator(convert_to_int)] = None
+    antall_mandsverk_ekstern_betalt:Annotated[int | None, BeforeValidator(convert_to_int)] = None
     risiko_av_estimat: str = ''
     risiko_av_estimat_tall: int | None = None
     kompetanse_som_trengs: str = ''
@@ -279,7 +279,7 @@ class RessursbrukUI(BaseModel):
     ressursbruk_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
     year: int | None = None
-    predicted_resources: Annotated[Union[int, None], BeforeValidator(convert_to_int)]
+    predicted_resources: Annotated[int | None, BeforeValidator(convert_to_int)] = None
     sist_endret: datetime | None = None
     endret_av: str = ''
     er_gjeldende: bool = True
