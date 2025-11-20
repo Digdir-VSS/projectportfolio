@@ -64,7 +64,7 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
         with ui.element("div").classes('col-span-1 row-span-1 col-start-4 row-start-4'):
             ui.label("Hvilken fase skal startes").classes('text-lg font-bold')
             ui.select(
-                ['Konsept', 'Planlegging', 'Gjennomføring','Problem/ide'],
+                ['Konsept', 'Planlegging', 'Gjennomføring','Problem/ide'],value=None
                 ).classes('w-full bg-white rounded-lg').bind_value(project.fremskritt, "fase")
         with ui.element("div").classes('col-span-1 row-span-1 col-start-4 row-start-5'):
             ui.label('Start').classes('text-lg font-bold')
@@ -119,7 +119,7 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
         with ui.element("div").classes('col-span-1 row-span-1 col-start-3 row-start-3'):
             ui.label("Er kompetanser tilgjengelige internt").classes('text-lg font-bold')
             kompetanse_internt_list = ["Ja","Ja, men det er ikke tilstrekkelig kapasitet","Delvis","Nei"]
-            ui.select(kompetanse_internt_list).classes('w-full bg-white rounded-lg').bind_value( project.resursbehov, "kompetanse_tilgjengelig")
+            ui.select(kompetanse_internt_list, value=None).classes('w-full bg-white rounded-lg').bind_value( project.resursbehov, "kompetanse_tilgjengelig")
         
 
         ui.label("Estimert antall månedsverk for fasen").classes('text-lg font-bold col-span-2 row-span-2 col-start-4 row-start-2')
@@ -142,7 +142,7 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
             ui.label("Hvor sikkert er estimatet").classes('text-lg font-bold')
             
 
-            ui.select(ESTIMAT_LISTE).classes('w-full bg-white rounded-lg').bind_value(project.resursbehov,"risiko_av_estimat")
+            ui.select(ESTIMAT_LISTE, value = None).classes('w-full bg-white rounded-lg').bind_value(project.resursbehov,"risiko_av_estimat")
 
         with ui.element("div").classes('col-span-4 row-span-2 col-start-2 row-start-4'):
             ui.label('Forklaring estimat').classes('text-lg font-bold')
@@ -238,9 +238,10 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
     async def check_or_update():
         kontaktpersoner = project.portfolioproject.kontaktpersoner
         navn = project.portfolioproject.navn
-        if validate_budget_distribution(project.resursbehov.estimert_budsjet_behov, project.ressursbruk[2026].predicted_resources,project.ressursbruk[2027].predicted_resources,project.ressursbruk[2028].predicted_resources):
-            ui.notify("❌ Summen av ressursbehov for 2026–2028 stemmer ikke med totalbudsjettet.", type="warning", position="top", close_button="OK")
-            return
+        if project.ressursbruk[2026].predicted_resources and project.ressursbruk[2027].predicted_resources and project.ressursbruk[2028].predicted_resources:
+            if validate_budget_distribution(project.resursbehov.estimert_budsjet_behov, project.ressursbruk[2026].predicted_resources,project.ressursbruk[2027].predicted_resources,project.ressursbruk[2028].predicted_resources):
+                ui.notify("❌ Summen av ressursbehov for 2026–2028 stemmer ikke med totalbudsjettet.", type="warning", position="top", close_button="OK")
+                return
         if isinstance(kontaktpersoner, str):
             try:
                 parsed = ast.literal_eval(kontaktpersoner)
