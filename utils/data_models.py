@@ -40,12 +40,12 @@ class PortfolioProjectUI(BaseModel):
     prosjekt_id: uuid.UUID | None = None
     navn: str = ''
     oppstart: Annotated[datetime | None, BeforeValidator(to_datetime)] = None
-    avdeling: str = ''
-    tiltakseier: str = ''
-    kontaktpersoner: str = ''
-    epost_kontakt: str = ''
+    avdeling: str | None = None
+    tiltakseier: str | None = None
+    kontaktpersoner: str | None = None
+    epost_kontakt: str | None = None
     sist_endret: datetime | None = None
-    endret_av: str = ''
+    endret_av: str | None = None
     er_gjeldende: bool = True
 
 
@@ -70,8 +70,8 @@ class DigitaliseringStrategi(SQLModel, table=True):
 class DigitaliseringStrategiUI(BaseModel):
     digitalisering_strategi_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
-    sammenheng_digital_strategi: str = ''
-    digital_strategi_kommentar: str = ''
+    sammenheng_digital_strategi: str | None = None
+    digital_strategi_kommentar: str | None = None
     sist_endret: datetime | None = None
     endret_av: str = ''
     er_gjeldende: bool = True
@@ -123,10 +123,10 @@ class FremskrittUI(BaseModel):
     fremskritt_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
     fremskritt: str | None = None
-    fase: str = ''
+    fase: str | None = None
     planlagt_ferdig: Annotated[datetime | None, BeforeValidator(to_datetime)] = None
     sist_endret: datetime | None = None
-    endret_av: str = ''
+    endret_av: str | None = None
     er_gjeldende: bool | None = None
 
 
@@ -156,16 +156,16 @@ class Malbilde(SQLModel, table=True):
 class MalbildeUI(BaseModel):
     malbilde_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
-    malbilde_1_beskrivelse: str = ''
+    malbilde_1_beskrivelse: str | None = None
     malbilde_1_vurdering: str | None = None
-    malbilde_2_beskrivelse: str = ''
+    malbilde_2_beskrivelse: str| None = None
     malbilde_2_vurdering: str | None = None
-    malbilde_3_beskrivelse: str = ''
+    malbilde_3_beskrivelse: str | None = None
     malbilde_3_vurdering: str | None = None
-    malbilde_4_beskrivelse: str = ''
+    malbilde_4_beskrivelse: str | None = None
     malbilde_4_vurdering: str | None = None
     sist_endret: datetime | None = None
-    endret_av: str = ''
+    endret_av: str | None = None
     er_gjeldende: bool = True
 
 class Problemstilling(SQLModel, table=True):
@@ -188,9 +188,9 @@ class Problemstilling(SQLModel, table=True):
 class ProblemstillingUI(BaseModel):
     problem_stilling_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
-    problem: str = ''
+    problem: str | None = None
     sist_endret: datetime | None = None
-    endret_av: str = ''
+    endret_av: str | None = None
     er_gjeldende: bool = True
 
 class Rapportering(SQLModel, table=True):
@@ -244,17 +244,17 @@ class Resursbehov(SQLModel, table=True):
 class ResursbehovUI(BaseModel):
     ressursbehov_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
-    estimert_budsjet_forklaring: str = ''
+    estimert_budsjet_forklaring: str | None = None
     estimert_budsjet_behov: Annotated[int | None, BeforeValidator(convert_to_int)] = None
     antall_mandsverk_intern: Annotated[int | None, BeforeValidator(convert_to_int)] = None
     antall_mandsverk_ekstern: Annotated[int | None, BeforeValidator(convert_to_int)] = None
     antall_mandsverk_ekstern_betalt:Annotated[int | None, BeforeValidator(convert_to_int)] = None
-    risiko_av_estimat: str = ''
+    risiko_av_estimat: str | None = None
     risiko_av_estimat_tall: int | None = None
-    kompetanse_som_trengs: str = ''
-    kompetanse_tilgjengelig: str = ''
+    kompetanse_som_trengs: str | None = None
+    kompetanse_tilgjengelig: str | None = None
     sist_endret: datetime | None = None
-    endret_av: str = ''
+    endret_av: str | None = None
     er_gjeldende: bool = True
 
 class Ressursbruk(SQLModel, table=True):
@@ -281,7 +281,7 @@ class RessursbrukUI(BaseModel):
     year: int | None = None
     predicted_resources: Annotated[int | None, BeforeValidator(convert_to_int)] = None
     sist_endret: datetime | None = None
-    endret_av: str = ''
+    endret_av: str | None = None
     er_gjeldende: bool = True
 
 class Risikovurdering(SQLModel, table=True):
@@ -304,9 +304,9 @@ class Risikovurdering(SQLModel, table=True):
 class RisikovurderingUI(BaseModel):
     risiko_vurdering_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
-    vurdering: str = ''
+    vurdering: str | None = None
     sist_endret: datetime | None = None
-    endret_av: str  = ''
+    endret_av: str  | None = None
     er_gjeldende: bool = True
 
 class Samarabeid(SQLModel, table=True):
@@ -331,11 +331,11 @@ class Samarabeid(SQLModel, table=True):
 class SamarabeidUI(BaseModel):
     samarbeid_id: uuid.UUID = uuid.uuid4() 
     prosjekt_id : uuid.UUID | None = None
-    samarbeid_intern: str = ''
-    samarbeid_eksternt: str = ''
-    avhengigheter_andre: str = ''
+    samarbeid_intern: str | None = None
+    samarbeid_eksternt: str | None = None
+    avhengigheter_andre: str | None = None
     sist_endret: datetime | None = None
-    endret_av: str = ''
+    endret_av: str | None = None
     er_gjeldende: bool = True
 
 class Tiltak(SQLModel, table=True):
@@ -358,9 +358,9 @@ class Tiltak(SQLModel, table=True):
 class TiltakUI(BaseModel):
     tiltak_id: uuid.UUID = uuid.uuid4()
     prosjekt_id : uuid.UUID | None = None
-    tiltak_beskrivelse: str = ''
+    tiltak_beskrivelse: str | None = None
     sist_endret: datetime | None = None
-    endret_av: str = ''
+    endret_av: str | None = None
     er_gjeldende: bool = True
 
 class UnderstøtteTildelingsbrev(SQLModel, table=True):
