@@ -5,6 +5,7 @@ from typing import List
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from .database.db import db_connector
+from .database.db_connection import ProjectData
 
 load_dotenv()
 
@@ -32,7 +33,7 @@ async def verify_api_key(x_api_key: str = Header(...)):
 
 
 @router.get("prosjekt/{prosjekt_id}")
-async def get_innnleverings_prosjekt(prosjekt_id: str, access_key: str = Depends(verify_api_key)):
+async def get_innnleverings_prosjekt(prosjekt_id: str, access_key: str = Depends(verify_api_key)) -> ProjectData:
     return db_connector.get_single_project(prosjekt_id)
 
 @router.post("/ny_prosjekt")
