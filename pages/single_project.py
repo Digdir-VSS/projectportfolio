@@ -216,75 +216,15 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
                         .classes('w-24 bg-white rounded-lg') \
                         .bind_value(project.ressursbruk[year], 'predicted_resources',forward=lambda x: int(x) if x not in (None,"") else None)
 
-    async def prune_unchanged_fields() -> "ProjectData":
-        """Compare original and modified ProjectData, and remove unchanged submodels."""
-        IGNORED_FIELDS = {
-            "sist_endret",
-            "endret_av",
-            "er_gjeldende",
-            "prosjekt_id",
-            "ressursbruk_id",
-        }
-
-        def clean_dict(d):
-            """Convert dataclass to dict and remove ignored fields."""
-            if is_dataclass(d):
-                d = asdict(d)
-            return {k: v for k, v in d.items() if k not in IGNORED_FIELDS}
-
-        # Iterate through each submodel (e.g. fremskritt, tiltak, etc.)
-        for field_name, original_value in original_project.__dict__.items():
-            modified_value = getattr(project, field_name, None)
-
-            # Skip if the modified field doesn't exist
-            if modified_value is None:
-                continue
-
-            # Handle ressursbruk separately (it's a dict of year → RessursbrukUI)
-            if field_name == "ressursbruk":
-                new_dict = {}
-                original_ressurs = getattr(original_project, field_name, {}) or {}
-
-                for year, modified_year_obj in modified_value.items():
-                    original_year_obj = original_ressurs.get(year)
-
-
-                    if original_year_obj is None:
-                        new_dict[year] = modified_year_obj
-                        continue
-                    
-                    orig_clean = clean_dict(original_year_obj)
-                    mod_clean = clean_dict(modified_year_obj)
-                    if orig_clean != mod_clean:
-                        new_dict[year] = modified_year_obj
-                # If nothing changed for any year, clear the entire dict
-                if not new_dict:
-                    setattr(project, field_name, None)
-                else:
-                    setattr(project, field_name, new_dict)
-                continue
-
-            # Compare regular dataclass models
-            if is_dataclass(modified_value) and is_dataclass(original_value):
-                if clean_dict(original_value) == clean_dict(modified_value):
-                    setattr(project, field_name, None)
-
-        if project.portfolioproject:
-            kontakt_list = ast.literal_eval(project.portfolioproject.kontaktpersoner)
-
-            if project.portfolioproject.tiltakseier:
-                if project.portfolioproject.tiltakseier not in kontakt_list:
-                    kontakt_list.append(project.portfolioproject.tiltakseier)
-            kontakt_epost = [brukere.get(i) for i in kontakt_list]
-            project.portfolioproject.epost_kontakt = str(kontakt_epost)
-
+    async def save_object(mod_obj) -> "ProjectData":
+     
         with ui.dialog() as dialog:
             ui.label("💾 Lagrer endringer... Vennligst vent ⏳")
             ui.spinner(size="lg", color="primary")
         try:
             dialog.open()
             await asyncio.sleep(0.1)  # Allow UI to render spinner
-            await run.io_bound(db_connector.update_project, project, prosjekt_id, email)
+            await run.io_bound(db_connector.update_project, mod_obj, prosjekt_id, email)
 
             ui.notify("✅ Endringer lagret i databasen!", type="positive", position="top")
 
@@ -312,8 +252,9 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
         or (isinstance(kontaktpersoner, str) and kontaktpersoner.strip() == ""):
             ui.notify("❌ Du må fylle inn kontaktperson.", type="warning", position="top", close_button="OK")
             return
+        mod_obj = db_connector.prune_unchanged_fields(original_obj=original_project,modified_obj= project, brukere=brukere)
+        await save_object(mod_obj)
 
-        await prune_unchanged_fields()
 
     ui.button("💾 Lagre", on_click=check_or_update).classes("mt-4")
 
