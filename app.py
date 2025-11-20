@@ -1,4 +1,6 @@
-from nicegui import ui, app, Client, run
+from nicegui import ui, Client, run
+from nicegui import app 
+from fastapi import FastAPI
 from typing import Any
 from cachetools import TTLCache
 from azure.identity import DefaultAzureCredential
@@ -7,7 +9,8 @@ import os
 from dotenv import load_dotenv
 from msal import ConfidentialClientApplication
 
-from utils.db_connection import DBConnector, ProjectData
+from backend.database.db_connection import DBConnector, ProjectData
+from backend.backend_api import router as innleverings_router
 from pages.login_page import register_login_pages
 from pages.dashboard import dashboard
 from pages.single_project import project_detail as digdir_overordnet_info_page
@@ -15,6 +18,8 @@ from pages.utils import layout
 import uuid
 
 load_dotenv()
+
+app.include_router(innleverings_router)
 
 # Client ID and secret correspond to your Entra Application registration
 credential = DefaultAzureCredential()
@@ -277,6 +282,7 @@ def leveranse():
 if __name__ in {"__main__", "__mp_main__"}:
     
     ui.run(
+        app,
         title='Projectportfolio',
         host="0.0.0.0",    
         port=8080,
