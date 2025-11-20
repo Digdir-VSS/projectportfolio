@@ -16,6 +16,7 @@ test_budget = [
     (5, 50, 25, 25, True),
     (100, 50, "25", 25, False),
     (100, 50, None, 25, True),
+    (None, None, None, None, False)
 ]
 
 @pytest.mark.parametrize("total, year_1, year_2, year_3, result", test_budget)
