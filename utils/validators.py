@@ -67,5 +67,14 @@ def to_date_str(value: Union[datetime, None]) -> Union[str, None]:
         return value.date().isoformat()
     return str(value)
 
-def validate_budget_distribution(total: int, year_1: int, year_2: int, year_3: int) -> bool:
-    return total != sum((year_1, year_2, year_3))
+def turn_none_to_zero(year_input: int | None) -> int:
+    if year_input is None:
+        return 0
+    else: 
+        return year_input
+
+def validate_budget_distribution(total: int, year_1: int | None, year_2: int | None, year_3: int | None) -> bool:
+    converted_year_1 = turn_none_to_zero(convert_to_int(year_1))
+    converted_year_2 = turn_none_to_zero(convert_to_int(year_2))
+    converted_year_3 = turn_none_to_zero(convert_to_int(year_3))
+    return total != sum((converted_year_1, converted_year_2, converted_year_3))
