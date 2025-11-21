@@ -79,3 +79,8 @@ def validate_budget_distribution(total: int, year_1: int | None, year_2: int | N
     converted_year_3 = turn_none_to_zero(convert_to_int(year_3))
     converted_total = turn_none_to_zero(convert_to_int(total))
     return converted_total != sum((converted_year_1, converted_year_2, converted_year_3))
+
+def sort_selected_values(e):
+    if isinstance(e.value, list):
+        sorted_values = sorted(e.value)
+        e.sender.value = sorted_values
