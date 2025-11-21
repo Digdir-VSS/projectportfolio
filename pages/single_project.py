@@ -3,8 +3,9 @@ from datetime import datetime, date
 import ast
 import json
 from utils.azure_users import load_users
-from backend.database.db_connection import DBConnector
-from  backend.database.data_models import RessursbrukUI
+from utils.backend_client import api_update_project
+from backend.database.db_connection import ProjectData
+from backend.database.data_models import RessursbrukUI
 import ast, asyncio
 import copy
 from dataclasses import asdict, is_dataclass
@@ -29,29 +30,40 @@ def to_json(value: list[str] | None):
 
 def to_date_str(value):
     """Convert datetime/date to ISO date string (YYYY-MM-DD) for NiceGUI."""
-    if value is None:
-        return None
+    if not value:
+        return ""
     if isinstance(value, datetime):
         return value.date().isoformat()
-    return str(value)
+    if isinstance(value, date):
+        return value.isoformat()
+    # If backend returns string like '2024-01-01T00:00:00'
+    try:
+        return datetime.fromisoformat(value).date().isoformat()
+    except Exception:
+        return ""
+
 def to_datetime(value):
-    if isinstance(value, str):
-        return datetime.strptime(value,"%Y-%m-%d")
-    else:
-        return value
+    """Convert NiceGUI input ('YYYY-MM-DD') into datetime."""
+    if not value:
+        return None
+
+    # Browser date input gives only dates (YYYY-MM-DD)
+    try:
+        return datetime.strptime(value, "%Y-%m-%d")
+    except ValueError:
+        pass
+
+    # If backend gave full ISO string
+    try:
+        return datetime.fromisoformat(value)
+    except ValueError:
+        return None
+    
 brukere = load_users()
 
 brukere_list = list(brukere.keys())
 avdelinger = ['BOD','DSS' ,'KOM','FEL','STL' ,'TUU', 'VIS', 'KI Norge']
-def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user_name: str, new: bool = False):
-    if new:
-        project = db_connector.create_empty_project(email=email, prosjekt_id=prosjekt_id)
-    else:
-        project = db_connector.get_single_project(prosjekt_id)
-        if not project:
-            ui.label('Project not found or you do not have access to it.')
-            return
-    original_project = copy.deepcopy(project)
+def project_detail(prosjekt_id: str, email: str, project: ProjectData, original_project: ProjectData):
     ui.markdown(f"## *Porteføljeinitiativ:* **{project.portfolioproject.navn}**").classes('text-xl font-bold')
     with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
         ui.label("1. Grunninformasjon").classes('col-span-1 row-span-1 col-start-1 row-start-3 text-lg font-bold underline mt-4 mb-2')
@@ -284,7 +296,7 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
         try:
             dialog.open()
             await asyncio.sleep(0.1)  # Allow UI to render spinner
-            await run.io_bound(db_connector.update_project, project, prosjekt_id, email)
+            await api_update_project(project, prosjekt_id, email)
 
             ui.notify("✅ Endringer lagret i databasen!", type="positive", position="top")
 

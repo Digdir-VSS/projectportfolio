@@ -43,7 +43,7 @@ async def create_new_innnleverings_prosjekt(ny_prosjekt: NyProsjekt, access_key:
 
 
 @router.get("/prosjekter")
-async def get_innnleverings_prosjekt(email: str | None, access_key: str = Depends(verify_api_key)) -> list[dict[str, Any]]:
+async def get_innnleverings_prosjekt(email: str | None = None, access_key: str = Depends(verify_api_key)) -> list[dict[str, Any]]:
     """ Remember that email needs to be passed as search query parameter in request"""
     return db_connector.get_projects(email)
 

@@ -1,7 +1,8 @@
-from typing import Any
+from typing import Any, Optional
 from uuid import UUID, uuid4
 import struct
-from datetime import datetime
+from pydantic import BaseModel
+from datetime import datetime, date
 import urllib
 from sqlmodel import SQLModel, Session, select, update
 from sqlalchemy import create_engine, event, Engine
@@ -15,18 +16,20 @@ from typing import Dict
 from .data_models import PortfolioProject, PortfolioProjectUI, Fremskritt, FremskrittUI, Resursbehov, ResursbehovUI, Samarabeid, SamarabeidUI, Problemstilling, ProblemstillingUI, Tiltak, TiltakUI, Risikovurdering, RisikovurderingUI, Malbilde,  MalbildeUI, DigitaliseringStrategi, DigitaliseringStrategiUI, RessursbrukUI,Ressursbruk
 load_dotenv()
 
-@dataclass
-class ProjectData:
-    fremskritt: FremskrittUI | None
-    samarabeid: SamarabeidUI | None
-    portfolioproject: PortfolioProjectUI | None
-    problemstilling: ProblemstillingUI | None
-    tiltak: TiltakUI | None
-    risikovurdering: RisikovurderingUI | None
-    malbilde: MalbildeUI | None
-    resursbehov: ResursbehovUI | None
-    digitaliseringstrategi: DigitaliseringStrategiUI | None
-    ressursbruk: Dict[int, RessursbrukUI] = field(default_factory=dict)
+class ProjectData(BaseModel):
+    fremskritt: Optional[FremskrittUI]
+    samarabeid: Optional[SamarabeidUI]
+    portfolioproject: Optional[PortfolioProjectUI]
+    problemstilling: Optional[ProblemstillingUI]
+    tiltak: Optional[TiltakUI]
+    risikovurdering: Optional[RisikovurderingUI]
+    malbilde: Optional[MalbildeUI]
+    resursbehov: Optional[ResursbehovUI]
+    digitaliseringstrategi: Optional[DigitaliseringStrategiUI]
+    ressursbruk: Dict[int, RessursbrukUI] = {}
+
+    class Config:
+        arbitrary_types_allowed = True  # allows your UI dataclasses
 
 def get_single_project_data(project_id: str, sql_models: dict):
     statement_dict = {}
