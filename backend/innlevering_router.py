@@ -3,6 +3,7 @@ from fastapi import Depends, HTTPException, status, Header
 import os
 from typing import Any
 from dotenv import load_dotenv
+from uuid import UUID
 from pydantic import BaseModel
 from .database.db import db_connector
 from .database.db_connection import ProjectData
@@ -45,3 +46,7 @@ async def create_new_innnleverings_prosjekt(ny_prosjekt: NyProsjekt, access_key:
 async def get_innnleverings_prosjekt(email: str | None, access_key: str = Depends(verify_api_key)) -> list[dict[str, Any]]:
     """ Remember that email needs to be passed as search query parameter in request"""
     return db_connector.get_projects(email)
+
+@router.post("/update_prosjekt")
+async def update_innnleverings_prosjekt(project: ProjectData, prosjekt_id: UUID, e_mail: str, access_key: str = Depends(verify_api_key)):
+    return db_connector.update_project(project, prosjekt_id, e_mail)
