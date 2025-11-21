@@ -1,44 +1,15 @@
 from nicegui import ui, run
-from datetime import datetime, date
 import ast
-import json
 from utils.azure_users import load_users
-from utils.db_connection import DBConnector
+from utils.db_connection import DBConnector, ProjectData
 from utils.data_models import RessursbrukUI
 import ast, asyncio
 import copy
-from dataclasses import asdict, is_dataclass
+from pydantic import BaseModel
 
-def to_list(value):
-    """Safely parse a JSON list or return [] if invalid."""
-    if value is None:
-        return []
-    if isinstance(value, list):  # Already deserialized
-        return value
-    value = str(value).strip()
-    if not value or value.lower() in ("null", "none"):
-        return []
-    try:
-        return json.loads(value)
-    except json.JSONDecodeError:
-        return []
-
-def to_json(value: list[str] | None):
-    """Convert UI list back to JSON string for the dataclass."""
-    return json.dumps(value or [],  ensure_ascii=False)
-
-def to_date_str(value):
-    """Convert datetime/date to ISO date string (YYYY-MM-DD) for NiceGUI."""
-    if value is None:
-        return None
-    if isinstance(value, datetime):
-        return value.date().isoformat()
-    return str(value)
-def to_datetime(value):
-    if isinstance(value, str):
-        return datetime.strptime(value,"%Y-%m-%d")
-    else:
-        return value
+from utils.validators import to_json, to_list, to_date_str, convert_to_int, add_thousand_split, convert_to_int_from_thousand_sign, validate_budget_distribution, sort_selected_values
+from static_variables import DIGITALISERINGS_STRATEGI,IGNORED_FIELDS, ESTIMAT_LISTE
+    
 brukere = load_users()
 
 brukere_list = list(brukere.keys())
@@ -63,12 +34,22 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
             ui.select(brukere_list, with_input=True, multiple=False, validation= lambda value: "Du må velge en tiltakseier" if value == None else None).props(
                     "outlined dense clearable options-dense color=primary").classes(
                         "w-full bg-white rounded-lg").props('use-chips').bind_value(project.portfolioproject, "tiltakseier")
- 
+        with ui.element("div").classes('col-span-1 row-span-1 col-start-4 row-start-4'):
+            ui.label("Hvilken fase skal startes").classes('text-lg font-bold')
+            ui.select(
+                ['Konsept', 'Planlegging', 'Gjennomføring','Problem/ide'],value=None
+                ).classes('w-full bg-white rounded-lg').bind_value(project.fremskritt, "fase")
         with ui.element("div").classes('col-span-3 row-span-1 col-start-1 row-start-5'):
             ui.label("Kontaktperson").classes('text-lg font-bold')
-            ui.select(brukere_list, with_input=True, multiple=True).props(
+            ui.select(brukere_list, with_input=True, multiple=True, on_change=sort_selected_values).props(
                     "clearable options-dense color=primary").classes("w-full bg-white rounded-lg").props('use-chips').bind_value(project.portfolioproject, "kontaktpersoner", forward=to_json, backward=to_list)
-
+        with ui.element("div").classes('col-span-1 row-span-1 col-start-4 row-start-5'):
+            ui.label('Start').classes('text-lg font-bold')
+            ui.input().bind_value(project.portfolioproject, "oppstart", backward=to_date_str).props("outlined dense type=date clearable color=primary").classes("w-full")
+            
+        with ui.element("div").classes('col-span-1 row-span-1 col-start-5 row-start-5'):
+            ui.label("Planlagt ferdig").classes('text-lg font-bold')
+            ui.input().bind_value(project.fremskritt, "planlagt_ferdig",backward=to_date_str).props("outlined dense type=date clearable color=primary").classes("w-full")
         with ui.element("div").classes('col-span-3 row-span-1 col-start-1 row-start-6'):
             ui.label('Hovedavdeling').classes('text-lg font-bold')
             ui.radio(
@@ -80,6 +61,7 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
             ui.select(
                 avdelinger,
                 multiple=True,
+                on_change=sort_selected_values
             ).props("use-chips").classes("w-full bg-white rounded-lg").bind_value(project.samarabeid, "samarbeid_intern", forward=to_json, backward=to_list)
 
         with ui.element("div").classes('col-span-1 row-span-1 col-start-3 row-start-7'):
@@ -90,18 +72,8 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
             ui.label("Avhengigheter andre oppgaver").classes('text-lg font-bold')
             ui.textarea().classes('w-full bg-white rounded-lg').bind_value(project.samarabeid, "avhengigheter_andre")
 
-        with ui.element("div").classes('col-span-1 row-span-1 col-start-4 row-start-4'):
-            ui.label("Hvilken fase skal startes").classes('text-lg font-bold')
-            ui.select(
-                ['Konsept', 'Planlegging', 'Gjennomføring','Problem/ide'],
-                ).classes('w-full bg-white rounded-lg').bind_value(project.fremskritt, "fase")
-        with ui.element("div").classes('col-span-1 row-span-1 col-start-4 row-start-5'):
-            ui.label('Start').classes('text-lg font-bold')
-            ui.input().bind_value(project.portfolioproject, "oppstart", backward=to_date_str, forward=to_datetime).props("outlined dense type=date clearable color=primary").classes("w-full")
-            
-        with ui.element("div").classes('col-span-1 row-span-1 col-start-5 row-start-5'):
-            ui.label("Planlagt ferdig").classes('text-lg font-bold')
-            ui.input().bind_value(project.fremskritt, "planlagt_ferdig",backward=to_date_str,forward=to_datetime).props("outlined dense type=date clearable color=primary").classes("w-full")
+        
+        
             
     with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
         ui.label("2. Begrunnelse").classes('col-span-1 row-span-1 col-start-1 row-start-2 text-lg font-bold underline mt-4 mb-2')
@@ -130,32 +102,11 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
         ui.textarea().classes('col-span-2 row-span-2 col-start-1 row-start-8 bg-white rounded-lg').bind_value(project.malbilde, "malbilde_3_beskrivelse")
         ui.label("4 Vi løser komplekse utfordringer sammen og tilpasser oss en verden i rask endring").classes('col-span-2 row-span-1 col-start-3 row-start-7 text-lg')
         ui.textarea().classes('col-span-2 row-span-2 col-start-3 row-start-8 bg-white rounded-lg').bind_value(project.malbilde, "malbilde_4_beskrivelse")
-        digitaliserings_strategi_digdir = {
-            "6": "6: få på plass veiledning om regelverksutvikling innen digitalisering, KI og datadeling",
-            "11a": "11a: forsterke arbeidet med sammenhengende tjenester, i samarbeid med KS",
-            "11g": "11g: videreføre arbeidet med livshendelser - Dødsfall og arv",
-            "12": "12: utrede en felles digital inngang til innbyggere og andre brukere til informasjon og til digitale offentlige tjenester",
-            "13": "13: etablere en utprøvingsarena for utforsking av regulatoriske og teknologiske utfordringer i arbeidet med sammenhengende tjenester",
-            "15": "15: videreutvikle virkemidler for digitalisering og innovasjon i offentlig sektor",
-            "41": "41: etablere en nasjonal arkitektur for et felles digitalt økosystem, i samarbeid med KS",
-            "42": "42: tilby alle en digital lommebok med eID på høyt nivå",
-            "43": "43: utvikle løsninger for digital representasjon, herunder for vergemål",
-            "51": "51: samordne råd- og veiledningsressurser innenfor digital sikkerhet bedre",
-            "74": "74: samordne og styrke veiledningen om deling og bruk av data, og arbeidet med orden i eget hus",
-            "75": "75: prioritere arbeidet med å gjøre tilgjengelig nasjonale datasett som er viktige for offentlig sektor og samfunnet",
-            "76": "76: legge til rette for sektorovergripende samarbeid om standarder og formater for datautveksling for digitalisering av hele verdikjeder",
-            "87": "87: styrke veiledningsarbeidet for ansvarlig utvikling og bruk av KI, blant annet gjennom regulatoriske sandkasser",
-            "88": "88: sikre ansvarlig utvikling og bruk av KI i offentlig sektor",
-            "114": "114: følge opp Handlingsplan for auka inkludering i eit digitalt samfunn",
-            "115": "115: styrke innsatsen for å øke den digitale kompetansen hos seniorer",
-            "116": "116: styrke arbeidet med brukskvalitet, klarspråk og universell utforming i offentlige digitale tjenester",
-            "118": "118: sikre økt brukerinvolvering ved utvikling av digitale tjenester"
-        }
-        reverse_digdir = {v: k for k, v in digitaliserings_strategi_digdir.items()}
-        with ui.element("div").classes('col-span-4 row-span-3 col-start-1 row-start-10'):
+
+        with ui.element("div").classes('col-span-4 row-span-5 col-start-1 row-start-10'):
             ui.label('Tilknyttet tiltak i Digitaliseringsstrategien').classes('text-lg font-bold')
-            ui.select(list(digitaliserings_strategi_digdir.values()), multiple=True).classes('w-full bg-white rounded-lg').bind_value(project.digitaliseringstrategi, "sammenheng_digital_strategi", forward=to_json, backward=to_list)
-        with ui.element("div").classes('col-span-4 row-span-2 col-start-1 row-start-13'):
+            ui.select(DIGITALISERINGS_STRATEGI, multiple=True, on_change=sort_selected_values).classes('w-full bg-white rounded-lg').props('use-chips').bind_value(project.digitaliseringstrategi, "sammenheng_digital_strategi", forward=to_json, backward=to_list)
+        with ui.element("div").classes('col-span-4 row-span-2 col-start-1 row-start-15'):
                 ui.label('Eventuell beskrivelse av kobling til Digitaliseringsstrategien').classes('text-lg font-bold')
                 ui.textarea().bind_value(project.digitaliseringstrategi, "digital_strategi_kommentar").classes('w-full bg-white rounded-lg')
 
@@ -169,36 +120,25 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
         with ui.element("div").classes('col-span-1 row-span-1 col-start-3 row-start-3'):
             ui.label("Er kompetanser tilgjengelige internt").classes('text-lg font-bold')
             kompetanse_internt_list = ["Ja","Ja, men det er ikke tilstrekkelig kapasitet","Delvis","Nei"]
-            #selected_kompetanse = project.resursbehov.kompetanse_tilgjengelig  if project.resursbehov.kompetanse_tilgjengelig in kompetanse_internt_list else None
-            ui.select(kompetanse_internt_list).classes('w-full bg-white rounded-lg').bind_value( project.resursbehov, "kompetanse_tilgjengelig")
+            ui.select(kompetanse_internt_list, value=None).classes('w-full bg-white rounded-lg').bind_value( project.resursbehov, "kompetanse_tilgjengelig")
         
 
         ui.label("Estimert antall månedsverk for fasen").classes('text-lg font-bold col-span-2 row-span-2 col-start-4 row-start-2')
 
         with ui.element("div").classes('col-span-1 row-span-1 col-start-4 row-start-3'):
             ui.label("Interne").classes('text-lg font-bold')
-            ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "antall_mandsverk_intern",forward=lambda x: int(x) if x not in (None,"") else None)
+            ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "antall_mandsverk_intern", forward=convert_to_int)
         with ui.element("div").classes('col-span-1 row-span-1 col-start-5 row-start-3'):
             ui.label("Eksterne").classes('text-lg font-bold')
-            ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "antall_mandsverk_ekstern",forward=lambda x: int(x) if x not in (None,"") else None)
+            ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "antall_mandsverk_ekstern", forward=convert_to_int)
 
     with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
         ui.label("5. Finansieringsbehov (ekskl. interne ressurser)​").classes('col-span-5 row-span-1 col-start-1 row-start-2 text-lg font-bold underline mt-4 mb-2')
 
         with ui.element("div").classes('col-span-2 row-span-1 col-start-1 row-start-3'):
             ui.label('Estimert budsjettbehov i kr').classes('text-lg font-bold')
-            ui.input().props('type=number min=0').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "estimert_budsjet_behov",forward=lambda x: int(x) if x not in (None,"") else None)
+            ui.input().props('inputmode=numeric').classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "estimert_budsjet_behov", backward=add_thousand_split, forward=convert_to_int_from_thousand_sign)
 
-        with ui.element("div").classes('col-span-1 row-span-1 col-start-1 row-start-4'):
-            ui.label("Hvor sikkert er estimatet").classes('text-lg font-bold')
-            estimat_liste = ["Relativt sikkert","Noe usikkert","Svært usikkert"]
-
-            ui.select(estimat_liste).classes('w-full bg-white rounded-lg').bind_value(project.resursbehov,"risiko_av_estimat")
-
-        with ui.element("div").classes('col-span-4 row-span-2 col-start-2 row-start-4'):
-            ui.label('Forklaring estimat').classes('text-lg font-bold')
-            ui.textarea(value=project.resursbehov.estimert_budsjet_forklaring).classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "estimert_budsjet_forklaring")
-        
         with ui.element("div").classes('col-span-3 row-span-2 col-start-3 row-start-3'):
             ui.label('Fordeling av budsjett pr år').classes('text-lg font-bold')
             
@@ -212,24 +152,30 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
                     # Container for each year (vertical inside horizontal)
                     with ui.element("div").classes("flex flex-row items-center"):
                         ui.label(f"{year}").classes('font-medium')
-                        ui.input().props('type=number min=0 step=1 input-style="text-align: right;"') \
+                        ui.input().props('inputmode=numeric min=0 step=1 input-style="text-align: right;"') \
                         .classes('w-24 bg-white rounded-lg') \
-                        .bind_value(project.ressursbruk[year], 'predicted_resources',forward=lambda x: int(x) if x not in (None,"") else None)
+                        .bind_value(project.ressursbruk[year], 'predicted_resources', backward=add_thousand_split, forward=convert_to_int_from_thousand_sign)
 
-    async def prune_unchanged_fields() -> "ProjectData":
+        with ui.element("div").classes('col-span-1 row-span-1 col-start-1 row-start-4'):
+            ui.label("Hvor sikkert er estimatet").classes('text-lg font-bold')
+            
+
+            ui.select(ESTIMAT_LISTE, value = None).classes('w-full bg-white rounded-lg').bind_value(project.resursbehov,"risiko_av_estimat")
+
+        with ui.element("div").classes('col-span-4 row-span-2 col-start-2 row-start-4'):
+            ui.label('Forklaring estimat').classes('text-lg font-bold')
+            ui.textarea(value=project.resursbehov.estimert_budsjet_forklaring).classes('w-full bg-white rounded-lg').bind_value(project.resursbehov, "estimert_budsjet_forklaring")
+        
+        
+
+    async def prune_unchanged_fields() -> ProjectData:
         """Compare original and modified ProjectData, and remove unchanged submodels."""
-        IGNORED_FIELDS = {
-            "sist_endret",
-            "endret_av",
-            "er_gjeldende",
-            "prosjekt_id",
-            "ressursbruk_id",
-        }
+
 
         def clean_dict(d):
             """Convert dataclass to dict and remove ignored fields."""
-            if is_dataclass(d):
-                d = asdict(d)
+            if isinstance(d, BaseModel):
+                d = d.model_dump()
             return {k: v for k, v in d.items() if k not in IGNORED_FIELDS}
 
         # Iterate through each submodel (e.g. fremskritt, tiltak, etc.)
@@ -265,7 +211,7 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
                 continue
 
             # Compare regular dataclass models
-            if is_dataclass(modified_value) and is_dataclass(original_value):
+            if isinstance(modified_value, BaseModel) and isinstance(original_value, BaseModel):
                 if clean_dict(original_value) == clean_dict(modified_value):
                     setattr(project, field_name, None)
 
@@ -295,6 +241,10 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
     async def check_or_update():
         kontaktpersoner = project.portfolioproject.kontaktpersoner
         navn = project.portfolioproject.navn
+        if project.ressursbruk[2026].predicted_resources or project.ressursbruk[2027].predicted_resources or project.ressursbruk[2028].predicted_resources:
+            if validate_budget_distribution(project.resursbehov.estimert_budsjet_behov, project.ressursbruk[2026].predicted_resources,project.ressursbruk[2027].predicted_resources,project.ressursbruk[2028].predicted_resources):
+                ui.notify("❌ Summen av ressursbehov for 2026–2028 stemmer ikke med totalbudsjettet.", type="warning", position="top", close_button="OK")
+                return
         if isinstance(kontaktpersoner, str):
             try:
                 parsed = ast.literal_eval(kontaktpersoner)

@@ -9,7 +9,8 @@ from sqlalchemy.exc import OperationalError
 from azure.identity import ClientSecretCredential
 from tenacity import retry, retry_if_exception_type, wait_exponential, stop_after_attempt
 from dotenv import load_dotenv
-from dataclasses import dataclass, is_dataclass, asdict, field
+from dataclasses import dataclass, field
+from pydantic import BaseModel
 from typing import Dict
 
 from utils.data_models import PortfolioProject, PortfolioProjectUI, Fremskritt, FremskrittUI, Resursbehov, ResursbehovUI, Samarabeid, SamarabeidUI, Problemstilling, ProblemstillingUI, Tiltak, TiltakUI, Risikovurdering, RisikovurderingUI, Malbilde,  MalbildeUI, DigitaliseringStrategi, DigitaliseringStrategiUI, RessursbrukUI,Ressursbruk
@@ -50,10 +51,10 @@ def ui_to_sqlmodel(ui_obj, sqlmodel_cls: type[SQLModel]) -> SQLModel:
     if ui_obj is None:
         return None
 
-    if not is_dataclass(ui_obj):
+    if not isinstance(ui_obj, BaseModel):
         raise TypeError(f"Expected dataclass instance, got {type(ui_obj)}")
 
-    ui_dict = asdict(ui_obj)
+    ui_dict = ui_obj.model_dump()
 
     # Filter out any keys that are not defined in the SQLModel class
     sqlmodel_fields = {name for name in sqlmodel_cls.__fields__}
