@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 from msal import ConfidentialClientApplication
 
 from backend.database.db_connection import DBConnector, ProjectData
-from backend.backend_api import router as innleverings_router
+from backend.innlevering_router import router as innleverings_router
 from pages.login_page import register_login_pages
 from pages.dashboard import dashboard
 from pages.single_project import project_detail as digdir_overordnet_info_page
