@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 from uuid import UUID, uuid4
 import struct
 from datetime import datetime
@@ -17,23 +17,18 @@ from utils.azure_users import load_users
 from utils.data_models import PortfolioProject, PortfolioProjectUI, Fremskritt, FremskrittUI, Resursbehov, ResursbehovUI, Samarabeid, SamarabeidUI, Problemstilling, ProblemstillingUI, Tiltak, TiltakUI, Risikovurdering, RisikovurderingUI, Malbilde,  MalbildeUI, DigitaliseringStrategi, DigitaliseringStrategiUI, RessursbrukUI,Ressursbruk, Finansiering, FinansieringUI, Vurdering, VurderingUI
 load_dotenv()
 brukere = load_users()
-@dataclass
-class ProjectData:
-    fremskritt: FremskrittUI | None
-    samarabeid: SamarabeidUI | None
-    portfolioproject: PortfolioProjectUI | None
-    problemstilling: ProblemstillingUI | None
-    tiltak: TiltakUI | None
-    risikovurdering: RisikovurderingUI | None
-    malbilde: MalbildeUI | None
-    resursbehov: ResursbehovUI | None
-    digitaliseringstrategi: DigitaliseringStrategiUI | None
-    ressursbruk: Dict[int, RessursbrukUI] = field(default_factory=dict)
 
-@dataclass
-class VurderingData:
-    finansiering: FinansieringUI | None
-    vurdering: VurderingUI | None
+class ProjectData(BaseModel):
+    fremskritt: Optional[FremskrittUI]
+    samarabeid: Optional[SamarabeidUI]
+    portfolioproject: Optional[PortfolioProjectUI]
+    problemstilling: Optional[ProblemstillingUI]
+    tiltak: Optional[TiltakUI]
+    risikovurdering: Optional[RisikovurderingUI]
+    malbilde: Optional[MalbildeUI]
+    resursbehov: Optional[ResursbehovUI]
+    digitaliseringstrategi: Optional[DigitaliseringStrategiUI]
+    ressursbruk: Dict[int, RessursbrukUI] | None 
 
 
 def get_single_project_data(project_id: str, sql_models: dict):
