@@ -16,8 +16,13 @@ from pages.utils import layout
 import uuid
 from static_variables import STEPS_DICT
 
+#app.include_router(innleverings_router)
+
+<<<<<<< HEAD
+=======
 load_dotenv()
 
+>>>>>>> 029ab4b (run on two ports)
 # Client ID and secret correspond to your Entra Application registration
 credential = DefaultAzureCredential()
 client = SecretClient(
