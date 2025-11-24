@@ -34,7 +34,6 @@ class PortfolioProject(SQLModel, table=True):
     er_gjeldende: bool = False
 
 
-
 class PortfolioProjectUI(BaseModel):
     prosjekt_sk_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None

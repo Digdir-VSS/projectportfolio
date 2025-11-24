@@ -27,7 +27,7 @@ class ProjectData(BaseModel):
     malbilde: Optional[MalbildeUI]
     resursbehov: Optional[ResursbehovUI]
     digitaliseringstrategi: Optional[DigitaliseringStrategiUI]
-    ressursbruk: Dict[int, RessursbrukUI] = {}
+    ressursbruk: Dict[int, RessursbrukUI] | None 
 
     class Config:
         arbitrary_types_allowed = True  # allows your UI dataclasses
