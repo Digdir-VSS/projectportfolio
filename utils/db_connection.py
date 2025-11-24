@@ -10,6 +10,7 @@ from azure.identity import ClientSecretCredential
 from tenacity import retry, retry_if_exception_type, wait_exponential, stop_after_attempt
 from dotenv import load_dotenv
 from dataclasses import dataclass, is_dataclass, asdict, field
+from pydantic import BaseModel
 from typing import Dict
 import ast
 
@@ -57,29 +58,73 @@ def ui_to_sqlmodel(ui_obj, sqlmodel_cls: type[SQLModel]) -> SQLModel:
     if ui_obj is None:
         return None
 
-    if not is_dataclass(ui_obj):
+    if not isinstance(ui_obj, BaseModel):
         raise TypeError(f"Expected dataclass instance, got {type(ui_obj)}")
 
-    ui_dict = asdict(ui_obj)
+    ui_dict = ui_obj.model_dump()
 
     # Filter out any keys that are not defined in the SQLModel class
     sqlmodel_fields = {name for name in sqlmodel_cls.__fields__}
     filtered_data = {k: v for k, v in ui_dict.items() if k in sqlmodel_fields}
 
     return sqlmodel_cls(**filtered_data)   
+# def clean_dict(d):
+#     IGNORED_FIELDS = {
+#             "sist_endret",
+#             "endret_av",
+#             "er_gjeldende",
+#             "prosjekt_id",
+#             "ressursbruk_id",
+#         }
+#     """Convert dataclass to dict and remove ignored fields."""
+#     if is_dataclass(d):
+#         d = asdict(d)
+#     return {k: v for k, v in d.items() if k not in IGNORED_FIELDS}
 def clean_dict(d):
     IGNORED_FIELDS = {
-            "sist_endret",
-            "endret_av",
-            "er_gjeldende",
-            "prosjekt_id",
-            "ressursbruk_id",
-        }
-    """Convert dataclass to dict and remove ignored fields."""
+        "sist_endret",
+        "endret_av",
+        "er_gjeldende",
+        "prosjekt_id",
+        "ressursbruk_id",
+    }
+
+    # dataclass → dict
     if is_dataclass(d):
         d = asdict(d)
-    return {k: v for k, v in d.items() if k not in IGNORED_FIELDS}
 
+    # SQLModel / Pydantic → dict
+    elif hasattr(d, "model_dump"):  # SQLModel & Pydantic v2
+        d = d.model_dump()
+
+    # Fallback: convert an object's __dict__ (if it has one)
+    elif hasattr(d, "__dict__"):
+        d = d.__dict__
+
+    # If not a dict after all attempts → nothing to compare, return as-is
+    if not isinstance(d, dict):
+        return d
+
+    # Remove ignored fields
+    return {k: v for k, v in d.items() if k not in IGNORED_FIELDS}
+def get_single_page(engine, project_id: str, sql_models: dict):
+    sql_model_dict = {}
+    project_id = UUID(project_id)
+
+    with Session(engine) as session:
+        stmt_dict = get_single_project_data(project_id, sql_models)
+
+        for sql_model_name, sql_statement in stmt_dict.items():
+            if sql_model_name == "ressursbruk":
+                result = session.exec(sql_statement).all()
+                sql_model_dict[sql_model_name] = result or []
+            else:
+                result = session.exec(sql_statement).first()
+                if result:
+                    sql_model_dict[sql_model_name] = result
+                else:
+                    sql_model_dict[sql_model_name] = sql_models[sql_model_name](prosjekt_id=project_id)
+    return sql_model_dict
 class DBConnector:
     engine: Engine
     sql_models: dict
@@ -163,7 +208,6 @@ class DBConnector:
         with Session(self.engine) as session:
             if email:
                 email_in_list=f"%{email}%"
-                print(email_in_list)
                 stmt = select(*columns).where(PortfolioProject.er_gjeldende == True, PortfolioProject.epost_kontakt.like(email_in_list))
             else:
                 stmt = select(*columns).where(PortfolioProject.er_gjeldende == True)
@@ -186,23 +230,8 @@ class DBConnector:
     
     def get_single_project(self, project_id: str, group: str = "project") -> ProjectData:
         sql_models = self.model_groups[group]["sql"]
-        ui_models = self.model_groups[group]["ui"]
-        sql_model_dict = {}
-        project_id = UUID(project_id)
-
-        with Session(self.engine) as session:
-            stmt_dict = get_single_project_data(project_id, sql_models)
-
-            for sql_model_name, sql_statement in stmt_dict.items():
-                if sql_model_name == "ressursbruk":
-                    result = session.exec(sql_statement).all()
-                    sql_model_dict[sql_model_name] = result or []
-                else:
-                    result = session.exec(sql_statement).first()
-                    if result:
-                        sql_model_dict[sql_model_name] = result
-                    else:
-                        sql_model_dict[sql_model_name] = sql_models[sql_model_name](prosjekt_id=project_id)
+        sql_model_dict = get_single_page(self.engine, project_id, sql_models)
+        
 
         # Construct UI layer
         project_data = ProjectData(
@@ -218,34 +247,7 @@ class DBConnector:
             ressursbruk={r.year: RessursbrukUI(**r.dict()) for r in sql_model_dict["ressursbruk"]},  # 👈 list of UI objects
         )
         return project_data
-    # def has_changes(existing_obj, new_obj) -> bool:
-    #     """Return True if there are meaningful differences between existing and new object fields."""
-    #     if not existing_obj:
-    #         return True  # Entirely new record
-
-    #     ignored_fields = {
-    #         "sist_endret",
-    #         "endret_av",
-    #         "er_gjeldende",
-    #         "prosjekt_id",
-    #         "ressursbruk_id",
-    #     }
-
-    #     for field_name, new_val in vars(new_obj).items():
-    #         if field_name.startswith("_") or field_name in ignored_fields:
-    #             continue
-    #         if not hasattr(existing_obj, field_name):
-    #             continue
-
-    #         old_val = getattr(existing_obj, field_name)
-
-    #         # Normalize datatypes (e.g., None vs empty string, float vs int)
-    #         if (old_val is None or old_val == "") and (new_val is None or new_val == ""):
-    #             continue
-    #         if str(old_val) != str(new_val):
-    #             return True
-
-    #     return False
+    
     @retry(retry=retry_if_exception_type(OperationalError),
     wait=wait_exponential(multiplier=1, min=1, max=10),
     stop=stop_after_attempt(3),
