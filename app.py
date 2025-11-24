@@ -18,6 +18,7 @@ from pages.dashboard import dashboard
 from pages.single_project import project_detail as digdir_overordnet_info_page
 from pages.utils import layout
 import uuid
+from static_variables import STEPS_DICT
 
 load_dotenv()
 
@@ -65,21 +66,6 @@ def require_login() -> dict[str, Any] | None:
         return None
     return claims
 
-steps_dict = {
-    "home": "Oversikt over dine prosjekter",
-    "oppdater_prosjekt": "Ny/ endre prosjekt",
-    "status_rapportering": "Rapportering av status",
-    "vurdering": "Vurdering"
-}
-field_mapping = {
-    "navn_tiltak": "Navn prosjekt",
-    "kontaktperson": "Kontaktperson",
-    "tiltakseier":"Tiltakseier",
-    "avdeling": "Hovedavdeling",
-    "fase_tiltak": "Fase",
-    "date_modified": "Sist endret",
-}
-avdelinger = ['BOD','DSS' ,'KOM','FEL','STL' ,'TUU', 'VIS']  # <-- your real avdelinger
 super_user = os.getenv("SUPER_USER")
 # keep a global cache of loaded projects for comparison
 ORIGINAL_PROJECTS: dict[str, list[ProjectData]] = {}
@@ -113,7 +99,7 @@ def main_page():
     if not user:
         return 
 
-    layout(active_step='home', title='Oversikt over dine prosjekter', steps=steps_dict)
+    layout(active_step='home', title='Oversikt over dine prosjekter', steps=STEPS_DICT)
     ui.label('Detter er hjemesiden. Her vil vi publisere en oversikt med informasjon om prosjektene.')
     dashboard()
 
@@ -131,7 +117,7 @@ async def overordnet():
         ui.notify('No email claim found in login!')
         return
 
-    layout(active_step='oppdater_prosjekt', title='Rediger prosjekt', steps=steps_dict)
+    layout(active_step='oppdater_prosjekt', title='Rediger prosjekt', steps=STEPS_DICT)
     ui.label(f'Prosjekter for {user_name}').classes('text-lg font-bold mb-2')
     if email in super_user:
         ui.label('Du er logget inn som superbruker og ser alle prosjekter').classes('text-sm italic mb-4')
@@ -139,31 +125,17 @@ async def overordnet():
     else:        
         projects = await api_get_projects(email)
     
-    def new_project():
-        # Create a blank ProjectData with default values
-        new_id = str(uuid.uuid4())
+    # store original copy for later diff
 
-        # Store it in the same place so project_detail() can load it
-        ui.notify("New project created", type="positive")
-
-        # Navigate to the same project page as "edit"
-        ui.navigate.to(f"/project/new/{new_id}")
+    
     # create a table with editable fields
+    if not projects:
+        ui.label('No projects found for this user.')
+        return
+    ORIGINAL_PROJECTS[email] = [p for p in projects]
     with ui.column().classes("w-full gap-2"):
-
-        # ALWAYS show the "New Project" button
         with ui.row().classes('gap-2'):
-            ui.button("➕ Ny prosjekt", on_click=lambda: new_project()).props("color=secondary")
-
-        # If no projects: show message and stop rendering the table only
-        if not projects:
-            ui.label('Ingen prosjekter funnet for denne brukeren')
-            return
-
-        ORIGINAL_PROJECTS[email] = [p for p in projects]
-    # with ui.column().classes("w-full gap-2"):
-    #     with ui.row().classes('gap-2'):
-    #         ui.button("➕ New Project", on_click=lambda: new_project()).props("color=secondary")
+            ui.button("➕ New Project", on_click=lambda: new_project()).props("color=secondary")
 
         visible_keys = [
             key for key in projects[0].keys()
@@ -227,7 +199,15 @@ async def overordnet():
             '''
         )
    
+    def new_project():
+        # Create a blank ProjectData with default values
+        new_id = str(uuid.uuid4())
 
+        # Store it in the same place so project_detail() can load it
+        ui.notify("New project created", type="positive")
+
+        # Navigate to the same project page as "edit"
+        ui.navigate.to(f"/project/new/{new_id}")
 
 @ui.page('/project/{prosjekt_id}')
 async def project_detail(prosjekt_id: str):
@@ -235,7 +215,7 @@ async def project_detail(prosjekt_id: str):
     user = require_login()
     if not user:
         return 
-    layout(active_step='oppdater_prosjekt', title='Prosjekt detaljer', steps=steps_dict)
+    layout(active_step='oppdater_prosjekt', title='Prosjekt detaljer', steps=STEPS_DICT)
     user_name = user["name"]
     email = user["preferred_username"]
     if not email:
@@ -255,7 +235,7 @@ def project_detail(prosjekt_id: str):
     user = require_login()
     if not user:
         return 
-    layout(active_step='oppdater_prosjekt', title='Prosjekt detaljer', steps=steps_dict)
+    layout(active_step='oppdater_prosjekt', title='Prosjekt detaljer', steps=STEPS_DICT)
 
     email = user["preferred_username"]
     user_name = user["name"]
@@ -268,7 +248,7 @@ def digdir():
     user = require_login()
     if not user:
         return 
-    layout(active_step='status_rapportering',  title='Rapportering av status',steps=steps_dict)
+    layout(active_step='status_rapportering',  title='Rapportering av status',steps=STEPS_DICT)
     # digdir_aktivitet_page('aktivitet')
     email = user["preferred_username"]
     user_name = user["name"]
@@ -282,7 +262,7 @@ def leveranse():
     user = require_login()
     if not user:
         return 
-    layout(active_step='vurdering', title='Vurdering',steps=steps_dict)
+    layout(active_step='vurdering', title='Vurdering',steps=STEPS_DICT)
     # digdir_leveranse("leveranse")
 
 

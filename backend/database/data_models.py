@@ -1,13 +1,15 @@
 import os
+from typing import Union, Annotated
 from sqlmodel import SQLModel, Field
 from sqlalchemy import Column
-from nicegui import binding
-from dataclasses import field
+from pydantic import BaseModel, BeforeValidator
 
 import uuid
 from sqlalchemy.dialects.mssql import UNIQUEIDENTIFIER
 from datetime import datetime
 from dotenv import load_dotenv
+
+from .validators import to_datetime, convert_to_int
 
 load_dotenv()
 
@@ -32,18 +34,18 @@ class PortfolioProject(SQLModel, table=True):
     er_gjeldende: bool = False
 
 
-@binding.bindable_dataclass
-class PortfolioProjectUI:
+
+class PortfolioProjectUI(BaseModel):
     prosjekt_sk_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
     navn: str = ''
-    oppstart: datetime | None = None
-    avdeling: str = ''
-    tiltakseier: str = ''
-    kontaktpersoner: str = ''
-    epost_kontakt: str = ''
+    oppstart: Annotated[datetime | None, BeforeValidator(to_datetime)] = None
+    avdeling: str | None = None
+    tiltakseier: str | None = None
+    kontaktpersoner: str | None = None
+    epost_kontakt: str | None = None
     sist_endret: datetime | None = None
-    endret_av: str = ''
+    endret_av: str | None = None
     er_gjeldende: bool = True
 
 
@@ -64,12 +66,12 @@ class DigitaliseringStrategi(SQLModel, table=True):
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
-@binding.bindable_dataclass
-class DigitaliseringStrategiUI:
+
+class DigitaliseringStrategiUI(BaseModel):
     digitalisering_strategi_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
-    sammenheng_digital_strategi: str = ''
-    digital_strategi_kommentar: str = ''
+    sammenheng_digital_strategi: str | None = None
+    digital_strategi_kommentar: str | None = None
     sist_endret: datetime | None = None
     endret_av: str = ''
     er_gjeldende: bool = True
@@ -116,15 +118,15 @@ class Fremskritt(SQLModel, table=True):
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
-@binding.bindable_dataclass
-class FremskrittUI:
+
+class FremskrittUI(BaseModel):
     fremskritt_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
-    fremskritt: str = ''
-    fase: str = ''
-    planlagt_ferdig: datetime | None = None
+    fremskritt: str | None = None
+    fase: str | None = None
+    planlagt_ferdig: Annotated[datetime | None, BeforeValidator(to_datetime)] = None
     sist_endret: datetime | None = None
-    endret_av: str = ''
+    endret_av: str | None = None
     er_gjeldende: bool | None = None
 
 
@@ -151,20 +153,19 @@ class Malbilde(SQLModel, table=True):
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
-@binding.bindable_dataclass
-class MalbildeUI:
+class MalbildeUI(BaseModel):
     malbilde_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
-    malbilde_1_beskrivelse: str = ''
-    malbilde_1_vurdering: str = ''
-    malbilde_2_beskrivelse: str = ''
-    malbilde_2_vurdering: str = ''
-    malbilde_3_beskrivelse: str = ''
-    malbilde_3_vurdering: str = ''
-    malbilde_4_beskrivelse: str = ''
-    malbilde_4_vurdering: str = ''
+    malbilde_1_beskrivelse: str | None = None
+    malbilde_1_vurdering: str | None = None
+    malbilde_2_beskrivelse: str| None = None
+    malbilde_2_vurdering: str | None = None
+    malbilde_3_beskrivelse: str | None = None
+    malbilde_3_vurdering: str | None = None
+    malbilde_4_beskrivelse: str | None = None
+    malbilde_4_vurdering: str | None = None
     sist_endret: datetime | None = None
-    endret_av: str = ''
+    endret_av: str | None = None
     er_gjeldende: bool = True
 
 class Problemstilling(SQLModel, table=True):
@@ -183,13 +184,13 @@ class Problemstilling(SQLModel, table=True):
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
-@binding.bindable_dataclass
-class ProblemstillingUI:
+
+class ProblemstillingUI(BaseModel):
     problem_stilling_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
-    problem: str = ''
+    problem: str | None = None
     sist_endret: datetime | None = None
-    endret_av: str = ''
+    endret_av: str | None = None
     er_gjeldende: bool = True
 
 class Rapportering(SQLModel, table=True):
@@ -239,21 +240,21 @@ class Resursbehov(SQLModel, table=True):
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
-@binding.bindable_dataclass
-class ResursbehovUI:
+
+class ResursbehovUI(BaseModel):
     ressursbehov_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
-    estimert_budsjet_forklaring: str = ''
-    estimert_budsjet_behov: int | None = None
-    antall_mandsverk_intern: int | None = None
-    antall_mandsverk_ekstern: int | None = None
-    antall_mandsverk_ekstern_betalt: int | None = None
-    risiko_av_estimat: str = ''
+    estimert_budsjet_forklaring: str | None = None
+    estimert_budsjet_behov: Annotated[int | None, BeforeValidator(convert_to_int)] = None
+    antall_mandsverk_intern: Annotated[int | None, BeforeValidator(convert_to_int)] = None
+    antall_mandsverk_ekstern: Annotated[int | None, BeforeValidator(convert_to_int)] = None
+    antall_mandsverk_ekstern_betalt:Annotated[int | None, BeforeValidator(convert_to_int)] = None
+    risiko_av_estimat: str | None = None
     risiko_av_estimat_tall: int | None = None
-    kompetanse_som_trengs: str = ''
-    kompetanse_tilgjengelig: str = ''
+    kompetanse_som_trengs: str | None = None
+    kompetanse_tilgjengelig: str | None = None
     sist_endret: datetime | None = None
-    endret_av: str = ''
+    endret_av: str | None = None
     er_gjeldende: bool = True
 
 class Ressursbruk(SQLModel, table=True):
@@ -273,14 +274,14 @@ class Ressursbruk(SQLModel, table=True):
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
-@binding.bindable_dataclass
-class RessursbrukUI:
+
+class RessursbrukUI(BaseModel):
     ressursbruk_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
     year: int | None = None
-    predicted_resources: int | None = None
+    predicted_resources: Annotated[int | None, BeforeValidator(convert_to_int)] = None
     sist_endret: datetime | None = None
-    endret_av: str = ''
+    endret_av: str | None = None
     er_gjeldende: bool = True
 
 class Risikovurdering(SQLModel, table=True):
@@ -299,13 +300,13 @@ class Risikovurdering(SQLModel, table=True):
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
-@binding.bindable_dataclass
-class RisikovurderingUI:
+
+class RisikovurderingUI(BaseModel):
     risiko_vurdering_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
-    vurdering: str = ''
+    vurdering: str | None = None
     sist_endret: datetime | None = None
-    endret_av: str  = ''
+    endret_av: str  | None = None
     er_gjeldende: bool = True
 
 class Samarabeid(SQLModel, table=True):
@@ -326,15 +327,15 @@ class Samarabeid(SQLModel, table=True):
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
-@binding.bindable_dataclass
-class SamarabeidUI:
+
+class SamarabeidUI(BaseModel):
     samarbeid_id: uuid.UUID = uuid.uuid4() 
     prosjekt_id : uuid.UUID | None = None
-    samarbeid_intern: str = ''
-    samarbeid_eksternt: str = ''
-    avhengigheter_andre: str = ''
+    samarbeid_intern: str | None = None
+    samarbeid_eksternt: str | None = None
+    avhengigheter_andre: str | None = None
     sist_endret: datetime | None = None
-    endret_av: str = ''
+    endret_av: str | None = None
     er_gjeldende: bool = True
 
 class Tiltak(SQLModel, table=True):
@@ -353,13 +354,13 @@ class Tiltak(SQLModel, table=True):
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
-@binding.bindable_dataclass
-class TiltakUI:
+
+class TiltakUI(BaseModel):
     tiltak_id: uuid.UUID = uuid.uuid4()
     prosjekt_id : uuid.UUID | None = None
-    tiltak_beskrivelse: str = ''
+    tiltak_beskrivelse: str | None = None
     sist_endret: datetime | None = None
-    endret_av: str = ''
+    endret_av: str | None = None
     er_gjeldende: bool = True
 
 class UnderstøtteTildelingsbrev(SQLModel, table=True):
