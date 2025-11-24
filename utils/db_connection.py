@@ -9,7 +9,7 @@ from sqlalchemy.exc import OperationalError
 from azure.identity import ClientSecretCredential
 from tenacity import retry, retry_if_exception_type, wait_exponential, stop_after_attempt
 from dotenv import load_dotenv
-from dataclasses import dataclass, is_dataclass, asdict, field
+from dataclasses import dataclass, field
 from pydantic import BaseModel
 from typing import Dict
 import ast
@@ -78,23 +78,9 @@ def clean_dict(d):
         "ressursbruk_id",
     }
 
-    # dataclass → dict
-    if is_dataclass(d):
-        d = asdict(d)
-
-    # SQLModel / Pydantic → dict
-    elif hasattr(d, "model_dump"):  # SQLModel & Pydantic v2
+    if isinstance(d,BaseModel):
         d = d.model_dump()
-
-    # Fallback: convert an object's __dict__ (if it has one)
-    elif hasattr(d, "__dict__"):
-        d = d.__dict__
-
-    # If not a dict after all attempts → nothing to compare, return as-is
-    if not isinstance(d, dict):
-        return d
-
-    # Remove ignored fields
+   
     return {k: v for k, v in d.items() if k not in IGNORED_FIELDS}
 def get_single_page(engine, project_id: str, sql_models: dict):
     sql_model_dict = {}
@@ -153,7 +139,7 @@ def prune_unchanged_fields(original_obj, modified_obj):
             continue
 
         # Compare regular dataclass models
-        if is_dataclass(modified_value) and is_dataclass(original_value):
+        if isinstance(modified_value, BaseModel) and isinstance(original_value, BaseModel):
             if clean_dict(original_value) == clean_dict(modified_value):
                 setattr(modified_obj, field_name, None)
 
