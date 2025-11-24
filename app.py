@@ -1,4 +1,5 @@
-from nicegui import ui, app, Client, run
+from nicegui import ui, Client
+from nicegui import app
 from typing import Any
 from cachetools import TTLCache
 from azure.identity import DefaultAzureCredential
