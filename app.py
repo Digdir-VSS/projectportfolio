@@ -1,6 +1,5 @@
-from nicegui import ui, Client, run
-from nicegui import app 
-from fastapi import FastAPI
+from nicegui import ui, Client
+from nicegui import app
 from typing import Any
 from cachetools import TTLCache
 from azure.identity import DefaultAzureCredential
@@ -269,7 +268,6 @@ def leveranse():
 if __name__ in {"__main__", "__mp_main__"}:
     
     ui.run(
-        app,
         title='Projectportfolio',
         host="0.0.0.0",    
         port=8080,
