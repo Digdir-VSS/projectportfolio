@@ -12,10 +12,11 @@ from dotenv import load_dotenv
 from dataclasses import dataclass, field
 from pydantic import BaseModel
 from typing import Dict
-
-from utils.data_models import PortfolioProject, PortfolioProjectUI, Fremskritt, FremskrittUI, Resursbehov, ResursbehovUI, Samarabeid, SamarabeidUI, Problemstilling, ProblemstillingUI, Tiltak, TiltakUI, Risikovurdering, RisikovurderingUI, Malbilde,  MalbildeUI, DigitaliseringStrategi, DigitaliseringStrategiUI, RessursbrukUI,Ressursbruk
+import ast
+from utils.azure_users import load_users
+from utils.data_models import PortfolioProject, PortfolioProjectUI, Fremskritt, FremskrittUI, Resursbehov, ResursbehovUI, Samarabeid, SamarabeidUI, Problemstilling, ProblemstillingUI, Tiltak, TiltakUI, Risikovurdering, RisikovurderingUI, Malbilde,  MalbildeUI, DigitaliseringStrategi, DigitaliseringStrategiUI, RessursbrukUI,Ressursbruk, Finansiering, FinansieringUI, Vurdering, VurderingUI
 load_dotenv()
-
+brukere = load_users()
 @dataclass
 class ProjectData:
     fremskritt: FremskrittUI | None
@@ -28,6 +29,12 @@ class ProjectData:
     resursbehov: ResursbehovUI | None
     digitaliseringstrategi: DigitaliseringStrategiUI | None
     ressursbruk: Dict[int, RessursbrukUI] = field(default_factory=dict)
+
+@dataclass
+class VurderingData:
+    finansiering: FinansieringUI | None
+    vurdering: VurderingUI | None
+
 
 def get_single_project_data(project_id: str, sql_models: dict):
     statement_dict = {}
@@ -62,16 +69,99 @@ def ui_to_sqlmodel(ui_obj, sqlmodel_cls: type[SQLModel]) -> SQLModel:
 
     return sqlmodel_cls(**filtered_data)   
 
+def clean_dict(d):
+    IGNORED_FIELDS = {
+        "sist_endret",
+        "endret_av",
+        "er_gjeldende",
+        "prosjekt_id",
+        "ressursbruk_id",
+    }
+
+    if isinstance(d,BaseModel):
+        d = d.model_dump()
+   
+    return {k: v for k, v in d.items() if k not in IGNORED_FIELDS}
+def get_single_page(engine, project_id: str, sql_models: dict):
+    sql_model_dict = {}
+    project_id = UUID(project_id)
+
+    with Session(engine) as session:
+        stmt_dict = get_single_project_data(project_id, sql_models)
+
+        for sql_model_name, sql_statement in stmt_dict.items():
+            if sql_model_name == "ressursbruk":
+                result = session.exec(sql_statement).all()
+                sql_model_dict[sql_model_name] = result or []
+            else:
+                result = session.exec(sql_statement).first()
+                if result:
+                    sql_model_dict[sql_model_name] = result
+                else:
+                    sql_model_dict[sql_model_name] = sql_models[sql_model_name](prosjekt_id=project_id)
+    return sql_model_dict
+
+def prune_unchanged_fields(original_obj, modified_obj):
+    """Compare original and modified ProjectData, and remove unchanged submodels."""
+
+
+    
+    # Iterate through each submodel (e.g. fremskritt, tiltak, etc.)
+    for field_name, original_value in original_obj.__dict__.items():
+        modified_value = getattr(modified_obj, field_name, None)
+
+        # Skip if the modified field doesn't exist
+        if modified_value is None:
+            continue
+
+        # Handle ressursbruk separately (it's a dict of year → RessursbrukUI)
+        if field_name == "ressursbruk":
+            new_dict = {}
+            original_ressurs = getattr(original_obj, field_name, {}) or {}
+
+            for year, modified_year_obj in modified_value.items():
+                original_year_obj = original_ressurs.get(year)
+
+
+                if original_year_obj is None:
+                    new_dict[year] = modified_year_obj
+                    continue
+                
+                orig_clean = clean_dict(original_year_obj)
+                mod_clean = clean_dict(modified_year_obj)
+                if orig_clean != mod_clean:
+                    new_dict[year] = modified_year_obj
+            # If nothing changed for any year, clear the entire dict
+            if not new_dict:
+                setattr(modified_obj, field_name, None)
+            else:
+                setattr(modified_obj, field_name, new_dict)
+            continue
+
+        # Compare regular dataclass models
+        if isinstance(modified_value, BaseModel) and isinstance(original_value, BaseModel):
+            if clean_dict(original_value) == clean_dict(modified_value):
+                setattr(modified_obj, field_name, None)
+
+    if hasattr(modified_obj, "portfolioproject") and modified_obj.portfolioproject:
+        kontakt_list = ast.literal_eval(modified_obj.portfolioproject.kontaktpersoner)
+
+        if modified_obj.portfolioproject.tiltakseier:
+            if modified_obj.portfolioproject.tiltakseier not in kontakt_list:
+                kontakt_list.append(modified_obj.portfolioproject.tiltakseier)
+        kontakt_epost = [brukere.get(i) for i in kontakt_list]
+        modified_obj.portfolioproject.epost_kontakt = str(kontakt_epost)
+
+
+    return modified_obj
 class DBConnector:
     engine: Engine
     sql_models: dict
     ui_models: dict
 
-    def __init__(self, engine: Engine, sql_models: dict[str, Any], ui_models: dict[str, Any]):
+    def __init__(self, engine: Engine, model_groups: dict[str, Any]):
         self.engine = engine
-        self.sql_models = sql_models
-        self.ui_models = ui_models
-
+        self.model_groups = model_groups
 
     @classmethod
     def create_engine(cls, driver_name: str, server_name: str, database_name: str, fabric_client_id: str, fabric_tenant_id: str, fabric_client_secret: str):
@@ -97,11 +187,31 @@ class DBConnector:
             cparams["attrs_before"] = {SQL_COPT_SS_ACCESS_TOKEN: token_struct}
         sql_models = {"fremskritt": Fremskritt, "samarabeid": Samarabeid, "portfolioproject": PortfolioProject, "problemstilling": Problemstilling, "tiltak": Tiltak, "risikovurdering": Risikovurdering, "malbilde": Malbilde, "resursbehov": Resursbehov, "digitaliseringstrategi": DigitaliseringStrategi, "ressursbruk": Ressursbruk}
         ui_models = {"fremskritt": FremskrittUI, "samarabeid": SamarabeidUI, "portfolioproject": PortfolioProjectUI, "problemstilling": ProblemstillingUI, "tiltak": TiltakUI, "risikovurdering": RisikovurderingUI, "malbilde": MalbildeUI, "resursbehov": ResursbehovUI, "digitaliseringstrategi": DigitaliseringStrategiUI, "ressursbruk": RessursbrukUI}
-        return cls(engine, sql_models, ui_models)
+        model_groups = {
+                "project": {
+                    "sql": sql_models,
+                    "ui": ui_models,
+                    "dataclass": ProjectData,
+                },
+                "vurdering": {
+                    "sql": {
+                        "finansiering": Finansiering,
+                        "vurdering": Vurdering,
+                    },
+                    "ui": {
+                        "finansiering": FinansieringUI,
+                        "vurdering": VurderingUI,
+                    },
+                    "dataclass": VurderingData,
+                },
+            }
+        
+        return cls(engine, model_groups)
     
-    def create_empty_project(self, email, prosjekt_id):
+    def create_empty_project(self, email, prosjekt_id, group: str = "project") -> ProjectData:
         empty_populated_schemas = {}
-        dict_of_schemas = self.ui_models.copy()
+        ui_models = self.model_groups[group]["ui"]
+        dict_of_schemas = ui_models.copy()
         dict_of_schemas.pop("portfolioproject")
         for name, schema in dict_of_schemas.items():
             if name == "ressursbruk":
@@ -127,7 +237,6 @@ class DBConnector:
         with Session(self.engine) as session:
             if email:
                 email_in_list=f"%{email}%"
-                print(email_in_list)
                 stmt = select(*columns).where(PortfolioProject.er_gjeldende == True, PortfolioProject.epost_kontakt.like(email_in_list))
             else:
                 stmt = select(*columns).where(PortfolioProject.er_gjeldende == True)
@@ -148,23 +257,10 @@ class DBConnector:
     stop=stop_after_attempt(3),
     reraise=True)
     
-    def get_single_project(self, project_id: str):
-        sql_model_dict = {}
-        project_id = UUID(project_id)
-
-        with Session(self.engine) as session:
-            stmt_dict = get_single_project_data(project_id, self.sql_models)
-
-            for sql_model_name, sql_statement in stmt_dict.items():
-                if sql_model_name == "ressursbruk":
-                    result = session.exec(sql_statement).all()
-                    sql_model_dict[sql_model_name] = result or []
-                else:
-                    result = session.exec(sql_statement).first()
-                    if result:
-                        sql_model_dict[sql_model_name] = result
-                    else:
-                        sql_model_dict[sql_model_name] = self.sql_models[sql_model_name](prosjekt_id=project_id)
+    def get_single_project(self, project_id: str, group: str = "project") -> ProjectData:
+        sql_models = self.model_groups[group]["sql"]
+        sql_model_dict = get_single_page(self.engine, project_id, sql_models)
+        
 
         # Construct UI layer
         project_data = ProjectData(
@@ -180,51 +276,26 @@ class DBConnector:
             ressursbruk={r.year: RessursbrukUI(**r.dict()) for r in sql_model_dict["ressursbruk"]},  # 👈 list of UI objects
         )
         return project_data
-    def has_changes(existing_obj, new_obj) -> bool:
-        """Return True if there are meaningful differences between existing and new object fields."""
-        if not existing_obj:
-            return True  # Entirely new record
-
-        ignored_fields = {
-            "sist_endret",
-            "endret_av",
-            "er_gjeldende",
-            "prosjekt_id",
-            "ressursbruk_id",
-        }
-
-        for field_name, new_val in vars(new_obj).items():
-            if field_name.startswith("_") or field_name in ignored_fields:
-                continue
-            if not hasattr(existing_obj, field_name):
-                continue
-
-            old_val = getattr(existing_obj, field_name)
-
-            # Normalize datatypes (e.g., None vs empty string, float vs int)
-            if (old_val is None or old_val == "") and (new_val is None or new_val == ""):
-                continue
-            if str(old_val) != str(new_val):
-                return True
-
-        return False
+    
     @retry(retry=retry_if_exception_type(OperationalError),
     wait=wait_exponential(multiplier=1, min=1, max=10),
     stop=stop_after_attempt(3),
     reraise=True)
 
-    def update_project(self, project: ProjectData, prosjekt_id: UUID, e_mail: str):
+    def update_project(self, org_proj: ProjectData, mod_proj:ProjectData, prosjekt_id: UUID, e_mail: str, group: str = "project"):
+        mod_proj = prune_unchanged_fields(org_proj, mod_proj)
         now = datetime.utcnow()
-
+        ui_models = self.model_groups[group]["ui"]
+        sql_models = self.model_groups[group]["sql"]
         with Session(self.engine) as session:
             objs = []
 
-            for model_name, ui_model in self.ui_models.items():
-                ui_obj = getattr(project, model_name)
+            for model_name, ui_model in ui_models.items():
+                ui_obj = getattr(mod_proj, model_name)
                 if ui_obj is None:
                     continue
 
-                sql_cls = self.sql_models[model_name]
+                sql_cls = sql_models[model_name]
 
                 # --- Handle ressursbruk specially (dict of years) ---
                 if model_name == "ressursbruk":
@@ -265,3 +336,4 @@ class DBConnector:
             # ✅ Use session for both update + insert to ensure atomicity
             session.add_all(objs)
             session.commit()
+    

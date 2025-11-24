@@ -100,6 +100,22 @@ class Finansiering(SQLModel, table=True):
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
+class FinansieringUI(BaseModel):
+    finansering_id: uuid.UUID = uuid.uuid4()
+    prosjekt_id: uuid.UUID | None = None
+    potensiell_finansering: int | None = None
+    mnd_verk: int | None = None
+    vedtatt_tildeling: int | None = None
+    prognose_innmeldt: int | None = None
+    prognose_tildelt: int | None = None
+    tentatitv_forpliktelse: int | None = None
+    estimert_budsjettbehov: int | None = None
+    usikkerhet_estimat: str = ''
+    risiko_av_estimat_tall: int | None = None
+    sist_endret: datetime | None = None
+    endret_av: str = ''
+    er_gjeldende: bool = True
+    
 class Fremskritt(SQLModel, table=True):
     __tablename__ = "Fremskritt"
     __table_args__ = {"schema": schema_name}
@@ -112,7 +128,7 @@ class Fremskritt(SQLModel, table=True):
     fase: str | None = None
     planlagt_ferdig: datetime | None = None
     sist_endret: datetime | None = None
-    endret_av: str | None = None
+    endret_av: str = ''
     er_gjeldende: bool = False
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
@@ -402,3 +418,14 @@ class Vurdering(SQLModel, table=True):
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
+
+class VurderingUI(BaseModel):
+    vurdering_id: uuid.UUID = uuid.uuid4()
+    prosjekt_id : uuid.UUID | None = None
+    gruppe: str | None = None
+    pulje: int | None = None
+    risiko_vurdering: str | None = None
+    sist_endret: datetime | None = None
+    endret_av: str = ''
+    er_gjeldende: bool = True
+    mscw: str | None = None
