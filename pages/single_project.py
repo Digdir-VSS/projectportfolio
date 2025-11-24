@@ -7,7 +7,11 @@ import ast, asyncio
 import copy
 from pydantic import BaseModel
 
+<<<<<<< HEAD
 from utils.validators import to_json, to_list, to_date_str, convert_to_int, add_thousand_split, convert_to_int_from_thousand_sign, validate_budget_distribution, sort_selected_values
+=======
+from utils.validators import to_json, to_list, to_date_str, convert_to_int, add_thousand_split, convert_to_int_from_thousand_sign, validate_budget_distribution, sort_selected_values, to_datetime
+>>>>>>> 7e8d4bf (add forward conversion to date)
 from static_variables import DIGITALISERINGS_STRATEGI,IGNORED_FIELDS, ESTIMAT_LISTE
     
 brukere = load_users()
@@ -45,11 +49,11 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
                     "clearable options-dense color=primary").classes("w-full bg-white rounded-lg").props('use-chips').bind_value(project.portfolioproject, "kontaktpersoner", forward=to_json, backward=to_list)
         with ui.element("div").classes('col-span-1 row-span-1 col-start-4 row-start-5'):
             ui.label('Start').classes('text-lg font-bold')
-            ui.input().bind_value(project.portfolioproject, "oppstart", backward=to_date_str).props("outlined dense type=date clearable color=primary").classes("w-full")
+            ui.input().bind_value(project.portfolioproject, "oppstart", backward=to_date_str, forward=to_datetime).props("outlined dense type=date clearable color=primary").classes("w-full")
             
         with ui.element("div").classes('col-span-1 row-span-1 col-start-5 row-start-5'):
             ui.label("Planlagt ferdig").classes('text-lg font-bold')
-            ui.input().bind_value(project.fremskritt, "planlagt_ferdig",backward=to_date_str).props("outlined dense type=date clearable color=primary").classes("w-full")
+            ui.input().bind_value(project.fremskritt, "planlagt_ferdig",backward=to_date_str, forward=to_datetime).props("outlined dense type=date clearable color=primary").classes("w-full")
         with ui.element("div").classes('col-span-3 row-span-1 col-start-1 row-start-6'):
             ui.label('Hovedavdeling').classes('text-lg font-bold')
             ui.radio(
@@ -71,8 +75,6 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
         with ui.element("div").classes('col-span-3 row-span-2 col-start-4 row-start-6'):
             ui.label("Avhengigheter andre oppgaver").classes('text-lg font-bold')
             ui.textarea().classes('w-full bg-white rounded-lg').bind_value(project.samarabeid, "avhengigheter_andre")
-
-        
         
             
     with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
