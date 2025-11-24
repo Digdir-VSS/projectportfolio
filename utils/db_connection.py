@@ -13,10 +13,10 @@ from dataclasses import dataclass, is_dataclass, asdict, field
 from pydantic import BaseModel
 from typing import Dict
 import ast
-
+from utils.azure_users import load_users
 from utils.data_models import PortfolioProject, PortfolioProjectUI, Fremskritt, FremskrittUI, Resursbehov, ResursbehovUI, Samarabeid, SamarabeidUI, Problemstilling, ProblemstillingUI, Tiltak, TiltakUI, Risikovurdering, RisikovurderingUI, Malbilde,  MalbildeUI, DigitaliseringStrategi, DigitaliseringStrategiUI, RessursbrukUI,Ressursbruk, Finansiering, FinansieringUI, Vurdering, VurderingUI
 load_dotenv()
-
+brukere = load_users()
 @dataclass
 class ProjectData:
     fremskritt: FremskrittUI | None
@@ -68,18 +68,7 @@ def ui_to_sqlmodel(ui_obj, sqlmodel_cls: type[SQLModel]) -> SQLModel:
     filtered_data = {k: v for k, v in ui_dict.items() if k in sqlmodel_fields}
 
     return sqlmodel_cls(**filtered_data)   
-# def clean_dict(d):
-#     IGNORED_FIELDS = {
-#             "sist_endret",
-#             "endret_av",
-#             "er_gjeldende",
-#             "prosjekt_id",
-#             "ressursbruk_id",
-#         }
-#     """Convert dataclass to dict and remove ignored fields."""
-#     if is_dataclass(d):
-#         d = asdict(d)
-#     return {k: v for k, v in d.items() if k not in IGNORED_FIELDS}
+
 def clean_dict(d):
     IGNORED_FIELDS = {
         "sist_endret",
@@ -125,6 +114,60 @@ def get_single_page(engine, project_id: str, sql_models: dict):
                 else:
                     sql_model_dict[sql_model_name] = sql_models[sql_model_name](prosjekt_id=project_id)
     return sql_model_dict
+
+def prune_unchanged_fields(original_obj, modified_obj):
+    """Compare original and modified ProjectData, and remove unchanged submodels."""
+
+
+    
+    # Iterate through each submodel (e.g. fremskritt, tiltak, etc.)
+    for field_name, original_value in original_obj.__dict__.items():
+        modified_value = getattr(modified_obj, field_name, None)
+
+        # Skip if the modified field doesn't exist
+        if modified_value is None:
+            continue
+
+        # Handle ressursbruk separately (it's a dict of year → RessursbrukUI)
+        if field_name == "ressursbruk":
+            new_dict = {}
+            original_ressurs = getattr(original_obj, field_name, {}) or {}
+
+            for year, modified_year_obj in modified_value.items():
+                original_year_obj = original_ressurs.get(year)
+
+
+                if original_year_obj is None:
+                    new_dict[year] = modified_year_obj
+                    continue
+                
+                orig_clean = clean_dict(original_year_obj)
+                mod_clean = clean_dict(modified_year_obj)
+                if orig_clean != mod_clean:
+                    new_dict[year] = modified_year_obj
+            # If nothing changed for any year, clear the entire dict
+            if not new_dict:
+                setattr(modified_obj, field_name, None)
+            else:
+                setattr(modified_obj, field_name, new_dict)
+            continue
+
+        # Compare regular dataclass models
+        if is_dataclass(modified_value) and is_dataclass(original_value):
+            if clean_dict(original_value) == clean_dict(modified_value):
+                setattr(modified_obj, field_name, None)
+
+    if hasattr(modified_obj, "portfolioproject") and modified_obj.portfolioproject:
+        kontakt_list = ast.literal_eval(modified_obj.portfolioproject.kontaktpersoner)
+
+        if modified_obj.portfolioproject.tiltakseier:
+            if modified_obj.portfolioproject.tiltakseier not in kontakt_list:
+                kontakt_list.append(modified_obj.portfolioproject.tiltakseier)
+        kontakt_epost = [brukere.get(i) for i in kontakt_list]
+        modified_obj.portfolioproject.epost_kontakt = str(kontakt_epost)
+
+
+    return modified_obj
 class DBConnector:
     engine: Engine
     sql_models: dict
@@ -253,7 +296,8 @@ class DBConnector:
     stop=stop_after_attempt(3),
     reraise=True)
 
-    def update_project(self, project: ProjectData, prosjekt_id: UUID, e_mail: str, group: str = "project"):
+    def update_project(self, org_proj: ProjectData, mod_proj:ProjectData, prosjekt_id: UUID, e_mail: str, group: str = "project"):
+        mod_proj = prune_unchanged_fields(org_proj, mod_proj)
         now = datetime.utcnow()
         ui_models = self.model_groups[group]["ui"]
         sql_models = self.model_groups[group]["sql"]
@@ -261,7 +305,7 @@ class DBConnector:
             objs = []
 
             for model_name, ui_model in ui_models.items():
-                ui_obj = getattr(project, model_name)
+                ui_obj = getattr(mod_proj, model_name)
                 if ui_obj is None:
                     continue
 
@@ -306,57 +350,4 @@ class DBConnector:
             # ✅ Use session for both update + insert to ensure atomicity
             session.add_all(objs)
             session.commit()
-    @staticmethod
-    def prune_unchanged_fields(original_obj, modified_obj, brukere):
-        """Compare original and modified ProjectData, and remove unchanged submodels."""
-
-
-        
-        # Iterate through each submodel (e.g. fremskritt, tiltak, etc.)
-        for field_name, original_value in original_obj.__dict__.items():
-            modified_value = getattr(modified_obj, field_name, None)
-
-            # Skip if the modified field doesn't exist
-            if modified_value is None:
-                continue
-
-            # Handle ressursbruk separately (it's a dict of year → RessursbrukUI)
-            if field_name == "ressursbruk":
-                new_dict = {}
-                original_ressurs = getattr(original_obj, field_name, {}) or {}
-
-                for year, modified_year_obj in modified_value.items():
-                    original_year_obj = original_ressurs.get(year)
-
-
-                    if original_year_obj is None:
-                        new_dict[year] = modified_year_obj
-                        continue
-                    
-                    orig_clean = clean_dict(original_year_obj)
-                    mod_clean = clean_dict(modified_year_obj)
-                    if orig_clean != mod_clean:
-                        new_dict[year] = modified_year_obj
-                # If nothing changed for any year, clear the entire dict
-                if not new_dict:
-                    setattr(modified_obj, field_name, None)
-                else:
-                    setattr(modified_obj, field_name, new_dict)
-                continue
-
-            # Compare regular dataclass models
-            if is_dataclass(modified_value) and is_dataclass(original_value):
-                if clean_dict(original_value) == clean_dict(modified_value):
-                    setattr(modified_obj, field_name, None)
-
-        if hasattr(modified_obj, "portfolioproject") and modified_obj.portfolioproject:
-            kontakt_list = ast.literal_eval(modified_obj.portfolioproject.kontaktpersoner)
-
-            if modified_obj.portfolioproject.tiltakseier:
-                if modified_obj.portfolioproject.tiltakseier not in kontakt_list:
-                    kontakt_list.append(modified_obj.portfolioproject.tiltakseier)
-            kontakt_epost = [brukere.get(i) for i in kontakt_list]
-            modified_obj.portfolioproject.epost_kontakt = str(kontakt_epost)
-
-
-        return modified_obj
+    

@@ -168,7 +168,7 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
         
         
 
-    async def save_object(mod_obj) -> "ProjectData":
+    async def save_object() -> "ProjectData":
      
         with ui.dialog() as dialog:
             ui.label("💾 Lagrer endringer... Vennligst vent ⏳")
@@ -176,7 +176,7 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
         try:
             dialog.open()
             await asyncio.sleep(0.1)  # Allow UI to render spinner
-            await run.io_bound(db_connector.update_project, mod_obj, prosjekt_id, email)
+            await run.io_bound(db_connector.update_project, original_project, project, prosjekt_id, email)
 
             ui.notify("✅ Endringer lagret i databasen!", type="positive", position="top")
 
@@ -208,8 +208,7 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
         or (isinstance(kontaktpersoner, str) and kontaktpersoner.strip() == ""):
             ui.notify("❌ Du må fylle inn kontaktperson.", type="warning", position="top", close_button="OK")
             return
-        mod_obj = db_connector.prune_unchanged_fields(original_obj=original_project,modified_obj= project, brukere=brukere)
-        await save_object(mod_obj)
+        await save_object()
 
 
     ui.button("💾 Lagre", on_click=check_or_update).classes("mt-4")
