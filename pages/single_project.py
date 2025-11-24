@@ -6,38 +6,11 @@ from backend.database.db_connection import ProjectData
 from backend.database.data_models import RessursbrukUI
 import ast, asyncio
 import copy
-from dataclasses import asdict, is_dataclass
+from pydantic import BaseModel
 
-def to_list(value):
-    """Safely parse a JSON list or return [] if invalid."""
-    if value is None:
-        return []
-    if isinstance(value, list):  # Already deserialized
-        return value
-    value = str(value).strip()
-    if not value or value.lower() in ("null", "none"):
-        return []
-    try:
-        return json.loads(value)
-    except json.JSONDecodeError:
-        return []
-
-def to_json(value: list[str] | None):
-    """Convert UI list back to JSON string for the dataclass."""
-    return json.dumps(value or [],  ensure_ascii=False)
-
-def to_date_str(value):
-    """Convert datetime/date to ISO date string (YYYY-MM-DD) for NiceGUI."""
-    if value is None:
-        return None
-    if isinstance(value, datetime):
-        return value.date().isoformat()
-    return str(value)
-def to_datetime(value):
-    if isinstance(value, str):
-        return datetime.strptime(value,"%Y-%m-%d")
-    else:
-        return value
+from utils.validators import to_json, to_list, to_date_str, convert_to_int, add_thousand_split, convert_to_int_from_thousand_sign, validate_budget_distribution, sort_selected_values, to_datetime
+from static_variables import DIGITALISERINGS_STRATEGI,IGNORED_FIELDS, ESTIMAT_LISTE
+    
 brukere = load_users()
 
 brukere_list = list(brukere.keys())
@@ -65,11 +38,11 @@ def project_detail(prosjekt_id: str, email: str, project: ProjectData, original_
                     "clearable options-dense color=primary").classes("w-full bg-white rounded-lg").props('use-chips').bind_value(project.portfolioproject, "kontaktpersoner", forward=to_json, backward=to_list)
         with ui.element("div").classes('col-span-1 row-span-1 col-start-4 row-start-5'):
             ui.label('Start').classes('text-lg font-bold')
-            ui.input().bind_value(project.portfolioproject, "oppstart", backward=to_date_str).props("outlined dense type=date clearable color=primary").classes("w-full")
+            ui.input().bind_value(project.portfolioproject, "oppstart", backward=to_date_str, forward=to_datetime).props("outlined dense type=date clearable color=primary").classes("w-full")
             
         with ui.element("div").classes('col-span-1 row-span-1 col-start-5 row-start-5'):
             ui.label("Planlagt ferdig").classes('text-lg font-bold')
-            ui.input().bind_value(project.fremskritt, "planlagt_ferdig",backward=to_date_str).props("outlined dense type=date clearable color=primary").classes("w-full")
+            ui.input().bind_value(project.fremskritt, "planlagt_ferdig",backward=to_date_str, forward=to_datetime).props("outlined dense type=date clearable color=primary").classes("w-full")
         with ui.element("div").classes('col-span-3 row-span-1 col-start-1 row-start-6'):
             ui.label('Hovedavdeling').classes('text-lg font-bold')
             ui.radio(
@@ -91,8 +64,6 @@ def project_detail(prosjekt_id: str, email: str, project: ProjectData, original_
         with ui.element("div").classes('col-span-3 row-span-2 col-start-4 row-start-6'):
             ui.label("Avhengigheter andre oppgaver").classes('text-lg font-bold')
             ui.textarea().classes('w-full bg-white rounded-lg').bind_value(project.samarabeid, "avhengigheter_andre")
-
-        
         
             
     with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
