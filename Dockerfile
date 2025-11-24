@@ -33,6 +33,6 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 ENV PATH="/.venv/bin:$PATH"
 
-EXPOSE 8080
+EXPOSE 8080 8000
 
-CMD ["python", "app.py"]
+CMD ["sh", "-c", "uvicorn api_main:api_app --host 0.0.0.0 --port 8000 & python app.py --host 0.0.0.0 --port 8080 & wait -n"]
