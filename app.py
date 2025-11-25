@@ -17,6 +17,7 @@ from utils.backend_client import api_get_projects, api_get_project
 from pages.login_page import register_login_pages
 from pages.dashboard import dashboard
 from pages.single_project import project_detail as digdir_overordnet_info_page
+from utils.azure_users import load_users
 from pages.utils import layout
 import uuid
 from static_variables import STEPS_DICT
@@ -218,7 +219,6 @@ async def project_detail(prosjekt_id: str):
         return 
     layout(active_step='oppdater_prosjekt', title='Prosjekt detaljer', steps=STEPS_DICT)
     user_name = user["name"]
-    print(user_name)
     email = user["preferred_username"]
     if not email:
         ui.notify('No email claim found in login!')
@@ -229,7 +229,8 @@ async def project_detail(prosjekt_id: str):
         ui.label('Project not found or you do not have access to it.')
         return
     original_project = copy.deepcopy(project)
-    digdir_overordnet_info_page(prosjekt_id=prosjekt_id, email=email, project=project, original_project=original_project)
+    bruker_list = load_users()
+    digdir_overordnet_info_page(prosjekt_id=prosjekt_id, email=email, project=project, original_project=original_project, brukere_list=bruker_list)
 
 @ui.page('/project/new/{prosjekt_id}')
 def project_detail(prosjekt_id: str):
@@ -244,7 +245,9 @@ def project_detail(prosjekt_id: str):
     if not email:
         ui.notify('No email claim found in login!')
         return
-    digdir_overordnet_info_page(prosjekt_id=prosjekt_id, email=email, user_name=user_name, new=True)
+    bruker_list = load_users()
+    digdir_overordnet_info_page(prosjekt_id=prosjekt_id, email=email, user_name=user_name, new=True, brukere_list=bruker_list)
+
 @ui.page("/status_rapportering")
 def digdir():
     user = require_login()
