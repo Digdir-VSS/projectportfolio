@@ -1,5 +1,7 @@
 from nicegui import ui, Client
 from nicegui import app
+from nicegui import ui, Client
+from nicegui import app
 from typing import Any
 from cachetools import TTLCache
 from azure.identity import DefaultAzureCredential
@@ -21,14 +23,8 @@ from static_variables import STEPS_DICT
 
 #app.include_router(innleverings_router)
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-=======
->>>>>>> 1a332096a93e30c495ddfda55981ce61345b918f
 load_dotenv()
 
->>>>>>> 029ab4b (run on two ports)
 # Client ID and secret correspond to your Entra Application registration
 credential = DefaultAzureCredential()
 client = SecretClient(
@@ -222,6 +218,7 @@ async def project_detail(prosjekt_id: str):
         return 
     layout(active_step='oppdater_prosjekt', title='Prosjekt detaljer', steps=STEPS_DICT)
     user_name = user["name"]
+    print(user_name)
     email = user["preferred_username"]
     if not email:
         ui.notify('No email claim found in login!')
