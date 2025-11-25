@@ -4,6 +4,7 @@ import struct
 from pydantic import BaseModel
 from datetime import datetime, date
 import urllib
+import ast
 from sqlmodel import SQLModel, Session, select, update
 from sqlalchemy import create_engine, event, Engine
 from sqlalchemy.exc import OperationalError
@@ -18,6 +19,7 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 from typing import Dict
 
+from utils.azure_users import load_users
 from .data_models import (
     PortfolioProject,
     PortfolioProjectUI,
@@ -44,7 +46,7 @@ from .data_models import (
 )
 
 load_dotenv()
-
+brukere = load_users()
 
 class VurderingData(BaseModel):
     finansiering: FinansieringUI | None
@@ -65,6 +67,55 @@ class ProjectData(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True  # allows your UI dataclasses
+
+
+def prune_unchanged_fields(original_obj, modified_obj):
+    """Compare original and modified ProjectData, and remove unchanged submodels."""
+    for field_name, original_value in original_obj.__dict__.items():
+        modified_value = getattr(modified_obj, field_name, None)
+
+        # Skip if the modified field doesn't exist
+        if modified_value is None:
+            continue
+
+        # Handle ressursbruk separately (it's a dict of year → RessursbrukUI)
+        if field_name == "ressursbruk":
+            new_dict = {}
+            original_ressurs = getattr(original_obj, field_name, {}) or {}
+
+            for year, modified_year_obj in modified_value.items():
+                original_year_obj = original_ressurs.get(year)
+
+
+                if original_year_obj is None:
+                    new_dict[year] = modified_year_obj
+                    continue
+                
+                orig_clean = clean_dict(original_year_obj)
+                mod_clean = clean_dict(modified_year_obj)
+                if orig_clean != mod_clean:
+                    new_dict[year] = modified_year_obj
+            # If nothing changed for any year, clear the entire dict
+            if not new_dict:
+                setattr(modified_obj, field_name, None)
+            else:
+                setattr(modified_obj, field_name, new_dict)
+            continue
+
+        # Compare regular dataclass models
+        if isinstance(modified_value, BaseModel) and isinstance(original_value, BaseModel):
+            if clean_dict(original_value) == clean_dict(modified_value):
+                setattr(modified_obj, field_name, None)
+
+    if hasattr(modified_obj, "portfolioproject") and modified_obj.portfolioproject:
+        kontakt_list = ast.literal_eval(modified_obj.portfolioproject.kontaktpersoner)
+
+        if modified_obj.portfolioproject.tiltakseier:
+            if modified_obj.portfolioproject.tiltakseier not in kontakt_list:
+                kontakt_list.append(modified_obj.portfolioproject.tiltakseier)
+        kontakt_epost = [brukere.get(i) for i in kontakt_list]
+        modified_obj.portfolioproject.epost_kontakt = str(kontakt_epost)
+    return modified_obj
 
 
 def get_single_project_data(project_id: str, sql_models: dict):
@@ -100,6 +151,38 @@ def ui_to_sqlmodel(ui_obj, sqlmodel_cls: type[SQLModel]) -> SQLModel:
 
     return sqlmodel_cls(**filtered_data)
 
+def clean_dict(d):
+    IGNORED_FIELDS = {
+        "sist_endret",
+        "endret_av",
+        "er_gjeldende",
+        "prosjekt_id",
+        "ressursbruk_id",
+    }
+
+    if isinstance(d,BaseModel):
+        d = d.model_dump()
+   
+    return {k: v for k, v in d.items() if k not in IGNORED_FIELDS}
+
+def get_single_page(engine, project_id: str, sql_models: dict):
+    sql_model_dict = {}
+    project_id = UUID(project_id)
+
+    with Session(engine) as session:
+        stmt_dict = get_single_project_data(project_id, sql_models)
+
+        for sql_model_name, sql_statement in stmt_dict.items():
+            if sql_model_name == "ressursbruk":
+                result = session.exec(sql_statement).all()
+                sql_model_dict[sql_model_name] = result or []
+            else:
+                result = session.exec(sql_statement).first()
+                if result:
+                    sql_model_dict[sql_model_name] = result
+                else:
+                    sql_model_dict[sql_model_name] = sql_models[sql_model_name](prosjekt_id=project_id)
+    return sql_model_dict
 
 class DBConnector:
     engine: Engine
@@ -177,7 +260,7 @@ class DBConnector:
         }
         return cls(engine, sql_models, ui_models)
 
-    def create_empty_project(self, email, prosjekt_id):
+    def create_empty_project(self, email, prosjekt_id, group: str = "project") -> ProjectData:
         empty_populated_schemas = {}
         ui_models = self.model_groups[group]["ui"]
         dict_of_schemas = ui_models.copy()
@@ -235,48 +318,23 @@ class DBConnector:
         stop=stop_after_attempt(3),
         reraise=True,
     )
-    def get_single_project(self, project_id: str):
-        sql_model_dict = {}
-        project_id = UUID(project_id)
-
-        with Session(self.engine) as session:
-            stmt_dict = get_single_project_data(project_id, self.sql_models)
-
-            for sql_model_name, sql_statement in stmt_dict.items():
-                if sql_model_name == "ressursbruk":
-                    result = session.exec(sql_statement).all()
-                    sql_model_dict[sql_model_name] = result or []
-                else:
-                    result = session.exec(sql_statement).first()
-                    if result:
-                        sql_model_dict[sql_model_name] = result
-                    else:
-                        sql_model_dict[sql_model_name] = self.sql_models[
-                            sql_model_name
-                        ](prosjekt_id=project_id)
+    def get_single_project(self, project_id: str, group: str = "project") -> ProjectData:
+        sql_models = self.model_groups[group]["sql"]
+        sql_model_dict = get_single_page(self.engine, project_id, sql_models)
+        
 
         # Construct UI layer
         project_data = ProjectData(
             fremskritt=FremskrittUI(**sql_model_dict["fremskritt"].dict()),
             resursbehov=ResursbehovUI(**sql_model_dict["resursbehov"].dict()),
             samarabeid=SamarabeidUI(**sql_model_dict["samarabeid"].dict()),
-            portfolioproject=PortfolioProjectUI(
-                **sql_model_dict["portfolioproject"].dict()
-            ),
+            portfolioproject=PortfolioProjectUI(**sql_model_dict["portfolioproject"].dict()),
             tiltak=TiltakUI(**sql_model_dict["tiltak"].dict()),
-            problemstilling=ProblemstillingUI(
-                **sql_model_dict["problemstilling"].dict()
-            ),
-            risikovurdering=RisikovurderingUI(
-                **sql_model_dict["risikovurdering"].dict()
-            ),
+            problemstilling=ProblemstillingUI(**sql_model_dict["problemstilling"].dict()),
+            risikovurdering=RisikovurderingUI(**sql_model_dict["risikovurdering"].dict()),
             malbilde=MalbildeUI(**sql_model_dict["malbilde"].dict()),
-            digitaliseringstrategi=DigitaliseringStrategiUI(
-                **sql_model_dict["digitaliseringstrategi"].dict()
-            ),
-            ressursbruk={
-                r.year: RessursbrukUI(**r.dict()) for r in sql_model_dict["ressursbruk"]
-            },  # 👈 list of UI objects
+            digitaliseringstrategi=DigitaliseringStrategiUI(**sql_model_dict["digitaliseringstrategi"].dict()),
+            ressursbruk={r.year: RessursbrukUI(**r.dict()) for r in sql_model_dict["ressursbruk"]},  # 👈 list of UI objects
         )
         return project_data
 
@@ -317,7 +375,8 @@ class DBConnector:
         stop=stop_after_attempt(3),
         reraise=True,
     )
-    def update_project(self, project: ProjectData, prosjekt_id: UUID, e_mail: str):
+    def update_project(self, org_proj: ProjectData, mod_proj:ProjectData, prosjekt_id: UUID, e_mail: str, group: str = "project"):
+        mod_proj = prune_unchanged_fields(org_proj, mod_proj)
         now = datetime.utcnow()
         ui_models = self.model_groups[group]["ui"]
         sql_models = self.model_groups[group]["sql"]
