@@ -46,7 +46,6 @@ from .data_models import (
 )
 
 load_dotenv()
-brukere = load_users()
 
 class VurderingData(BaseModel):
     finansiering: FinansieringUI | None
@@ -69,7 +68,7 @@ class ProjectData(BaseModel):
         arbitrary_types_allowed = True  # allows your UI dataclasses
 
 
-def prune_unchanged_fields(original_obj, modified_obj):
+def prune_unchanged_fields(original_obj, modified_obj, brukere):
     """Compare original and modified ProjectData, and remove unchanged submodels."""
     for field_name, original_value in original_obj.__dict__.items():
         modified_value = getattr(modified_obj, field_name, None)
@@ -375,8 +374,8 @@ class DBConnector:
         stop=stop_after_attempt(3),
         reraise=True,
     )
-    def update_project(self, org_proj: ProjectData, mod_proj:ProjectData, prosjekt_id: UUID, e_mail: str, group: str = "project"):
-        mod_proj = prune_unchanged_fields(org_proj, mod_proj)
+    def update_project(self, org_proj: ProjectData, mod_proj:ProjectData, prosjekt_id: UUID, e_mail: str, brukere: list, group: str = "project"):
+        mod_proj = prune_unchanged_fields(org_proj, mod_proj, brukere=brukere)
         now = datetime.utcnow()
         ui_models = self.model_groups[group]["ui"]
         sql_models = self.model_groups[group]["sql"]

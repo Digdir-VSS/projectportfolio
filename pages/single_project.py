@@ -9,11 +9,8 @@ import ast, asyncio
 from utils.validators import to_json, to_list, to_date_str, convert_to_int, add_thousand_split, convert_to_int_from_thousand_sign, validate_budget_distribution, sort_selected_values, to_datetime
 from static_variables import DIGITALISERINGS_STRATEGI,IGNORED_FIELDS, ESTIMAT_LISTE
     
-brukere = load_users()
-
-brukere_list = list(brukere.keys())
 avdelinger = ['BOD','DSS' ,'KOM','FEL','STL' ,'TUU', 'VIS', 'KI Norge']
-def project_detail(prosjekt_id: str, email: str, project: ProjectData, original_project: ProjectData):
+def project_detail(prosjekt_id: str, email: str, project: ProjectData, original_project: ProjectData, brukere_list):
     ui.markdown(f"## *Porteføljeinitiativ:* **{project.portfolioproject.navn}**").classes('text-xl font-bold')
     with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
         ui.label("1. Grunninformasjon").classes('col-span-1 row-span-1 col-start-1 row-start-3 text-lg font-bold underline mt-4 mb-2')
@@ -165,7 +162,7 @@ def project_detail(prosjekt_id: str, email: str, project: ProjectData, original_
         try:
             dialog.open()
             await asyncio.sleep(0.1)  # Allow UI to render spinner
-            await api_update_project(project, prosjekt_id, email)
+            await api_update_project(project, prosjekt_id, email, brukere_list)
 
             ui.notify("✅ Endringer lagret i databasen!", type="positive", position="top")
 
