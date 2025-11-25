@@ -5,18 +5,8 @@ from utils.backend_client import api_update_project
 from backend.database.db_connection import ProjectData
 from backend.database.data_models import RessursbrukUI
 import ast, asyncio
-import copy
-from pydantic import BaseModel
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-from utils.validators import to_json, to_list, to_date_str, convert_to_int, add_thousand_split, convert_to_int_from_thousand_sign, validate_budget_distribution, sort_selected_values
-=======
 from utils.validators import to_json, to_list, to_date_str, convert_to_int, add_thousand_split, convert_to_int_from_thousand_sign, validate_budget_distribution, sort_selected_values, to_datetime
->>>>>>> 7e8d4bf (add forward conversion to date)
-=======
-from utils.validators import to_json, to_list, to_date_str, convert_to_int, add_thousand_split, convert_to_int_from_thousand_sign, validate_budget_distribution, sort_selected_values, to_datetime
->>>>>>> 1a332096a93e30c495ddfda55981ce61345b918f
 from static_variables import DIGITALISERINGS_STRATEGI,IGNORED_FIELDS, ESTIMAT_LISTE
     
 brukere = load_users()
@@ -175,11 +165,7 @@ def project_detail(prosjekt_id: str, email: str, project: ProjectData, original_
         try:
             dialog.open()
             await asyncio.sleep(0.1)  # Allow UI to render spinner
-<<<<<<< HEAD
-            await run.io_bound(db_connector.update_project, original_project, project, prosjekt_id, email)
-=======
             await api_update_project(project, prosjekt_id, email)
->>>>>>> 1a332096a93e30c495ddfda55981ce61345b918f
 
             ui.notify("✅ Endringer lagret i databasen!", type="positive", position="top")
 
