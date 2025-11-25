@@ -1,7 +1,8 @@
 from typing import Any, Optional
 from uuid import UUID, uuid4
 import struct
-from datetime import datetime
+from pydantic import BaseModel
+from datetime import datetime, date
 import urllib
 from sqlmodel import SQLModel, Session, select, update
 from sqlalchemy import create_engine, event, Engine
@@ -12,9 +13,8 @@ from dotenv import load_dotenv
 from dataclasses import dataclass, field
 from pydantic import BaseModel
 from typing import Dict
-import ast
-from utils.azure_users import load_users
-from utils.data_models import PortfolioProject, PortfolioProjectUI, Fremskritt, FremskrittUI, Resursbehov, ResursbehovUI, Samarabeid, SamarabeidUI, Problemstilling, ProblemstillingUI, Tiltak, TiltakUI, Risikovurdering, RisikovurderingUI, Malbilde,  MalbildeUI, DigitaliseringStrategi, DigitaliseringStrategiUI, RessursbrukUI,Ressursbruk, Finansiering, FinansieringUI, Vurdering, VurderingUI
+
+from utils.data_models import PortfolioProject, PortfolioProjectUI, Fremskritt, FremskrittUI, Resursbehov, ResursbehovUI, Samarabeid, SamarabeidUI, Problemstilling, ProblemstillingUI, Tiltak, TiltakUI, Risikovurdering, RisikovurderingUI, Malbilde,  MalbildeUI, DigitaliseringStrategi, DigitaliseringStrategiUI, RessursbrukUI,Ressursbruk
 load_dotenv()
 brukere = load_users()
 

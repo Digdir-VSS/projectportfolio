@@ -7,8 +7,11 @@ from azure.keyvault.secrets import SecretClient
 import os
 from dotenv import load_dotenv
 from msal import ConfidentialClientApplication
+import copy
 
-from utils.db_connection import DBConnector, ProjectData
+from backend.database.db_connection import DBConnector, ProjectData
+from backend.innlevering_router import router as innleverings_router
+from utils.backend_client import api_get_projects, api_get_project
 from pages.login_page import register_login_pages
 from pages.dashboard import dashboard
 from pages.single_project import project_detail as digdir_overordnet_info_page
@@ -19,7 +22,10 @@ from static_variables import STEPS_DICT
 #app.include_router(innleverings_router)
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> 1a332096a93e30c495ddfda55981ce61345b918f
 load_dotenv()
 
 >>>>>>> 029ab4b (run on two ports)
@@ -120,9 +126,9 @@ async def overordnet():
     ui.label(f'Prosjekter for {user_name}').classes('text-lg font-bold mb-2')
     if email in super_user:
         ui.label('Du er logget inn som superbruker og ser alle prosjekter').classes('text-sm italic mb-4')
-        projects = await run.io_bound(db_connector.get_projects, None)
+        projects = await api_get_projects(None)
     else:        
-        projects = await run.io_bound(db_connector.get_projects, email)
+        projects = await api_get_projects(email)
     
     # store original copy for later diff
 
@@ -209,20 +215,25 @@ async def overordnet():
         ui.navigate.to(f"/project/new/{new_id}")
 
 @ui.page('/project/{prosjekt_id}')
-def project_detail(prosjekt_id: str):
+async def project_detail(prosjekt_id: str):
   
     user = require_login()
     if not user:
         return 
     layout(active_step='oppdater_prosjekt', title='Prosjekt detaljer', steps=STEPS_DICT)
     user_name = user["name"]
-    print(user_name)
     email = user["preferred_username"]
     if not email:
         ui.notify('No email claim found in login!')
         return
-    digdir_overordnet_info_page(db_connector=db_connector, prosjekt_id=prosjekt_id, email=email, user_name=user_name)
     
+    project = await api_get_project(prosjekt_id=prosjekt_id)
+    if not project:
+        ui.label('Project not found or you do not have access to it.')
+        return
+    original_project = copy.deepcopy(project)
+    digdir_overordnet_info_page(prosjekt_id=prosjekt_id, email=email, project=project, original_project=original_project)
+
 @ui.page('/project/new/{prosjekt_id}')
 def project_detail(prosjekt_id: str):
     
@@ -233,12 +244,10 @@ def project_detail(prosjekt_id: str):
 
     email = user["preferred_username"]
     user_name = user["name"]
-    print(user_name)
     if not email:
         ui.notify('No email claim found in login!')
         return
-    digdir_overordnet_info_page(db_connector=db_connector, prosjekt_id=prosjekt_id, email=email, user_name=user_name, new=True)
-
+    digdir_overordnet_info_page(prosjekt_id=prosjekt_id, email=email, user_name=user_name, new=True)
 @ui.page("/status_rapportering")
 def digdir():
     user = require_login()

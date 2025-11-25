@@ -2,6 +2,9 @@ import httpx
 import os 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 1a332096a93e30c495ddfda55981ce61345b918f
 from enum import StrEnum
 
 from backend.database.db_connection import ProjectData
@@ -19,6 +22,7 @@ class EndpointConfig(StrEnum):
 
 async def api_get_projects(email: str | None):
     print(f"{BACKEND_BASE_URL}/{EndpointConfig.INNLEVERING}/prosjekter")
+<<<<<<< HEAD
 =======
 =======
 from enum import StrEnum
@@ -43,12 +47,15 @@ async def api_get_projects(email: str | None):
 =======
     print(f"{BACKEND_BASE_URL}/{EndpointConfig.INNLEVERING}/prosjekter")
 >>>>>>> bd7afd7 (add Enum Config)
+=======
+>>>>>>> 1a332096a93e30c495ddfda55981ce61345b918f
     headers = {"x-api-key": API_KEY}
     params = {}
     if email is not None:
         params["email"] = email
 
     async with httpx.AsyncClient() as client:
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
         r = await client.get(f"{BACKEND_BASE_URL}/{EndpointConfig.INNLEVERING}/prosjekter", params=params, headers=headers)
@@ -58,6 +65,9 @@ async def api_get_projects(email: str | None):
 =======
         r = await client.get(f"{BACKEND_BASE_URL}/{EndpointConfig.INNLEVERING}/prosjekter", params=params, headers=headers)
 >>>>>>> bd7afd7 (add Enum Config)
+=======
+        r = await client.get(f"{BACKEND_BASE_URL}/{EndpointConfig.INNLEVERING}/prosjekter", params=params, headers=headers)
+>>>>>>> 1a332096a93e30c495ddfda55981ce61345b918f
         r.raise_for_status()
         return r.json()
 
@@ -67,6 +77,7 @@ async def api_get_project(prosjekt_id: str):
     async with httpx.AsyncClient() as client:
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         r = await client.get(f"{BACKEND_BASE_URL}/{EndpointConfig.INNLEVERING}/prosjekt/{prosjekt_id}", headers=headers)
 =======
         r = await client.get(f"{BACKEND_BASE}/prosjekt/{prosjekt_id}", headers=headers)
@@ -74,6 +85,9 @@ async def api_get_project(prosjekt_id: str):
 =======
         r = await client.get(f"{BACKEND_BASE_URL}/{EndpointConfig.INNLEVERING}/prosjekt/{prosjekt_id}", headers=headers)
 >>>>>>> bd7afd7 (add Enum Config)
+=======
+        r = await client.get(f"{BACKEND_BASE_URL}/{EndpointConfig.INNLEVERING}/prosjekt/{prosjekt_id}", headers=headers)
+>>>>>>> 1a332096a93e30c495ddfda55981ce61345b918f
         r.raise_for_status()
         data = r.json()
         return ProjectData(**data)
@@ -87,6 +101,7 @@ async def api_update_project(project: ProjectData, prosjekt_id: str, email: str)
         r = await client.post(
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
             f"{BACKEND_BASE_URL}/{EndpointConfig.INNLEVERING}/update_prosjekt",
 =======
             f"{BACKEND_BASE}/update_prosjekt",
@@ -94,10 +109,14 @@ async def api_update_project(project: ProjectData, prosjekt_id: str, email: str)
 =======
             f"{BACKEND_BASE_URL}/{EndpointConfig.INNLEVERING}/update_prosjekt",
 >>>>>>> bd7afd7 (add Enum Config)
+=======
+            f"{BACKEND_BASE_URL}/{EndpointConfig.INNLEVERING}/update_prosjekt",
+>>>>>>> 1a332096a93e30c495ddfda55981ce61345b918f
             params=params,
             json=payload,
             headers=headers,
         )
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 =======
@@ -106,6 +125,8 @@ async def api_update_project(project: ProjectData, prosjekt_id: str, email: str)
 >>>>>>> 0411402 (add client to backend fast api)
 =======
 >>>>>>> bd7afd7 (add Enum Config)
+=======
+>>>>>>> 1a332096a93e30c495ddfda55981ce61345b918f
         return r.json()
 
 async def api_create_new_project(email: str, prosjekt_id: str):
@@ -116,6 +137,7 @@ async def api_create_new_project(email: str, prosjekt_id: str):
         r = await client.post(
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
             f"{BACKEND_BASE_URL}/{EndpointConfig.INNLEVERING}/ny_prosjekt",
 =======
             f"{BACKEND_BASE}/ny_prosjekt",
@@ -123,6 +145,9 @@ async def api_create_new_project(email: str, prosjekt_id: str):
 =======
             f"{BACKEND_BASE_URL}/{EndpointConfig.INNLEVERING}/ny_prosjekt",
 >>>>>>> bd7afd7 (add Enum Config)
+=======
+            f"{BACKEND_BASE_URL}/{EndpointConfig.INNLEVERING}/ny_prosjekt",
+>>>>>>> 1a332096a93e30c495ddfda55981ce61345b918f
             json=payload,
             headers=headers,
         )

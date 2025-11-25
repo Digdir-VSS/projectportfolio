@@ -416,6 +416,7 @@ class Vurdering(SQLModel, table=True):
     mscw: str | None = None
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
+<<<<<<< HEAD:utils/data_models.py
     )
 
 class VurderingUI(BaseModel):
@@ -428,3 +429,6 @@ class VurderingUI(BaseModel):
     endret_av: str = ''
     er_gjeldende: bool = True
     mscw: str | None = None
+=======
+    )
+>>>>>>> 1a332096a93e30c495ddfda55981ce61345b918f:backend/database/data_models.py
