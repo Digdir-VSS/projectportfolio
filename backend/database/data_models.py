@@ -417,7 +417,6 @@ class Vurdering(SQLModel, table=True):
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
-
 class VurderingUI(BaseModel):
     vurdering_id: uuid.UUID = uuid.uuid4()
     prosjekt_id : uuid.UUID | None = None
