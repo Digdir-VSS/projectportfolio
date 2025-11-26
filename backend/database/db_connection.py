@@ -41,6 +41,8 @@ from .data_models import (
     DigitaliseringStrategiUI,
     RessursbrukUI,
     Ressursbruk,
+    Finansiering,
+    Vurdering,
     FinansieringUI,
     VurderingUI
 )
@@ -68,7 +70,7 @@ class ProjectData(BaseModel):
         arbitrary_types_allowed = True  # allows your UI dataclasses
 
 
-def prune_unchanged_fields(original_obj, modified_obj, brukere):
+def prune_unchanged_fields(original_obj, modified_obj):
     """Compare original and modified ProjectData, and remove unchanged submodels."""
     for field_name, original_value in original_obj.__dict__.items():
         modified_value = getattr(modified_obj, field_name, None)
@@ -105,15 +107,6 @@ def prune_unchanged_fields(original_obj, modified_obj, brukere):
         if isinstance(modified_value, BaseModel) and isinstance(original_value, BaseModel):
             if clean_dict(original_value) == clean_dict(modified_value):
                 setattr(modified_obj, field_name, None)
-
-    if hasattr(modified_obj, "portfolioproject") and modified_obj.portfolioproject:
-        kontakt_list = ast.literal_eval(modified_obj.portfolioproject.kontaktpersoner)
-
-        if modified_obj.portfolioproject.tiltakseier:
-            if modified_obj.portfolioproject.tiltakseier not in kontakt_list:
-                kontakt_list.append(modified_obj.portfolioproject.tiltakseier)
-        kontakt_epost = [brukere.get(i) for i in kontakt_list]
-        modified_obj.portfolioproject.epost_kontakt = str(kontakt_epost)
     return modified_obj
 
 
@@ -257,7 +250,26 @@ class DBConnector:
             "digitaliseringstrategi": DigitaliseringStrategiUI,
             "ressursbruk": RessursbrukUI,
         }
-        return cls(engine, sql_models, ui_models)
+        model_groups = {
+                "project": {
+                    "sql": sql_models,
+                    "ui": ui_models,
+                    "dataclass": ProjectData,
+                },
+                "vurdering": {
+                    "sql": {
+                        "finansiering": Finansiering,
+                        "vurdering": Vurdering,
+                    },
+                    "ui": {
+                        "finansiering": FinansieringUI,
+                        "vurdering": VurderingUI,
+                    },
+                    "dataclass": VurderingData,
+                },
+            }
+        
+        return cls(engine, model_groups)
 
     def create_empty_project(self, email, prosjekt_id, group: str = "project") -> ProjectData:
         empty_populated_schemas = {}
@@ -374,8 +386,9 @@ class DBConnector:
         stop=stop_after_attempt(3),
         reraise=True,
     )
-    def update_project(self, org_proj: ProjectData, mod_proj:ProjectData, prosjekt_id: UUID, e_mail: str, brukere: list, group: str = "project"):
-        mod_proj = prune_unchanged_fields(org_proj, mod_proj, brukere=brukere)
+    def update_project(self, mod_proj: ProjectData, prosjekt_id: UUID, e_mail: str, group: str = "project"):
+        org_proj = self.get_single_project(str(prosjekt_id))
+        mod_proj = prune_unchanged_fields(org_proj, mod_proj)
         now = datetime.utcnow()
         ui_models = self.model_groups[group]["ui"]
         sql_models = self.model_groups[group]["sql"]
