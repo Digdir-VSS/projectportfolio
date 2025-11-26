@@ -12,6 +12,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 COPY frontend ./frontend
 COPY backend ./backend
 COPY models ./models
+COPY icon ./icon
 
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-editable --python python3.13
