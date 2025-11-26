@@ -19,55 +19,38 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 from typing import Dict
 
-from utils.azure_users import load_users
-from .data_models import (
-    PortfolioProject,
+from models.ui_models import (
     PortfolioProjectUI,
-    Fremskritt,
     FremskrittUI,
-    Resursbehov,
     ResursbehovUI,
-    Samarabeid,
     SamarabeidUI,
-    Problemstilling,
     ProblemstillingUI,
-    Tiltak,
     TiltakUI,
-    Risikovurdering,
     RisikovurderingUI,
-    Malbilde,
     MalbildeUI,
-    DigitaliseringStrategi,
     DigitaliseringStrategiUI,
     RessursbrukUI,
+    FinansieringUI,
+    VurderingUI,
+    ProjectData,
+    VurderingData
+)
+from models.sql_models import (
+    PortfolioProject,
+    Fremskritt,
+    Resursbehov,
+    Samarabeid,
+    Problemstilling,
+    Tiltak,
+    Risikovurdering,
+    Malbilde,
+    DigitaliseringStrategi,
     Ressursbruk,
     Finansiering,
     Vurdering,
-    FinansieringUI,
-    VurderingUI
 )
 
 load_dotenv()
-
-class VurderingData(BaseModel):
-    finansiering: FinansieringUI | None
-    vurdering: VurderingUI | None
-
-
-class ProjectData(BaseModel):
-    fremskritt: Optional[FremskrittUI]
-    samarabeid: Optional[SamarabeidUI]
-    portfolioproject: Optional[PortfolioProjectUI]
-    problemstilling: Optional[ProblemstillingUI]
-    tiltak: Optional[TiltakUI]
-    risikovurdering: Optional[RisikovurderingUI]
-    malbilde: Optional[MalbildeUI]
-    resursbehov: Optional[ResursbehovUI]
-    digitaliseringstrategi: Optional[DigitaliseringStrategiUI]
-    ressursbruk: Dict[int, RessursbrukUI] | None
-
-    class Config:
-        arbitrary_types_allowed = True  # allows your UI dataclasses
 
 
 def prune_unchanged_fields(original_obj, modified_obj):
