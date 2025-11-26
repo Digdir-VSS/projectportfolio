@@ -1,5 +1,4 @@
 from nicegui import ui, Client
-import asyncio
 from nicegui import app
 from typing import Any
 from cachetools import TTLCache
@@ -10,13 +9,12 @@ from dotenv import load_dotenv
 from msal import ConfidentialClientApplication
 import copy
 
-from backend.database.db_connection import ProjectData
-from utils.backend_client import api_get_projects, api_get_project
-from pages.login_page import register_login_pages
-from pages.dashboard import dashboard
-from pages.single_project import project_detail as digdir_overordnet_info_page
-from utils.azure_users import load_users
-from pages.utils import layout
+from frontend.utils.backend_client import api_get_projects, api_get_project
+from frontend.pages.login_page import register_login_pages
+from frontend.pages.dashboard import dashboard
+from frontend.pages.single_project import project_detail as digdir_overordnet_info_page
+from frontend.utils.azure_users import load_users
+from frontend.pages.utils import layout
 import uuid
 from static_variables import STEPS_DICT
 
@@ -68,7 +66,6 @@ def require_login() -> dict[str, Any] | None:
 
 super_user = os.getenv("SUPER_USER")
 # keep a global cache of loaded projects for comparison
-ORIGINAL_PROJECTS: dict[str, list[ProjectData]] = {}
 @ui.page("/")
 def index(client: Client):
     """

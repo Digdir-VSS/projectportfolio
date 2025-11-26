@@ -2,7 +2,7 @@ import httpx
 import os 
 from enum import StrEnum
 
-from backend.database.db_connection import ProjectData
+from models.ui_models import ProjectData
 
 BACKEND_BASE_URL = os.getenv("BACKEND_BASE_URL")
 API_KEY = os.getenv("INNLEVERING_API_KEY")  # or whatever you use
