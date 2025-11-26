@@ -1,6 +1,5 @@
 from nicegui import ui, Client
-from nicegui import app
-from nicegui import ui, Client
+import asyncio
 from nicegui import app
 from typing import Any
 from cachetools import TTLCache
@@ -11,8 +10,7 @@ from dotenv import load_dotenv
 from msal import ConfidentialClientApplication
 import copy
 
-from backend.database.db_connection import DBConnector, ProjectData
-from backend.innlevering_router import router as innleverings_router
+from backend.database.db_connection import ProjectData
 from utils.backend_client import api_get_projects, api_get_project
 from pages.login_page import register_login_pages
 from pages.dashboard import dashboard
@@ -25,6 +23,8 @@ from static_variables import STEPS_DICT
 #app.include_router(innleverings_router)
 
 load_dotenv()
+
+bruker_list = load_users()
 
 # Client ID and secret correspond to your Entra Application registration
 credential = DefaultAzureCredential()
@@ -49,8 +49,6 @@ msal_app = ConfidentialClientApplication(
     client_credential=CLIENT_SECRET,
 )
 
-db_connector = DBConnector.create_engine(driver_name = "{ODBC Driver 18 for SQL Server}", server_name = os.getenv("SERVER"), database_name = os.getenv("DATABASE"), fabric_client_id = os.getenv("FABRIC_CLIENT_ID"), fabric_tenant_id  = os.getenv("TENANT_ID"), fabric_client_secret = os.getenv("FABRIC_SECRET"))
-# Cache for in-progress authorisation flows. Give the user 5 minutes to complete the flow
 AUTH_FLOW_STATES: TTLCache[str, dict[str, Any]] = TTLCache(maxsize=256, ttl=60 * 5)
 
 register_login_pages(
@@ -134,7 +132,7 @@ async def overordnet():
     if not projects:
         ui.label('No projects found for this user.')
         return
-    ORIGINAL_PROJECTS[email] = [p for p in projects]
+    
     with ui.column().classes("w-full gap-2"):
         with ui.row().classes('gap-2'):
             ui.button("➕ New Project", on_click=lambda: new_project()).props("color=secondary")
@@ -223,17 +221,14 @@ async def project_detail(prosjekt_id: str):
     if not email:
         ui.notify('No email claim found in login!')
         return
-    
     project = await api_get_project(prosjekt_id=prosjekt_id)
     if not project:
         ui.label('Project not found or you do not have access to it.')
         return
-    original_project = copy.deepcopy(project)
-    bruker_list = load_users()
-    digdir_overordnet_info_page(prosjekt_id=prosjekt_id, email=email, project=project, original_project=original_project, brukere_list=bruker_list)
+    digdir_overordnet_info_page(prosjekt_id=prosjekt_id, email=email, project=project, brukere_list=bruker_list)
 
 @ui.page('/project/new/{prosjekt_id}')
-def project_detail(prosjekt_id: str):
+async def project_detail(prosjekt_id: str):
     
     user = require_login()
     if not user:
@@ -245,7 +240,6 @@ def project_detail(prosjekt_id: str):
     if not email:
         ui.notify('No email claim found in login!')
         return
-    bruker_list = load_users()
     digdir_overordnet_info_page(prosjekt_id=prosjekt_id, email=email, user_name=user_name, new=True, brukere_list=bruker_list)
 
 @ui.page("/status_rapportering")
@@ -278,5 +272,5 @@ if __name__ in {"__main__", "__mp_main__"}:
         host="0.0.0.0",    
         port=8080,
         storage_secret=os.getenv("STORAGE_SECRET"),
-        favicon='icon/Verktøykasse.png'
+        favicon='icon/Verktøykasse.png',
     )
