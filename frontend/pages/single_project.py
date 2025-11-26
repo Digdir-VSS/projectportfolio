@@ -5,7 +5,7 @@ from models.ui_models import ProjectData, RessursbrukUI
 import ast, asyncio
 
 from models.validators import to_json, to_list, to_date_str, convert_to_int, add_thousand_split, convert_to_int_from_thousand_sign, validate_budget_distribution, sort_selected_values, to_datetime
-from static_variables import DIGITALISERINGS_STRATEGI, ESTIMAT_LISTE
+from frontend.static_variables import DIGITALISERINGS_STRATEGI, ESTIMAT_LISTE
     
 avdelinger = ['BOD','DSS' ,'KOM','FEL','STL' ,'TUU', 'VIS', 'KI Norge']
 def project_detail(prosjekt_id: str, email: str, project: ProjectData, brukere_list):

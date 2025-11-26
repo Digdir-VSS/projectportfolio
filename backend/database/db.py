@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from .db_connection import DBConnector
+from backend.database.db_connection import DBConnector
 
 load_dotenv()
 

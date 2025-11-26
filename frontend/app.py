@@ -16,7 +16,7 @@ from frontend.pages.single_project import project_detail as digdir_overordnet_in
 from frontend.utils.azure_users import load_users
 from frontend.pages.utils import layout
 import uuid
-from static_variables import STEPS_DICT
+from frontend.static_variables import STEPS_DICT
 
 #app.include_router(innleverings_router)
 

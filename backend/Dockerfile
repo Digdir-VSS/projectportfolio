@@ -19,7 +19,7 @@ RUN curl https://packages.microsoft.com/keys/microsoft.asc | \
 
 ENV PATH="$PATH:/opt/mssql-tools18/bin"
 
-WORKDIR /app
+WORKDIR /.
 
 # Copy lockfiles first for layer caching
 COPY pyproject.toml uv.lock ./
@@ -29,6 +29,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 # Copy only backend code (and any shared modules)
 COPY backend ./backend
+COPY models ./models
 
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-editable --python python3.13
@@ -38,4 +39,5 @@ ENV PATH="/app/.venv/bin:$PATH"
 EXPOSE 8000
 
 # IMPORTANT: CMD must be split into args, not one string
-CMD ["uvicorn", "backend.api_main:api_app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uv", "run", "--no-sync", "uvicorn", "backend.api_main:api_app", "--host", "0.0.0.0", "--port", "8000"]
+

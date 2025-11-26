@@ -4,8 +4,8 @@ from typing import Any
 from dotenv import load_dotenv
 from uuid import UUID
 from pydantic import BaseModel
-from .database.db import db_connector
-from .database.db_connection import ProjectData
+from backend.database.db import db_connector
+from backend.database.db_connection import ProjectData
 
 load_dotenv()
 
