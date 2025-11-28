@@ -61,4 +61,5 @@ async def api_create_new_project(email: str, prosjekt_id: str):
             headers=headers,
         )
         r.raise_for_status()
-        return r.json()
+        data = r.json()
+        return ProjectData(**data)
