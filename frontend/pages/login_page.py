@@ -1,6 +1,6 @@
 from nicegui import ui, app, Client
 from fastapi.responses import RedirectResponse
-from pages.utils import validate_token
+from frontend.pages.utils import validate_token
 import os
 
 def register_login_pages(msal_app, AUTH_FLOW_STATES, ENTRA_LOGOUT_ENDPOINT, SCOPE, REDIRECT_PATH):

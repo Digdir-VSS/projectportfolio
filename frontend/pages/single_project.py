@@ -1,28 +1,14 @@
 from nicegui import ui, run
 import ast
-from utils.azure_users import load_users
-from utils.db_connection import DBConnector, ProjectData
-from utils.data_models import RessursbrukUI
+from frontend.utils.backend_client import api_update_project
+from models.ui_models import ProjectData, RessursbrukUI
 import ast, asyncio
-import copy
-from pydantic import BaseModel
 
-from utils.validators import to_json, to_list, to_date_str, convert_to_int, add_thousand_split, convert_to_int_from_thousand_sign, validate_budget_distribution, sort_selected_values
-from static_variables import DIGITALISERINGS_STRATEGI,IGNORED_FIELDS, ESTIMAT_LISTE
+from models.validators import to_json, to_list, to_date_str, convert_to_int, add_thousand_split, convert_to_int_from_thousand_sign, validate_budget_distribution, sort_selected_values, to_datetime
+from frontend.static_variables import DIGITALISERINGS_STRATEGI, ESTIMAT_LISTE
     
-brukere = load_users()
-
-brukere_list = list(brukere.keys())
 avdelinger = ['BOD','DSS' ,'KOM','FEL','STL' ,'TUU', 'VIS', 'KI Norge']
-def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user_name: str, new: bool = False):
-    if new:
-        project = db_connector.create_empty_project(email=email, prosjekt_id=prosjekt_id)
-    else:
-        project = db_connector.get_single_project(prosjekt_id)
-        if not project:
-            ui.label('Project not found or you do not have access to it.')
-            return
-    original_project = copy.deepcopy(project)
+def project_detail(prosjekt_id: str, email: str, project: ProjectData, brukere_list):
     ui.markdown(f"## *Porteføljeinitiativ:* **{project.portfolioproject.navn}**").classes('text-xl font-bold')
     with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
         ui.label("1. Grunninformasjon").classes('col-span-1 row-span-1 col-start-1 row-start-3 text-lg font-bold underline mt-4 mb-2')
@@ -45,11 +31,11 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
                     "clearable options-dense color=primary").classes("w-full bg-white rounded-lg").props('use-chips').bind_value(project.portfolioproject, "kontaktpersoner", forward=to_json, backward=to_list)
         with ui.element("div").classes('col-span-1 row-span-1 col-start-4 row-start-5'):
             ui.label('Start').classes('text-lg font-bold')
-            ui.input().bind_value(project.portfolioproject, "oppstart", backward=to_date_str).props("outlined dense type=date clearable color=primary").classes("w-full")
+            ui.input().bind_value(project.portfolioproject, "oppstart", backward=to_date_str, forward=to_datetime).props("outlined dense type=date clearable color=primary").classes("w-full")
             
         with ui.element("div").classes('col-span-1 row-span-1 col-start-5 row-start-5'):
             ui.label("Planlagt ferdig").classes('text-lg font-bold')
-            ui.input().bind_value(project.fremskritt, "planlagt_ferdig",backward=to_date_str).props("outlined dense type=date clearable color=primary").classes("w-full")
+            ui.input().bind_value(project.fremskritt, "planlagt_ferdig",backward=to_date_str, forward=to_datetime).props("outlined dense type=date clearable color=primary").classes("w-full")
         with ui.element("div").classes('col-span-3 row-span-1 col-start-1 row-start-6'):
             ui.label('Hovedavdeling').classes('text-lg font-bold')
             ui.radio(
@@ -71,8 +57,6 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
         with ui.element("div").classes('col-span-3 row-span-2 col-start-4 row-start-6'):
             ui.label("Avhengigheter andre oppgaver").classes('text-lg font-bold')
             ui.textarea().classes('w-full bg-white rounded-lg').bind_value(project.samarabeid, "avhengigheter_andre")
-
-        
         
             
     with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
@@ -176,7 +160,7 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
         try:
             dialog.open()
             await asyncio.sleep(0.1)  # Allow UI to render spinner
-            await run.io_bound(db_connector.update_project, original_project, project, prosjekt_id, email)
+            await api_update_project(project, prosjekt_id, email)
 
             ui.notify("✅ Endringer lagret i databasen!", type="positive", position="top")
 
@@ -185,8 +169,10 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
         finally:
             dialog.close()
     async def check_or_update():
+        
         kontaktpersoner = project.portfolioproject.kontaktpersoner
         navn = project.portfolioproject.navn
+        print(navn)
         if project.ressursbruk[2026].predicted_resources or project.ressursbruk[2027].predicted_resources or project.ressursbruk[2028].predicted_resources:
             if validate_budget_distribution(project.resursbehov.estimert_budsjet_behov, project.ressursbruk[2026].predicted_resources,project.ressursbruk[2027].predicted_resources,project.ressursbruk[2028].predicted_resources):
                 ui.notify("❌ Summen av ressursbehov for 2026–2028 stemmer ikke med totalbudsjettet.", type="warning", position="top", close_button="OK")
@@ -208,6 +194,10 @@ def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user
         or (isinstance(kontaktpersoner, str) and kontaktpersoner.strip() == ""):
             ui.notify("❌ Du må fylle inn kontaktperson.", type="warning", position="top", close_button="OK")
             return
+        print("==========================================================================")
+        print(project.portfolioproject)
+        print("==========================================================================")
+        project.portfolioproject.epost_kontakt = brukere_list[project.portfolioproject.tiltakseier]
         await save_object()
 
 

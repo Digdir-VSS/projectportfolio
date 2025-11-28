@@ -7,14 +7,21 @@ on:
 
 env:
   ACR_NAME: projectportfolioregistry
-  IMAGE_NAME: portfolio.dev
-  CONTAINER_APP_NAME: project-portfolio-dev-app
+  BACKEND_IMAGE_NAME: portfolio-backend.dev
+  FRONTEND_IMAGE_NAME: portfolio-frontend.dev
+
+  CONTAINER_APP_NAME_BACKEND: portfolio-backend-dev-app
+  CONTAINER_APP_NAME_FRONTEND: project-portfolio-dev-app
+
   RESOURCE_GROUP: project-portfolio-resource
   BASE_APPLICATION_URL: https://project-portfolio-dev-app.wittybay-0abce5d9.norwayeast.azurecontainerapps.io
+  BACKEND_BASE_URL: https://portfolio-backend-dev-app.internal.wittybay-0abce5d9.norwayeast.azurecontainerapps.io/api
+
   TENANT_NAME: digdir.no
   DRIVER: ODBC Driver 18 for SQL Server
   DATABASE: PortfolioWarehouse
   SCHEMA: "portfolio_dev"
+  INNLEVERING_API_KEY: ${{ secrets.INTERNAL_API_KEY }}
   CLIENT_ID: ${{ secrets.CLIENT_ID }}
   TENANT_ID: ${{ secrets.TENANT_ID }}
   SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
@@ -30,7 +37,7 @@ permissions:
   id-token: write
   contents: read
 jobs:
-  build-and-deploy:
+  build-and-deploy-backend:
     runs-on: ubuntu-latest
     steps:
       - name: Azure login
@@ -43,31 +50,71 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build Docker image
+      - name: Build Docker backend image
         run: |
-          docker build -t $ACR_NAME.azurecr.io/$IMAGE_NAME:${{ github.sha }} .
-          docker tag $ACR_NAME.azurecr.io/$IMAGE_NAME:${{ github.sha }} $ACR_NAME.azurecr.io/$IMAGE_NAME:latest
+          docker build -f backend/Dockerfile $ACR_NAME.azurecr.io/$BACKEND_IMAGE_NAME:${{ github.sha }} .
+          docker tag $ACR_NAME.azurecr.io/$BACKEND_IMAGE_NAME:${{ github.sha }} $ACR_NAME.azurecr.io/$BACKEND_IMAGE_NAME:latest
+      
+      - name: Build Docker frontend image
+        run: |
+          docker build -f frontend/Dockerfile $ACR_NAME.azurecr.io/$FRONTEND_IMAGE_NAME:${{ github.sha }} .
+          docker tag $ACR_NAME.azurecr.io/$FRONTEND_IMAGE_NAME:${{ github.sha }} $ACR_NAME.azurecr.io/$FRONTEND_IMAGE_NAME:latest
 
       - name: Login to ACR
         run: |
           az acr login --name $ACR_NAME
 
-      - name: Push Docker image to ACR
+      - name: Push backend image to ACR
         run: |
-          docker push $ACR_NAME.azurecr.io/$IMAGE_NAME:${{ github.sha }}
-          docker push $ACR_NAME.azurecr.io/$IMAGE_NAME:latest
+          docker push $ACR_NAME.azurecr.io/$BACKEND_IMAGE_NAME:${{ github.sha }}
+          docker push $ACR_NAME.azurecr.io/$BACKEND_IMAGE_NAME:latest
 
-      - name: Deploy to Azure Container Apps (dev)
+      - name: Push frontend image to ACR
+        run: |
+          docker push $ACR_NAME.azurecr.io/$FRONTEND_IMAGE_NAME:${{ github.sha }}
+          docker push $ACR_NAME.azurecr.io/$FRONTEND_IMAGE_NAME:latest
+
+      - name: Deploy backend to Azure Container Apps (dev)
         uses: azure/CLI@v1
         with:
           inlineScript: |
             az containerapp update \
-              --name $CONTAINER_APP_NAME \
+              --name $CONTAINER_APP_NAME_BACKEND \
               --resource-group $RESOURCE_GROUP \
-              --image $ACR_NAME.azurecr.io/$IMAGE_NAME:${{ github.sha }} \
+              --image $ACR_NAME.azurecr.io/$BACKEND_IMAGE_NAME:${{ github.sha }} \
+              --revision-suffix "build-${{ github.run_number }}" \
+              --set-env-vars \
+                SCHEMA="${SCHEMA}" \
+                TENANT_NAME="${TENANT_NAME}" \
+                DRIVER="${DRIVER}" \
+                DATABASE="${DATABASE}" \
+                STORAGE_SECRET="${STORAGE_SECRET}" \
+                SUPER_USER="${SUPER_USER}" \
+                SERVER="${SERVER}" \
+                CLIENT_ID="${CLIENT_ID}" \
+                CLIENT_SECRET_NAME="${CLIENT_SECRET_NAME}" \
+                KEY_VAULT_URL="${KEY_VAULT_URL}" \
+                FABRIC_CLIENT_ID="${FABRIC_CLIENT_ID}" \
+                FABRIC_SECRET_NAME="${FABRIC_SECRET_NAME}" \
+                INNLEVERING_API_KEY="${INNLEVERING_API_KEY}" \
+                TENANT_ID="${TENANT_ID}" \
+                UUID_RUN="${{ github.run_id }}" \
+              --cpu 1 \
+              --memory 2Gi
+
+      - name: Deploy frontend to Azure Container Apps (dev)
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+            az containerapp update \
+              --name $ONTAINER_APP_NAME_FRONTEND \
+              --resource-group $RESOURCE_GROUP \
+              --image $ACR_NAME.azurecr.io/$FRONTEND_IMAGE_NAME:${{ github.sha }} \
               --revision-suffix "build-${{ github.run_number }}" \
               --set-env-vars \
                 BASE_APPLICATION_URL="${BASE_APPLICATION_URL}" \
+                INNLEVERING_API_KEY="${INNLEVERING_API_KEY}" \
+                BACKEND_BASE_URL="${BACKEND_BASE_URL}" \
                 SCHEMA="${SCHEMA}" \
                 TENANT_NAME="${TENANT_NAME}" \
                 DRIVER="${DRIVER}" \
