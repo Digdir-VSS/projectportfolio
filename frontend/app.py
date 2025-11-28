@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from msal import ConfidentialClientApplication
 import copy
 
-from frontend.utils.backend_client import api_get_projects, api_get_project
+from frontend.utils.backend_client import api_get_projects, api_get_project, api_create_new_project
 from frontend.pages.login_page import register_login_pages
 from frontend.pages.dashboard import dashboard
 from frontend.pages.single_project import project_detail as digdir_overordnet_info_page
@@ -233,11 +233,11 @@ async def project_detail(prosjekt_id: str):
     layout(active_step='oppdater_prosjekt', title='Prosjekt detaljer', steps=STEPS_DICT)
 
     email = user["preferred_username"]
-    user_name = user["name"]
+    project = await api_create_new_project(email=email, prosjekt_id=prosjekt_id)
     if not email:
         ui.notify('No email claim found in login!')
         return
-    digdir_overordnet_info_page(prosjekt_id=prosjekt_id, email=email, user_name=user_name, new=True, brukere_list=bruker_list)
+    digdir_overordnet_info_page(prosjekt_id=prosjekt_id, email=email, project=project, brukere_list=bruker_list)
 
 @ui.page("/status_rapportering")
 def digdir():
