@@ -169,9 +169,10 @@ def project_detail(prosjekt_id: str, email: str, project: ProjectData, brukere_l
         finally:
             dialog.close()
     async def check_or_update():
-        project.portfolioproject.epost_kontakt = brukere_list[project.portfolioproject.tiltakseier]
+        
         kontaktpersoner = project.portfolioproject.kontaktpersoner
         navn = project.portfolioproject.navn
+        print(navn)
         if project.ressursbruk[2026].predicted_resources or project.ressursbruk[2027].predicted_resources or project.ressursbruk[2028].predicted_resources:
             if validate_budget_distribution(project.resursbehov.estimert_budsjet_behov, project.ressursbruk[2026].predicted_resources,project.ressursbruk[2027].predicted_resources,project.ressursbruk[2028].predicted_resources):
                 ui.notify("❌ Summen av ressursbehov for 2026–2028 stemmer ikke med totalbudsjettet.", type="warning", position="top", close_button="OK")
@@ -193,6 +194,10 @@ def project_detail(prosjekt_id: str, email: str, project: ProjectData, brukere_l
         or (isinstance(kontaktpersoner, str) and kontaktpersoner.strip() == ""):
             ui.notify("❌ Du må fylle inn kontaktperson.", type="warning", position="top", close_button="OK")
             return
+        print("==========================================================================")
+        print(project.portfolioproject)
+        print("==========================================================================")
+        project.portfolioproject.epost_kontakt = brukere_list[project.portfolioproject.tiltakseier]
         await save_object()
 
 
