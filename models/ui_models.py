@@ -11,7 +11,7 @@ from models.validators import to_datetime, convert_to_int
 class PortfolioProjectUI(BaseModel):
     prosjekt_sk_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
-    navn: str = ''
+    navn: str | None = None
     oppstart: Annotated[datetime | None, BeforeValidator(to_datetime)] = None
     avdeling: str | None = None
     tiltakseier: str | None = None
@@ -28,7 +28,7 @@ class DigitaliseringStrategiUI(BaseModel):
     sammenheng_digital_strategi: str | None = None
     digital_strategi_kommentar: str | None = None
     sist_endret: datetime | None = None
-    endret_av: str = ''
+    endret_av: str | None = None
     er_gjeldende: bool = True
 
 
@@ -42,10 +42,10 @@ class FinansieringUI(BaseModel):
     prognose_tildelt: int | None = None
     tentatitv_forpliktelse: int | None = None
     estimert_budsjettbehov: int | None = None
-    usikkerhet_estimat: str = ''
+    usikkerhet_estimat: str | None = None
     risiko_av_estimat_tall: int | None = None
     sist_endret: datetime | None = None
-    endret_av: str = ''
+    endret_av: str | None = None
     er_gjeldende: bool = True
     
 
@@ -144,7 +144,7 @@ class VurderingUI(BaseModel):
     pulje: int | None = None
     risiko_vurdering: str | None = None
     sist_endret: datetime | None = None
-    endret_av: str = ''
+    endret_av: str | None = None
     er_gjeldende: bool = True
     mscw: str | None = None
 
