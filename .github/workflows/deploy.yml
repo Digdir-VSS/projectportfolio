@@ -52,12 +52,12 @@ jobs:
 
       - name: Build Docker backend image
         run: |
-          docker build -f backend/Dockerfile -t $ACR_NAME.azurecr.io/$BACKEND_IMAGE_NAME:${{ github.sha }} backend
+          docker buildx build -f backend/Dockerfile -t $ACR_NAME.azurecr.io/$BACKEND_IMAGE_NAME:${{ github.sha }} .
           docker tag $ACR_NAME.azurecr.io/$BACKEND_IMAGE_NAME:${{ github.sha }} $ACR_NAME.azurecr.io/$BACKEND_IMAGE_NAME:latest
       
       - name: Build Docker frontend image
         run: |
-          docker buildx build -f frontend/Dockerfile -t $ACR_NAME.azurecr.io/$FRONTEND_IMAGE_NAME:${{ github.sha }} frontend
+          docker buildx build -f frontend/Dockerfile -t $ACR_NAME.azurecr.io/$FRONTEND_IMAGE_NAME:${{ github.sha }} .
           docker tag $ACR_NAME.azurecr.io/$FRONTEND_IMAGE_NAME:${{ github.sha }} $ACR_NAME.azurecr.io/$FRONTEND_IMAGE_NAME:latest
 
       - name: Login to ACR
