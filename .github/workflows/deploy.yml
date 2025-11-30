@@ -107,7 +107,7 @@ jobs:
         with:
           inlineScript: |
             az containerapp update \
-              --name $ONTAINER_APP_NAME_FRONTEND \
+              --name $CONTAINER_APP_NAME_FRONTEND \
               --resource-group $RESOURCE_GROUP \
               --image $ACR_NAME.azurecr.io/$FRONTEND_IMAGE_NAME:${{ github.sha }} \
               --revision-suffix "build-${{ github.run_number }}" \
