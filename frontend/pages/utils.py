@@ -1,57 +1,50 @@
-from typing import Any, Callable
-
 from nicegui import ui
-import requests
-import jwt
-from jwt.algorithms import RSAAlgorithm
-import os 
-from dotenv import load_dotenv
+import ast
 
-load_dotenv()
+from models.ui_models import ProjectData
+from models.validators import validate_budget_distribution
 
-def _get_tenant_public_key_for_key_id(key_id, tenant_name):
-    """
-    Obtain the public key used by Azure AD to sign tokens.
+def validate_kontaktpersoner(kontaktpersoner: str | None, msg: str) -> tuple[bool, str]:
+    if kontaktpersoner is None:
+        return  False, msg
+    kontaktpersoner_list = ast.literal_eval(kontaktpersoner) if kontaktpersoner else []
+    if not kontaktpersoner_list:
+        return  False, msg
+    return True, ""
 
-    Note that this method obtains all public keys on every call. This could be optimised by caching these keys and/or by
-    only obtaining keys that are not yet present in the cache.
-    """
-    jwks_url = f"https://login.microsoftonline.com/{tenant_name}/discovery/v2.0/keys"
-    response = requests.get(jwks_url)
-    jwks = response.json()
+def validate_project_navn(project_navn: str | None, msg: str) -> tuple[bool, str]:
+    if not project_navn:
+        return  False, msg
+    if project_navn.strip() == "":
+        return  False, msg
+    return True, ""
 
-    # Find the correct key from the available keys
-    key = next((key for key in jwks["keys"] if key["kid"] == key_id), None)
-
-    # Attempt to extract the actual public key
-    if key:
-        public_key = RSAAlgorithm.from_jwk(key)
+def validate_tiltakseier(tiltakseier: str | None, msg: str) -> tuple[bool, str]:
+    if tiltakseier is None:
+        return False, msg
+    if not tiltakseier:
+        return False, msg
     else:
-        raise Exception("Public key not found")
+        return True, ""
+    
+def validate_send_schema(project: ProjectData) -> tuple[bool, str]:
+    validation_navn, message_navn = validate_project_navn(project.portfolioproject.navn, msg="❌ Du må fylle inn tiltaksnavn.")
+    if not validation_navn:
+        return validation_navn, message_navn
 
-    return public_key
+    validation_kontaktperson, message_kontaktperson = validate_kontaktpersoner(project.portfolioproject.kontaktpersoner, msg="❌ Du må fylle inn kontaktperson.")
+    if not validation_kontaktperson:
+        return validation_kontaktperson, message_kontaktperson
+    
+    validation_tiltakseier, message_tiltakseier = validate_tiltakseier(project.portfolioproject.tiltakseier, msg="❌ Du må fylle inn tiltakseier.")
+    if not validation_tiltakseier:
+        return validation_tiltakseier, message_tiltakseier
 
-
-def validate_token(jwt_token, tenant_name):
-    """Validate the JWT token using the public key from Azure AD."""
-
-    # Obtain relevant specifications from the JWT token
-    header = jwt.get_unverified_header(jwt_token)
-    algorithm = header["alg"]
-    key_id = header["kid"]
-
-    # Obtain the Azure public key corresponding to our tenant and the given `key_id` that was included in the JWT token.
-    tenant_public_key = _get_tenant_public_key_for_key_id(key_id, tenant_name)
-
-    try:
-        # Decode the token, verifying the signature and claims
-        decoded_token = jwt.decode(jwt_token, tenant_public_key, algorithms=[algorithm], audience=os.getenv("CLIENT_ID"))
-        return decoded_token
-    except jwt.PyJWTError as e:
-        print(f"Token validation error: {e}")
-        return None
-
-
+    if project.ressursbruk[2026].predicted_resources or project.ressursbruk[2027].predicted_resources or project.ressursbruk[2028].predicted_resources:
+        if validate_budget_distribution(project.resursbehov.estimert_budsjet_behov, project.ressursbruk[2026].predicted_resources,project.ressursbruk[2027].predicted_resources,project.ressursbruk[2028].predicted_resources):
+            return  False, "❌ Summen av ressursbehov for 2026–2028 stemmer ikke med totalbudsjettet."
+    else:
+        return True, ""
 
 def layout(active_step: str, title: str, steps: dict[str, str]):
     ui.add_head_html('''
@@ -76,117 +69,3 @@ def layout(active_step: str, title: str, steps: dict[str, str]):
         
         # set active step
         stepper.value = active_step
-
-        #     ui.step('Oversikt over dine prosjekter').props('name=oversikt clickable') \
-        #         .on('click', lambda: ui.navigate.to('/'))
-        #     ui.step('Overordnet info').props('name=overordnet clickable') \
-        #         .on('click', lambda: ui.navigate.to('/overordnet'))
-        #     ui.step('Om Digdirs aktivitet').props('name=aktivitet clickable') \
-        #         .on('click', lambda: ui.navigate.to('/digdir_aktivitet'))
-        #     ui.step('Om Digdirs leveranse').props('name=leveranse clickable') \
-        #         .on('click', lambda: ui.navigate.to('/leveranse'))
-        # stepper.value = active_step
-
-
-def input_field(
-    cache_model: Any,
-    field_name: str,
-    label: str,
-    validation: Callable[[str], str | None] | None = None,
-) -> None:
-    """Render an input field bound to a cache_model attribute."""
-    with ui.element("div").classes("flex flex-col gap-1"):
-        ui.html(label)
-        ui.input(validation=validation).bind_value(cache_model, field_name).props(
-            "outlined dense clearable color=primary"
-        ).classes("w-full")
-
-
-def input_field_date(cache_model: Any, field_name: str, label: str) -> None:
-    """Render a date input field bound to a cache_model attribute."""
-    with ui.element("div").classes("flex flex-col gap-1"):
-        ui.html(label)
-        ui.input().bind_value(cache_model, field_name).props(
-            "outlined dense type=date clearable color=primary"
-        ).classes("w-full")
-
-
-def select_field(
-    cache_model: Any, field_name: str, label: str, categories: list[str]
-) -> None:
-    """Render a select dropdown with optional 'Annet' input field."""
-    with ui.element("div").classes("flex flex-col gap-1"):
-        ui.html(label)
-        select = (
-            ui.select(categories)
-            .bind_value(cache_model, field_name)
-            .props("outlined dense clearable options-dense color=primary")
-            .classes("w-full")
-        )
-
-        ui.input("Spesifiser annet...").bind_visibility_from(
-            select, "value", lambda v: v == "Annet"
-        ).bind_value(cache_model, f"{field_name}_annet").props(
-            "outlined dense clearable color=primary"
-        ).classes(
-            "w-full"
-        )
-
-
-def text_area_field(
-    cache_model: Any, field_name: str, label: str, rows: int = 6, h_size: int = 40
-) -> None:
-    """Render a textarea field."""
-    with ui.element("div").classes("flex flex-col gap-1"):
-        ui.html(label)
-        ui.textarea().bind_value(cache_model, field_name).props(
-            f"outlined clearable color=primary rows={rows}"
-        ).classes(f"w-full h-{h_size}")
-
-
-def check_box(
-    cache_model: Any, field_name: str, label: str, boxes: list[str], rows: int = 2
-) -> None:
-    """Render a group of checkboxes, including optional 'Annet' input."""
-    with ui.element("div").classes("flex flex-col gap-1"):
-        ui.html(label)
-
-        number_of_cols = int(len(boxes) / rows) or 1
-
-        with ui.element("div").classes(f"grid grid-cols-{number_of_cols} gap-5 w-full"):
-            for box_name in boxes:
-                box_name = box_name.replace(" ", "_")
-                key = f"{field_name}_{box_name}"
-
-                # Ensure default is False instead of None
-                if getattr(cache_model, key, None) is None:
-                    setattr(cache_model, key, False)
-
-                checkbox = ui.checkbox(box_name).bind_value(cache_model, key)
-
-                if box_name.lower() == "annet":
-                    ui.input("Spesifiser annet...").bind_visibility_from(
-                        checkbox, "value"
-                    ).bind_value(cache_model, f"{field_name}_Annet").props(
-                        "outlined dense clearable color=primary"
-                    ).classes(
-                        f"w-full col-span-{number_of_cols}"
-                    )
-
-
-def radio_box(
-    cache_model: Any, field_name: str, label: str, boxes: list[str], rows: int = 2
-) -> None:
-    """Render a radio group with optional 'Annet' input."""
-    with ui.element("div").classes("flex flex-col gap-1"):
-        ui.html(label)
-        with ui.element("div").classes(f"grid grid-cols-1 gap-1 w-full"):
-            radio = ui.radio(boxes).bind_value(cache_model, field_name).props("inline")
-
-            ui.input("Spesifiser annet...").bind_visibility_from(
-                radio, "value", lambda v: v == "Annet"
-            ).bind_value(cache_model, f"{field_name}_annet").props(
-                "outlined dense clearable color=primary"
-            ).classes(
-                "w-full"
-            )

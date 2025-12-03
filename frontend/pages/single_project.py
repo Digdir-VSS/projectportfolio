@@ -4,7 +4,8 @@ from frontend.utils.backend_client import api_update_project
 from models.ui_models import ProjectData, RessursbrukUI
 import ast, asyncio
 
-from models.validators import to_json, to_list, to_date_str, convert_to_int, add_thousand_split, convert_to_int_from_thousand_sign, validate_budget_distribution, sort_selected_values, to_datetime
+from frontend.pages.utils import validate_send_schema
+from models.validators import to_json, to_list, to_date_str, convert_to_int, add_thousand_split, convert_to_int_from_thousand_sign, sort_selected_values, to_datetime
 from frontend.static_variables import DIGITALISERINGS_STRATEGI, ESTIMAT_LISTE
     
 avdelinger = ['BOD','DSS' ,'KOM','FEL','STL' ,'TUU', 'VIS', 'KI Norge']
@@ -169,36 +170,15 @@ def project_detail(prosjekt_id: str, email: str, project: ProjectData, brukere_l
         finally:
             dialog.close()
     async def check_or_update():
-        
-        kontaktpersoner = project.portfolioproject.kontaktpersoner
-        navn = project.portfolioproject.navn
-        print(navn)
-        if project.ressursbruk[2026].predicted_resources or project.ressursbruk[2027].predicted_resources or project.ressursbruk[2028].predicted_resources:
-            if validate_budget_distribution(project.resursbehov.estimert_budsjet_behov, project.ressursbruk[2026].predicted_resources,project.ressursbruk[2027].predicted_resources,project.ressursbruk[2028].predicted_resources):
-                ui.notify("❌ Summen av ressursbehov for 2026–2028 stemmer ikke med totalbudsjettet.", type="warning", position="top", close_button="OK")
-                return
-        if isinstance(kontaktpersoner, str):
-            try:
-                parsed = ast.literal_eval(kontaktpersoner)
-                if isinstance(parsed, list):
-                    kontaktpersoner = parsed
-                else:
-                    kontaktpersoner = []
-            except Exception:
-                kontaktpersoner = []
-        # Check navn_tiltak — handles None or empty string
-        if not navn or navn.strip() == "":
-            ui.notify("❌ Du må fylle inn tiltaksnavn.", type="warning", position="top", close_button="OK")
-            return
-        if not kontaktpersoner or (isinstance(kontaktpersoner, list) and len(kontaktpersoner) == 0) \
-        or (isinstance(kontaktpersoner, str) and kontaktpersoner.strip() == ""):
-            ui.notify("❌ Du må fylle inn kontaktperson.", type="warning", position="top", close_button="OK")
-            return
-        print("==========================================================================")
-        print(project.portfolioproject)
-        print("==========================================================================")
-        project.portfolioproject.epost_kontakt = brukere_list[project.portfolioproject.tiltakseier]
-        await save_object()
+    
+        is_valid, message = validate_send_schema(project)
+        if is_valid:
+            project.portfolioproject.epost_kontakt = brukere_list[project.portfolioproject.tiltakseier]
+            await save_object()
+        else: 
+            ui.notify(message, type="warning", position="top", close_button="OK")
+            return 
+
 
 
     ui.button("💾 Lagre", on_click=check_or_update).classes("mt-4")
