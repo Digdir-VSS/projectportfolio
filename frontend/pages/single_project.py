@@ -18,9 +18,9 @@ def project_detail(prosjekt_id: str, email: str, project: ProjectData, brukere_l
             ui.input(value=project.portfolioproject.navn).classes('w-full bg-white rounded-lg').bind_value(project.portfolioproject, "navn")
         with ui.element("div").classes('col-span-3 row-span-1 col-start-1 row-start-4'):
             ui.label("Tiltakseier (linjeleder)").classes('text-lg font-bold')
-            ui.select(brukere_list, with_input=True, multiple=False, validation= lambda value: "Du må velge en tiltakseier" if value == None else None).props(
+            ui.select(list(brukere_list.keys()), with_input=True, multiple=False, validation= lambda value: "Du må velge en tiltakseier" if value == None else None).props(
                     "outlined dense clearable options-dense color=primary").classes(
-                        "w-full bg-white rounded-lg").props('use-chips').bind_value(project.portfolioproject, "epost_kontakt")
+                        "w-full bg-white rounded-lg").props('use-chips').bind_value(project.portfolioproject, "tiltakseier")
         with ui.element("div").classes('col-span-1 row-span-1 col-start-4 row-start-4'):
             ui.label("Hvilken fase skal startes").classes('text-lg font-bold')
             ui.select(
@@ -28,7 +28,7 @@ def project_detail(prosjekt_id: str, email: str, project: ProjectData, brukere_l
                 ).classes('w-full bg-white rounded-lg').bind_value(project.fremskritt, "fase")
         with ui.element("div").classes('col-span-3 row-span-1 col-start-1 row-start-5'):
             ui.label("Kontaktperson").classes('text-lg font-bold')
-            ui.select(list(brukere_list.values()), with_input=True, multiple=True, on_change=sort_selected_values).props(
+            ui.select(list(brukere_list.keys()), with_input=True, multiple=True, on_change=sort_selected_values).props(
                     "clearable options-dense color=primary").classes("w-full bg-white rounded-lg").props('use-chips').bind_value(project.portfolioproject, "kontaktpersoner", forward=to_json, backward=to_list)
         with ui.element("div").classes('col-span-1 row-span-1 col-start-4 row-start-5'):
             ui.label('Start').classes('text-lg font-bold')
@@ -173,8 +173,11 @@ def project_detail(prosjekt_id: str, email: str, project: ProjectData, brukere_l
     
         is_valid, message = validate_send_schema(project)
         if is_valid:
-            project.portfolioproject.tiltakseier = brukere_list[project.portfolioproject.epost_kontakt]
-            await save_object()
+            project.portfolioproject.epost_kontakt = brukere_list[project.portfolioproject.tiltakseier]
+            print("Epost", project.portfolioproject.epost_kontakt)
+            print("Tiltakseier", project.portfolioproject.tiltakseier)
+            print("Kontaktpersoner", project.portfolioproject.kontaktpersoner)
+            #await save_object()
         else: 
             ui.notify(message, type="warning", position="top", close_button="OK")
             return 
