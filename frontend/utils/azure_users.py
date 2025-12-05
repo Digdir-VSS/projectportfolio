@@ -32,7 +32,7 @@ async def _fetch_all_users() -> dict:
 
             for user in page.value:
                 if user.job_title and user.job_title != "Eksterne":
-                    brukere[user.display_name] = user.mail
+                    brukere[user.mail] = user.display_name
 
         if page.odata_next_link:
             page = await client.users.with_url(page.odata_next_link).get()
