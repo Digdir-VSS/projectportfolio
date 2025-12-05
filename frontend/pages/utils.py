@@ -41,10 +41,10 @@ def validate_send_schema(project: ProjectData) -> tuple[bool, str]:
         return validation_tiltakseier, message_tiltakseier
 
     if project.ressursbruk[2026].predicted_resources or project.ressursbruk[2027].predicted_resources or project.ressursbruk[2028].predicted_resources:
-        if validate_budget_distribution(project.resursbehov.estimert_budsjet_behov, project.ressursbruk[2026].predicted_resources,project.ressursbruk[2027].predicted_resources,project.ressursbruk[2028].predicted_resources):
+        is_invaid = validate_budget_distribution(project.resursbehov.estimert_budsjet_behov, project.ressursbruk[2026].predicted_resources,project.ressursbruk[2027].predicted_resources,project.ressursbruk[2028].predicted_resources)
+        if is_invaid:   
             return  False, "❌ Summen av ressursbehov for 2026–2028 stemmer ikke med totalbudsjettet."
-    else:
-        return True, ""
+    return True, ""
 
 def layout(active_step: str, title: str, steps: dict[str, str]):
     ui.add_head_html('''
