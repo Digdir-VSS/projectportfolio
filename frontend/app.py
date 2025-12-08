@@ -86,7 +86,7 @@ def index(client: Client):
             ui.button("Login with Microsoft", on_click=lambda: ui.navigate.to("/login"))
     else:
         # If the user is logged in, store their information and redirect them to the actual app
-        ui.navigate.to("/home")
+        ui.navigate.to("/oppdater_prosjekt")
 
 
 
@@ -100,7 +100,15 @@ def main_page():
     ui.label('Detter er hjemmesiden. Her vil vi publisere en oversikt med informasjon om prosjektene.')
     dashboard()
 
+def new_project():
+    # Create a blank ProjectData with default values
+    new_id = str(uuid.uuid4())
 
+    # Store it in the same place so project_detail() can load it
+    ui.notify("New project created", type="positive")
+
+    # Navigate to the same project page as "edit"
+    ui.navigate.to(f"/project/new/{new_id}")
 
 @ui.page('/oppdater_prosjekt')
 async def overordnet():
@@ -125,15 +133,14 @@ async def overordnet():
     # store original copy for later diff
 
     
-    # create a table with editable fields
-    if not projects:
-        ui.label('Ingen prosjekter funnet for denne brukeren.')
-        return
     
     with ui.column().classes("w-full gap-2"):
         with ui.row().classes('gap-2'):
             ui.button("➕ New Project", on_click=lambda: new_project()).props("color=secondary")
-
+        # create a table with editable fields
+        if not projects:
+            ui.label('No projects found for this user.')
+            return
         visible_keys = [
             key for key in projects[0].keys()
             if key not in ["prosjekt_id", "epost_kontakt"]
@@ -196,15 +203,7 @@ async def overordnet():
             '''
         )
    
-    def new_project():
-        # Create a blank ProjectData with default values
-        new_id = str(uuid.uuid4())
 
-        # Store it in the same place so project_detail() can load it
-        ui.notify("New project created", type="positive")
-
-        # Navigate to the same project page as "edit"
-        ui.navigate.to(f"/project/new/{new_id}")
 
 @ui.page('/project/{prosjekt_id}')
 async def project_detail(prosjekt_id: str):

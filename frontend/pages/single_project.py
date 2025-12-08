@@ -173,7 +173,10 @@ def project_detail(prosjekt_id: str, email: str, project: ProjectData, brukere_l
     
         is_valid, message = validate_send_schema(project)
         if is_valid:
-            project.portfolioproject.epost_kontakt = brukere_list[project.portfolioproject.tiltakseier]
+            kontakt_list = ast.literal_eval(project.portfolioproject.kontaktpersoner)
+            kontakt_list.append(project.portfolioproject.tiltakseier)
+            kontakt_set = list(set(kontakt_list))
+            project.portfolioproject.epost_kontakt = str([brukere_list[i] for i in kontakt_set])
             await save_object()
         else: 
             ui.notify(message, type="warning", position="top", close_button="OK")
