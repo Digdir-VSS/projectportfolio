@@ -1,4 +1,4 @@
-name: Build and Deploy to Azure Container Apps (Dev)
+name: Build and Deploy to Azure Container Apps (Prod)
 
 on:
   push:
