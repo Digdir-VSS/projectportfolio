@@ -96,8 +96,8 @@ def main_page():
     if not user:
         return 
 
-    layout(active_step='home', title='Oversikt over dine prosjekter', steps=STEPS_DICT)
-    ui.label('Detter er hjemesiden. Her vil vi publisere en oversikt med informasjon om prosjektene.')
+    layout(active_step='home', title='Hjemmeside', steps=STEPS_DICT)
+    ui.label('Detter er hjemmesiden. Her vil vi publisere en oversikt med informasjon om prosjektene.')
     dashboard()
 
 def new_project():
@@ -122,10 +122,10 @@ async def overordnet():
         ui.notify('No email claim found in login!')
         return
 
-    layout(active_step='oppdater_prosjekt', title='Rediger prosjekt', steps=STEPS_DICT)
+    layout(active_step='oppdater_prosjekt', title='Ny/ endre prosjekt', steps=STEPS_DICT)
     ui.label(f'Prosjekter for {user_name}').classes('text-lg font-bold mb-2')
     if email in super_user:
-        ui.label('Du er logget inn som superbruker og ser alle prosjekter').classes('text-sm italic mb-4')
+        ui.label('Du er logget inn som admin og ser alle prosjekter').classes('text-sm italic mb-4')
         projects = await api_get_projects(None)
     else:        
         projects = await api_get_projects(email)
@@ -133,7 +133,6 @@ async def overordnet():
     # store original copy for later diff
 
     
-
     
     with ui.column().classes("w-full gap-2"):
         with ui.row().classes('gap-2'):
@@ -220,7 +219,7 @@ async def project_detail(prosjekt_id: str):
         return
     project = await api_get_project(prosjekt_id=prosjekt_id)
     if not project:
-        ui.label('Project not found or you do not have access to it.')
+        ui.label('Prosjektet ble ikke funnet, eller du har ikke tilgang til det.')
         return
     digdir_overordnet_info_page(prosjekt_id=prosjekt_id, email=email, project=project, brukere_list=bruker_list)
 

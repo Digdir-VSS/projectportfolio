@@ -6,7 +6,7 @@ from backend.database.db_connection import DBConnector
 
 @pytest.fixture
 def db_connector():
-    return DBConnector(engine=MagicMock())
+    return DBConnector(engine=MagicMock(), model_groups={})
 
 
 def make_operational_error(message: str):
@@ -35,7 +35,7 @@ def test_retry_on_operational_error(monkeypatch, db_connector):
     ]
     # context-managed session
     mock_ctx = make_context_session(mock_session)
-    monkeypatch.setattr("utils.db_connection.Session", MagicMock(return_value=mock_ctx))
+    monkeypatch.setattr("backend.database.db_connection.Session", MagicMock(return_value=mock_ctx))
 
     result = db_connector.get_projects()
 
@@ -51,7 +51,7 @@ def test_stops_after_max_retries(monkeypatch, db_connector):
         make_operational_error("08S01 TCP Provider"),
     ]
     mock_ctx = make_context_session(mock_session)
-    monkeypatch.setattr("utils.db_connection.Session", MagicMock(return_value=mock_ctx))
+    monkeypatch.setattr("backend.database.db_connection.Session", MagicMock(return_value=mock_ctx))
 
     with pytest.raises(OperationalError):
         db_connector.get_projects()
@@ -63,7 +63,7 @@ def test_no_retry_on_non_operational_error(monkeypatch, db_connector):
     mock_session = MagicMock()
     mock_session.exec.side_effect = ValueError("Some other error")
     mock_ctx = make_context_session(mock_session)
-    monkeypatch.setattr("utils.db_connection.Session", MagicMock(return_value=mock_ctx))
+    monkeypatch.setattr("backend.database.db_connection.Session", MagicMock(return_value=mock_ctx))
 
     with pytest.raises(ValueError):
         db_connector.get_projects()
