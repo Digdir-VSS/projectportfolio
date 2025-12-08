@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import os
 import uuid
 from unittest.mock import patch
+import uuid
 
 from backend.innlevering_router import router
 
@@ -18,7 +19,7 @@ client = TestClient(app)
 
 
 def test_new_innnleverings_prosjekt():
-    payload = {"email": "test@example.com", "prosjekt_id": "ABC123"}
+    payload = {"email": "test@example.com", "prosjekt_id": str(uuid.uuid4())}
     response = client.post(
         "/api/innlevering/ny_prosjekt", headers={"x-api-key": API_KEY}, json=payload
     )
