@@ -15,7 +15,7 @@ env:
 
   RESOURCE_GROUP: project-portfolio-resource
   BASE_APPLICATION_URL: https://project-portfolio-prod-app.wittybay-0abce5d9.norwayeast.azurecontainerapps.io
-  BACKEND_BASE_URL: https://portfolio-backend-prod-app.internal.wittybay-0abce5d9.norwayeast.azurecontainerapps.io//api
+  BACKEND_BASE_URL: https://portfolio-backend-prod-app.internal.wittybay-0abce5d9.norwayeast.azurecontainerapps.io/api
 
   TENANT_NAME: digdir.no
   DRIVER: ODBC Driver 18 for SQL Server
