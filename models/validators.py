@@ -1,12 +1,27 @@
-from datetime import datetime
-from typing import Union, Optional
+from datetime import datetime, date, time
+from typing import Any, Union, Optional
 import json
 
-def to_datetime(value: str) -> datetime:
-    if isinstance(value, str):
-        return datetime.strptime(value,"%Y-%m-%d")
-    else:
+def to_datetime(value: Any) -> datetime | None:
+    """Validator used by Pydantic: accept ISO datetimes and plain dates."""
+    if value is None:
+        return None
+    if isinstance(value, datetime):
         return value
+    if isinstance(value, str):
+        # Try full ISO first: 2025-11-30T00:00:00
+        try:
+            return datetime.fromisoformat(value)
+        except ValueError:
+            pass
+        # Fallback: pure date string: 2025-11-30
+        try:
+            return datetime.strptime(value, "%Y-%m-%d")
+        except ValueError:
+            return None
+    # Unknown type: just return as-is or None
+    return None
+
 
 def convert_to_int(number: Union[str, int, None]) -> Union[int, None]:
     if number:

@@ -1,15 +1,11 @@
 import os
-from typing import Union, Annotated
 from sqlmodel import SQLModel, Field
 from sqlalchemy import Column
-from pydantic import BaseModel, BeforeValidator
 
 import uuid
 from sqlalchemy.dialects.mssql import UNIQUEIDENTIFIER
 from datetime import datetime
 from dotenv import load_dotenv
-
-from .validators import to_datetime, convert_to_int
 
 load_dotenv()
 
@@ -34,21 +30,6 @@ class PortfolioProject(SQLModel, table=True):
     er_gjeldende: bool = False
 
 
-
-class PortfolioProjectUI(BaseModel):
-    prosjekt_sk_id: uuid.UUID = uuid.uuid4()
-    prosjekt_id: uuid.UUID | None = None
-    navn: str = ''
-    oppstart: Annotated[datetime | None, BeforeValidator(to_datetime)] = None
-    avdeling: str | None = None
-    tiltakseier: str | None = None
-    kontaktpersoner: str | None = None
-    epost_kontakt: str | None = None
-    sist_endret: datetime | None = None
-    endret_av: str | None = None
-    er_gjeldende: bool = True
-
-
 class DigitaliseringStrategi(SQLModel, table=True):
     __tablename__ = "DigitaliseringStrategi"
     __table_args__ = {"schema": schema_name}
@@ -66,15 +47,6 @@ class DigitaliseringStrategi(SQLModel, table=True):
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
-
-class DigitaliseringStrategiUI(BaseModel):
-    digitalisering_strategi_id: uuid.UUID = uuid.uuid4()
-    prosjekt_id: uuid.UUID | None = None
-    sammenheng_digital_strategi: str | None = None
-    digital_strategi_kommentar: str | None = None
-    sist_endret: datetime | None = None
-    endret_av: str = ''
-    er_gjeldende: bool = True
 
 class Finansiering(SQLModel, table=True):
     __tablename__ = "Finansering"
@@ -99,22 +71,6 @@ class Finansiering(SQLModel, table=True):
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
-
-class FinansieringUI(BaseModel):
-    finansering_id: uuid.UUID = uuid.uuid4()
-    prosjekt_id: uuid.UUID | None = None
-    potensiell_finansering: int | None = None
-    mnd_verk: int | None = None
-    vedtatt_tildeling: int | None = None
-    prognose_innmeldt: int | None = None
-    prognose_tildelt: int | None = None
-    tentatitv_forpliktelse: int | None = None
-    estimert_budsjettbehov: int | None = None
-    usikkerhet_estimat: str = ''
-    risiko_av_estimat_tall: int | None = None
-    sist_endret: datetime | None = None
-    endret_av: str = ''
-    er_gjeldende: bool = True
     
 class Fremskritt(SQLModel, table=True):
     __tablename__ = "Fremskritt"
@@ -128,22 +84,11 @@ class Fremskritt(SQLModel, table=True):
     fase: str | None = None
     planlagt_ferdig: datetime | None = None
     sist_endret: datetime | None = None
-    endret_av: str = ''
+    endret_av: str | None = None
     er_gjeldende: bool = False
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
-
-
-class FremskrittUI(BaseModel):
-    fremskritt_id: uuid.UUID = uuid.uuid4()
-    prosjekt_id: uuid.UUID | None = None
-    fremskritt: str | None = None
-    fase: str | None = None
-    planlagt_ferdig: Annotated[datetime | None, BeforeValidator(to_datetime)] = None
-    sist_endret: datetime | None = None
-    endret_av: str | None = None
-    er_gjeldende: bool | None = None
 
 
 class Malbilde(SQLModel, table=True):
@@ -169,21 +114,6 @@ class Malbilde(SQLModel, table=True):
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
-class MalbildeUI(BaseModel):
-    malbilde_id: uuid.UUID = uuid.uuid4()
-    prosjekt_id: uuid.UUID | None = None
-    malbilde_1_beskrivelse: str | None = None
-    malbilde_1_vurdering: str | None = None
-    malbilde_2_beskrivelse: str| None = None
-    malbilde_2_vurdering: str | None = None
-    malbilde_3_beskrivelse: str | None = None
-    malbilde_3_vurdering: str | None = None
-    malbilde_4_beskrivelse: str | None = None
-    malbilde_4_vurdering: str | None = None
-    sist_endret: datetime | None = None
-    endret_av: str | None = None
-    er_gjeldende: bool = True
-
 class Problemstilling(SQLModel, table=True):
     __tablename__ = "Problemstilling"
     __table_args__ = {"schema": schema_name}
@@ -199,15 +129,6 @@ class Problemstilling(SQLModel, table=True):
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
-
-
-class ProblemstillingUI(BaseModel):
-    problem_stilling_id: uuid.UUID = uuid.uuid4()
-    prosjekt_id: uuid.UUID | None = None
-    problem: str | None = None
-    sist_endret: datetime | None = None
-    endret_av: str | None = None
-    er_gjeldende: bool = True
 
 class Rapportering(SQLModel, table=True):
     __tablename__ = "Rapportering"
@@ -256,23 +177,6 @@ class Resursbehov(SQLModel, table=True):
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
-
-class ResursbehovUI(BaseModel):
-    ressursbehov_id: uuid.UUID = uuid.uuid4()
-    prosjekt_id: uuid.UUID | None = None
-    estimert_budsjet_forklaring: str | None = None
-    estimert_budsjet_behov: Annotated[int | None, BeforeValidator(convert_to_int)] = None
-    antall_mandsverk_intern: Annotated[int | None, BeforeValidator(convert_to_int)] = None
-    antall_mandsverk_ekstern: Annotated[int | None, BeforeValidator(convert_to_int)] = None
-    antall_mandsverk_ekstern_betalt:Annotated[int | None, BeforeValidator(convert_to_int)] = None
-    risiko_av_estimat: str | None = None
-    risiko_av_estimat_tall: int | None = None
-    kompetanse_som_trengs: str | None = None
-    kompetanse_tilgjengelig: str | None = None
-    sist_endret: datetime | None = None
-    endret_av: str | None = None
-    er_gjeldende: bool = True
-
 class Ressursbruk(SQLModel, table=True):
     __tablename__ = "Ressursbruk"
     __table_args__ = {"schema": schema_name}
@@ -291,15 +195,6 @@ class Ressursbruk(SQLModel, table=True):
     )
 
 
-class RessursbrukUI(BaseModel):
-    ressursbruk_id: uuid.UUID = uuid.uuid4()
-    prosjekt_id: uuid.UUID | None = None
-    year: int | None = None
-    predicted_resources: Annotated[int | None, BeforeValidator(convert_to_int)] = None
-    sist_endret: datetime | None = None
-    endret_av: str | None = None
-    er_gjeldende: bool = True
-
 class Risikovurdering(SQLModel, table=True):
     __tablename__ = "Risikovurdering"
     __table_args__ = {"schema": schema_name}
@@ -315,15 +210,6 @@ class Risikovurdering(SQLModel, table=True):
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
-
-
-class RisikovurderingUI(BaseModel):
-    risiko_vurdering_id: uuid.UUID = uuid.uuid4()
-    prosjekt_id: uuid.UUID | None = None
-    vurdering: str | None = None
-    sist_endret: datetime | None = None
-    endret_av: str  | None = None
-    er_gjeldende: bool = True
 
 class Samarabeid(SQLModel, table=True):
     __tablename__ = "Samarbeid"
@@ -343,17 +229,6 @@ class Samarabeid(SQLModel, table=True):
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
-
-class SamarabeidUI(BaseModel):
-    samarbeid_id: uuid.UUID = uuid.uuid4() 
-    prosjekt_id : uuid.UUID | None = None
-    samarbeid_intern: str | None = None
-    samarbeid_eksternt: str | None = None
-    avhengigheter_andre: str | None = None
-    sist_endret: datetime | None = None
-    endret_av: str | None = None
-    er_gjeldende: bool = True
-
 class Tiltak(SQLModel, table=True):
     __tablename__ = "Tiltak"
     __table_args__ = {"schema": schema_name}
@@ -369,15 +244,6 @@ class Tiltak(SQLModel, table=True):
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
-
-
-class TiltakUI(BaseModel):
-    tiltak_id: uuid.UUID = uuid.uuid4()
-    prosjekt_id : uuid.UUID | None = None
-    tiltak_beskrivelse: str | None = None
-    sist_endret: datetime | None = None
-    endret_av: str | None = None
-    er_gjeldende: bool = True
 
 class UnderstøtteTildelingsbrev(SQLModel, table=True):
     __tablename__ = "UnderstøtteTildelingsbrev"
@@ -418,14 +284,3 @@ class Vurdering(SQLModel, table=True):
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
-
-class VurderingUI(BaseModel):
-    vurdering_id: uuid.UUID = uuid.uuid4()
-    prosjekt_id : uuid.UUID | None = None
-    gruppe: str | None = None
-    pulje: int | None = None
-    risiko_vurdering: str | None = None
-    sist_endret: datetime | None = None
-    endret_av: str = ''
-    er_gjeldende: bool = True
-    mscw: str | None = None

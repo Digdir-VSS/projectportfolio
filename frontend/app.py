@@ -1,4 +1,5 @@
-from nicegui import ui, app, Client, run
+from nicegui import ui, Client
+from nicegui import app
 from typing import Any
 from cachetools import TTLCache
 from azure.identity import DefaultAzureCredential
@@ -6,16 +7,22 @@ from azure.keyvault.secrets import SecretClient
 import os
 from dotenv import load_dotenv
 from msal import ConfidentialClientApplication
+import copy
 
-from utils.db_connection import DBConnector, ProjectData
-from pages.login_page import register_login_pages
-from pages.dashboard import dashboard
-from pages.single_project import project_detail as digdir_overordnet_info_page
-from pages.utils import layout
+from frontend.utils.backend_client import api_get_projects, api_get_project, api_create_new_project
+from frontend.pages.login_page import register_login_pages
+from frontend.pages.dashboard import dashboard
+from frontend.pages.single_project import project_detail as digdir_overordnet_info_page
+from frontend.utils.azure_users import load_users
+from frontend.pages.utils import layout
 import uuid
-from static_variables import STEPS_DICT
+from frontend.static_variables import STEPS_DICT
+
+#app.include_router(innleverings_router)
 
 load_dotenv()
+
+bruker_list = load_users()
 
 # Client ID and secret correspond to your Entra Application registration
 credential = DefaultAzureCredential()
@@ -40,8 +47,6 @@ msal_app = ConfidentialClientApplication(
     client_credential=CLIENT_SECRET,
 )
 
-db_connector = DBConnector.create_engine(driver_name = "{ODBC Driver 18 for SQL Server}", server_name = os.getenv("SERVER"), database_name = os.getenv("DATABASE"), fabric_client_id = os.getenv("FABRIC_CLIENT_ID"), fabric_tenant_id  = os.getenv("TENANT_ID"), fabric_client_secret = os.getenv("FABRIC_SECRET"))
-# Cache for in-progress authorisation flows. Give the user 5 minutes to complete the flow
 AUTH_FLOW_STATES: TTLCache[str, dict[str, Any]] = TTLCache(maxsize=256, ttl=60 * 5)
 
 register_login_pages(
@@ -61,7 +66,6 @@ def require_login() -> dict[str, Any] | None:
 
 super_user = os.getenv("SUPER_USER")
 # keep a global cache of loaded projects for comparison
-ORIGINAL_PROJECTS: dict[str, list[ProjectData]] = {}
 @ui.page("/")
 def index(client: Client):
     """
@@ -82,7 +86,7 @@ def index(client: Client):
             ui.button("Login with Microsoft", on_click=lambda: ui.navigate.to("/login"))
     else:
         # If the user is logged in, store their information and redirect them to the actual app
-        ui.navigate.to("/home")
+        ui.navigate.to("/oppdater_prosjekt")
 
 
 
@@ -92,11 +96,19 @@ def main_page():
     if not user:
         return 
 
-    layout(active_step='home', title='Oversikt over dine prosjekter', steps=STEPS_DICT)
-    ui.label('Detter er hjemesiden. Her vil vi publisere en oversikt med informasjon om prosjektene.')
+    layout(active_step='home', title='Hjemmeside', steps=STEPS_DICT)
+    ui.label('Detter er hjemmesiden. Her vil vi publisere en oversikt med informasjon om prosjektene.')
     dashboard()
 
+def new_project():
+    # Create a blank ProjectData with default values
+    new_id = str(uuid.uuid4())
 
+    # Store it in the same place so project_detail() can load it
+    ui.notify("New project created", type="positive")
+
+    # Navigate to the same project page as "edit"
+    ui.navigate.to(f"/project/new/{new_id}")
 
 @ui.page('/oppdater_prosjekt')
 async def overordnet():
@@ -110,26 +122,25 @@ async def overordnet():
         ui.notify('No email claim found in login!')
         return
 
-    layout(active_step='oppdater_prosjekt', title='Rediger prosjekt', steps=STEPS_DICT)
+    layout(active_step='oppdater_prosjekt', title='Ny/ endre prosjekt', steps=STEPS_DICT)
     ui.label(f'Prosjekter for {user_name}').classes('text-lg font-bold mb-2')
     if email in super_user:
-        ui.label('Du er logget inn som superbruker og ser alle prosjekter').classes('text-sm italic mb-4')
-        projects = await run.io_bound(db_connector.get_projects, None)
+        ui.label('Du er logget inn som admin og ser alle prosjekter').classes('text-sm italic mb-4')
+        projects = await api_get_projects(None)
     else:        
-        projects = await run.io_bound(db_connector.get_projects, email)
+        projects = await api_get_projects(email)
     
     # store original copy for later diff
 
     
-    # create a table with editable fields
-    if not projects:
-        ui.label('No projects found for this user.')
-        return
-    ORIGINAL_PROJECTS[email] = [p for p in projects]
+    
     with ui.column().classes("w-full gap-2"):
         with ui.row().classes('gap-2'):
             ui.button("➕ New Project", on_click=lambda: new_project()).props("color=secondary")
-
+        # create a table with editable fields
+        if not projects:
+            ui.label('No projects found for this user.')
+            return
         visible_keys = [
             key for key in projects[0].keys()
             if key not in ["prosjekt_id", "epost_kontakt"]
@@ -192,33 +203,28 @@ async def overordnet():
             '''
         )
    
-    def new_project():
-        # Create a blank ProjectData with default values
-        new_id = str(uuid.uuid4())
 
-        # Store it in the same place so project_detail() can load it
-        ui.notify("New project created", type="positive")
-
-        # Navigate to the same project page as "edit"
-        ui.navigate.to(f"/project/new/{new_id}")
 
 @ui.page('/project/{prosjekt_id}')
-def project_detail(prosjekt_id: str):
+async def project_detail(prosjekt_id: str):
   
     user = require_login()
     if not user:
         return 
     layout(active_step='oppdater_prosjekt', title='Prosjekt detaljer', steps=STEPS_DICT)
     user_name = user["name"]
-    print(user_name)
     email = user["preferred_username"]
     if not email:
         ui.notify('No email claim found in login!')
         return
-    digdir_overordnet_info_page(db_connector=db_connector, prosjekt_id=prosjekt_id, email=email, user_name=user_name)
-    
+    project = await api_get_project(prosjekt_id=prosjekt_id)
+    if not project:
+        ui.label('Prosjektet ble ikke funnet, eller du har ikke tilgang til det.')
+        return
+    digdir_overordnet_info_page(prosjekt_id=prosjekt_id, email=email, project=project, brukere_list=bruker_list)
+
 @ui.page('/project/new/{prosjekt_id}')
-def project_detail(prosjekt_id: str):
+async def project_detail(prosjekt_id: str):
     
     user = require_login()
     if not user:
@@ -226,12 +232,11 @@ def project_detail(prosjekt_id: str):
     layout(active_step='oppdater_prosjekt', title='Prosjekt detaljer', steps=STEPS_DICT)
 
     email = user["preferred_username"]
-    user_name = user["name"]
-    print(user_name)
+    project = await api_create_new_project(email=email, prosjekt_id=prosjekt_id)
     if not email:
         ui.notify('No email claim found in login!')
         return
-    digdir_overordnet_info_page(db_connector=db_connector, prosjekt_id=prosjekt_id, email=email, user_name=user_name, new=True)
+    digdir_overordnet_info_page(prosjekt_id=prosjekt_id, email=email, project=project, brukere_list=bruker_list)
 
 @ui.page("/status_rapportering")
 def digdir():
@@ -263,5 +268,5 @@ if __name__ in {"__main__", "__mp_main__"}:
         host="0.0.0.0",    
         port=8080,
         storage_secret=os.getenv("STORAGE_SECRET"),
-        favicon='icon/Verktøykasse.png'
+        favicon='icon/Verktøykasse.png',
     )
