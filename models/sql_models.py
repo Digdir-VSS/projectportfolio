@@ -284,3 +284,22 @@ class Vurdering(SQLModel, table=True):
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
+
+class Overview(SQLModel, table=True):
+    __tablename__ = "vw_oversikt"
+    __table_args__ = {"schema": schema_name}
+    prosjekt_id: uuid.UUID = Field(
+            default_factory=uuid.uuid4,
+            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True, default=uuid.uuid4),
+        )
+    navn: str | None = None
+    avdeling: str | None = None
+    fase: str | None = None
+    planlagt_ferdig: datetime | None = None
+    fremskritt_status: str | None = None
+    estimert_budsjet_behov: int | None = None
+    antall_mandsverk_intern: int | None = None
+    antall_mandsverk_ekstern: int | None = None
+    estimert_bruk_2025: int | None = None
+    estimert_bruk_2026: int | None = None   
+    estimert_bruk_2027: int | None = None   
