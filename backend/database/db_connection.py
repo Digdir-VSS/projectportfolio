@@ -222,7 +222,6 @@ class DBConnector:
             "resursbehov": Resursbehov,
             "digitaliseringstrategi": DigitaliseringStrategi,
             "ressursbruk": Ressursbruk,
-            "overview": Overview
         }
         ui_models = {
             "fremskritt": FremskrittUI,
@@ -234,8 +233,7 @@ class DBConnector:
             "malbilde": MalbildeUI,
             "resursbehov": ResursbehovUI,
             "digitaliseringstrategi": DigitaliseringStrategiUI,
-            "ressursbruk": RessursbrukUI,
-            "overview": OverviewUI
+            "ressursbruk": RessursbrukUI
         }
         model_groups = {
                 "project": {
