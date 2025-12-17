@@ -1,4 +1,5 @@
 from fastapi import Depends, HTTPException, status, Header, APIRouter
+from fastapi.responses import JSONResponse
 import os
 from typing import Any
 from dotenv import load_dotenv
@@ -6,6 +7,7 @@ from uuid import UUID
 from pydantic import BaseModel
 from backend.database.db import db_connector
 from backend.database.db_connection import ProjectData
+from models.sql_models import Overview
 
 load_dotenv()
 
@@ -49,3 +51,7 @@ async def get_innnleverings_prosjekt(email: str | None = None, access_key: str =
 @router.post("/update_prosjekt")
 async def update_innnleverings_prosjekt(project: ProjectData, prosjekt_id: UUID, e_mail: str, access_key: str = Depends(verify_api_key)):
     return db_connector.update_project(project, prosjekt_id, e_mail)
+
+@router.get("/get_overview", response_model=list[Overview])
+async def get_overview(access_key: str = Depends(verify_api_key)):
+    return db_connector.get_overview()
