@@ -13,6 +13,7 @@ from frontend.utils.backend_client import api_get_projects, api_get_project, api
 from frontend.pages.login_page import register_login_pages
 from frontend.pages.dashboard import dashboard
 from frontend.pages.single_project import project_detail as digdir_overordnet_info_page
+from frontend.pages.vurdering import project_detail as digdir_vurdering_redigering
 from frontend.utils.azure_users import load_users
 from frontend.pages.utils import layout
 import uuid
@@ -239,20 +240,107 @@ async def project_detail(prosjekt_id: str):
     digdir_overordnet_info_page(prosjekt_id=prosjekt_id, email=email, project=project, brukere_list=bruker_list)
 
 @ui.page("/status_rapportering")
-def digdir():
+async def status():
     user = require_login()
     if not user:
         return 
-    layout(active_step='status_rapportering',  title='Rapportering av status',steps=STEPS_DICT)
-    # digdir_aktivitet_page('aktivitet')
+    layout(active_step='status_rapportering',  title='Status av prosjekter',steps=STEPS_DICT)
     email = user["preferred_username"]
-    user_name = user["name"]
     if not email:
         ui.notify('No email claim found in login!')
         return
+    
+    ui.label(f'Status for alle prosjekter').classes('text-lg font-bold mb-2')
+    projects = await api_get_projects(None)
+
+  
+    
+    with ui.column().classes("w-full gap-2"):
+        # create a table with editable fields
+        if not projects:
+            ui.label('Ingen prosjekt funnet forløpig.')
+            return
+        visible_keys = [
+            key for key in projects[0].keys()
+            if key not in ["prosjekt_id", "epost_kontakt"]
+        ]
+
+        columns = [
+            {
+                "name": key,
+                "label": key.replace("_", " ").title(),
+                "field": key,
+                "sortable": True,
+                "align": "left",
+            }
+            for key in visible_keys
+        ]
 
 
-@ui.page("/vurdering")
+        rows = [
+            {**p, "prosjekt_id": str(p["prosjekt_id"])}  # ensure UUID is a string
+            for p in projects
+        ]
+
+        table =  ui.table(columns=columns,
+                    rows=rows,
+                    row_key="prosjekt_id",
+                    column_defaults={
+                        "align": "left",
+                        "headerClasses": "uppercase text-primary",
+                        "sortable": True,
+                        "filterable": True,
+                    },).classes("w-full")
+        if user["preferred_username"] in super_user:
+            table.add_slot(
+                'header',
+                r'''
+                <q-tr :props="props">
+                    <q-th auto-width />
+                    <q-th v-for="col in props.cols" :key="col.name" :props="props">
+                        {{ col.label }}
+                    </q-th>
+                </q-tr>
+                '''
+            )
+
+            table.add_slot(
+                'body',
+                r'''
+                <q-tr :props="props">
+                    <q-td auto-width>
+                        <a :href="'/vurdering/' + props.row.prosjekt_id"><q-btn size="sm" color="primary" round dense
+                        @click="location.href = '/vurdering/' + props.row.prosjekt_id"
+
+                        icon="edit" /></a>
+                        
+                    </q-td>
+                    <q-td v-for="col in props.cols" :key="col.name" :props="props">
+                        {{ col.value }}
+                    </q-td>
+                </q-tr>
+                '''
+            )
+@ui.page('/vurdering/{prosjekt_id}')
+async def status_rapportering(prosjekt_id: str):
+    
+    user = require_login()
+    if not user:
+        return 
+    layout(active_step='vurdering', title='Vurdering av status', steps=STEPS_DICT)
+
+    email = user["preferred_username"]
+    if not email:
+        ui.notify('No email claim found in login!')
+        return
+    project = await api_get_project(prosjekt_id=prosjekt_id)
+    if not project:
+        ui.label('Prosjektet ble ikke funnet, eller du har ikke tilgang til det.')
+        return
+    digdir_vurdering_redigering(prosjekt_id=prosjekt_id, email=email, project=project, brukere_list=bruker_list)
+   
+
+@ui.page("/rapportering_leveranse")
 def leveranse():
     user = require_login()
     if not user:

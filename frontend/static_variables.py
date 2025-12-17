@@ -11,8 +11,8 @@ IGNORED_FIELDS = [
 STEPS_DICT = {
     "home": "Oversikt over dine prosjekter",
     "oppdater_prosjekt": "Ny/ endre prosjekt",
-    "status_rapportering": "Rapportering av status",
-    "leveranse": "Om Digdirs leveranse"
+    "status_rapportering": "Status av prosjekter",
+    "leveranse": "Rapportering av leveranser",
 }
 FIELD_MAPPING = {
     "navn_tiltak": "Navn prosjekt",

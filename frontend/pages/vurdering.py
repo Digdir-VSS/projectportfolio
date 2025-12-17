@@ -3,13 +3,14 @@ from datetime import datetime, date
 import ast
 import json
 from utils.azure_users import load_users
-from utils.db_connection import DBConnector
-from utils.data_models import RessursbrukUI
+from models.ui_models import VurderingData
 import ast, asyncio
 import copy
 from dataclasses import asdict, is_dataclass
 
-def project_detail(db_connector: DBConnector, prosjekt_id: str, email: str, user_name: str):
+
+
+def vurdering_detail(prosjekt_id: str, email: str, project: ProjectData, brukere_list):
     if new:
         project = db_connector.create_empty_project(email=email, prosjekt_id=prosjekt_id)
     else:
