@@ -183,7 +183,7 @@ class DBConnector:
         # --- Connection string (NO auth here, token comes later) ---
         connection_string = (
             "Driver={};Server=tcp:{},1433;Database={};Encrypt=yes;"
-            "TrustServerCertificate=no;Connection Timeout=3; encoding=utf8"
+            "TrustServerCertificate=no;Connection Timeout=30; encoding=utf8"
         ).format(driver_name, server_name, database_name)
 
         params = urllib.parse.quote(connection_string)
