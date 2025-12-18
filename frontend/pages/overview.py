@@ -1,6 +1,6 @@
 from typing import List
 from nicegui import ui
-from dataclasses import fields
+from datetime import datetime
 
 from models.ui_models import OverviewUI
 
@@ -12,7 +12,7 @@ def create_columns(overview_fields: List[str]):
                  columns.append({
                 "name": "prosjekt_id", 
                 "label": "",       
-                "field": "__actions",
+                "field": "prosjekt_id",
                 "sortable": False,
                 "align": "left",
                 "headerClasses": "hidden",
@@ -26,6 +26,7 @@ def create_columns(overview_fields: List[str]):
                     "align": "left",
                     "classes": "break-words whitespace-normal",
                     "headerClasses": "break-words whitespace-normal",
+                    "sort": "asc",
                 })
             else:
                 columns.append({
@@ -34,8 +35,8 @@ def create_columns(overview_fields: List[str]):
                     "field": field_name,
                     "sortable": True,
                     "align": "left",
-                    "classes": "break-words whitespace-normal" if field_name == "navn" else "",
-                    "headerClasses": "break-words whitespace-normal" if field_name == "navn" else "",
+                    "classes": "break-words whitespace-normal",
+                    "headerClasses": "break-words whitespace-normal",
                 })
 
     return columns
@@ -48,10 +49,13 @@ def overview_page(overview: List[OverviewUI]):
 
         columns = create_columns(OverviewUI.model_fields)
 
-        rows = [
-            {**prosjekt.model_dump()}
-            for prosjekt in overview
-        ]
+        rows = sorted(
+            [
+                {**prosjekt.model_dump(), "__row_id": str(prosjekt.prosjekt_id)}
+                for prosjekt in overview
+            ],
+            key=lambda r: r["planlagt_ferdig"] or datetime.max  # None goes last
+        )
         table = ui.table(
             columns=columns,
             rows=rows,
@@ -69,20 +73,21 @@ def overview_page(overview: List[OverviewUI]):
         r""" <q-tr :props="props" class="bg-gray-200"> <q-th auto-width class="bg-gray-200"></q-th> <q-th v-for="col in props.cols" :key="col.name" :props="props" class="bg-gray-200 text-lg font-semibold"> {{ col.label }} </q-th> </q-tr> """,
     )
     table.add_slot(
-    "body-cell-prosjekt_id",
-    r"""
-    <q-td auto-width>
-        <q-btn
-            size="sm"
-            color="primary"
-            round
-            dense
-            icon="edit"
-            @click="location.href = '/project/' + props.row.prosjekt_id"
-        />
-    </q-td>
-    """,
-)   
+        "body-cell-prosjekt_id",
+        r"""
+        <q-td auto-width>
+            <a :href="'/project/' + props.row.prosjekt_id">
+                <q-btn
+                    size="sm"
+                    color="primary"
+                    round
+                    dense
+                    icon="edit"
+                />
+            </a>
+        </q-td>
+        """
+    )
     table.add_slot(
     "body-cell-planlagt_ferdig",
     r"""
