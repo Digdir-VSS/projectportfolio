@@ -3,6 +3,7 @@ import os
 from enum import StrEnum
 
 from models.ui_models import ProjectData
+from models.ui_models import OverviewUI
 
 BACKEND_BASE_URL = os.getenv("BACKEND_BASE_URL")
 API_KEY = os.getenv("INNLEVERING_API_KEY")  # or whatever you use
@@ -63,3 +64,10 @@ async def api_create_new_project(email: str, prosjekt_id: str):
         r.raise_for_status()
         data = r.json()
         return ProjectData(**data)
+    
+async def api_get_overview():
+    headers = {"x-api-key": API_KEY}
+    async with httpx.AsyncClient() as client:
+        response = await client.get(f"{BACKEND_BASE_URL}/{EndpointConfig.INNLEVERING}/get_overview", headers=headers)
+        response.raise_for_status()
+        return [OverviewUI(**prosjekt) for prosjekt in response.json()]

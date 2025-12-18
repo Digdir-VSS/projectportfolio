@@ -167,3 +167,18 @@ class ProjectData(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True  # allows your UI dataclasses
+
+
+class OverviewUI(BaseModel):
+    prosjekt_id: uuid.UUID
+    navn: str | None = None
+    avdeling: str | None = None
+    fase: str | None = None
+    planlagt_ferdig: datetime | None = None
+    fremskritt_status: str | None = None
+    estimert_budsjet_behov: int | None = None
+    antall_mandsverk_intern: int | None = None
+    antall_mandsverk_ekstern: int | None = None
+    estimert_bruk_2025: int | None = None
+    estimert_bruk_2026: int | None = None   
+    estimert_bruk_2027: int | None = None   

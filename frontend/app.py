@@ -9,9 +9,10 @@ from dotenv import load_dotenv
 from msal import ConfidentialClientApplication
 import copy
 
-from frontend.utils.backend_client import api_get_projects, api_get_project, api_create_new_project
+from frontend.utils.backend_client import api_get_projects, api_get_project, api_create_new_project, api_get_overview
 from frontend.pages.login_page import register_login_pages
 from frontend.pages.dashboard import dashboard
+from frontend.pages.overview import overview_page
 from frontend.pages.single_project import project_detail as digdir_overordnet_info_page
 from frontend.utils.azure_users import load_users
 from frontend.pages.utils import layout
@@ -109,6 +110,15 @@ def new_project():
 
     # Navigate to the same project page as "edit"
     ui.navigate.to(f"/project/new/{new_id}")
+
+@ui.page('/oversikt')
+async def oversikt():
+    user = require_login()
+    if not user:
+        return 
+    oversikt_data = await api_get_overview()
+    layout(active_step='oversikt_side', title='Oversikt', steps=STEPS_DICT)
+    overview_page(oversikt_data)
 
 @ui.page('/oppdater_prosjekt')
 async def overordnet():
