@@ -33,7 +33,8 @@ from models.ui_models import (
     FinansieringUI,
     VurderingUI,
     ProjectData,
-    VurderingData
+    VurderingData,
+    OverviewUI
 )
 from models.sql_models import (
     PortfolioProject,
@@ -48,6 +49,7 @@ from models.sql_models import (
     Ressursbruk,
     Finansiering,
     Vurdering,
+    Overview
 )
 
 load_dotenv()
@@ -181,7 +183,7 @@ class DBConnector:
         # --- Connection string (NO auth here, token comes later) ---
         connection_string = (
             "Driver={};Server=tcp:{},1433;Database={};Encrypt=yes;"
-            "TrustServerCertificate=no;Connection Timeout=30"
+            "TrustServerCertificate=no;Connection Timeout=30; encoding=utf8"
         ).format(driver_name, server_name, database_name)
 
         params = urllib.parse.quote(connection_string)
@@ -231,7 +233,7 @@ class DBConnector:
             "malbilde": MalbildeUI,
             "resursbehov": ResursbehovUI,
             "digitaliseringstrategi": DigitaliseringStrategiUI,
-            "ressursbruk": RessursbrukUI,
+            "ressursbruk": RessursbrukUI
         }
         model_groups = {
                 "project": {
@@ -424,3 +426,9 @@ class DBConnector:
             # ✅ Use session for both update + insert to ensure atomicity
             session.add_all(objs)
             session.commit()
+
+    def get_overview(self):
+        with Session(self.engine) as session:
+            stmt = select(Overview)
+            results = session.exec(stmt).all()
+        return [r.dict() for r in results]
