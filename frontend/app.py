@@ -97,7 +97,7 @@ def main_page():
     if not user:
         return 
 
-    layout(active_step='home', title='Hjemmeside', steps=STEPS_DICT)
+    layout(title='Hjemmeside', menu_items=STEPS_DICT, active_route="home")
     ui.label('Detter er hjemmesiden. Her vil vi publisere en oversikt med informasjon om prosjektene.')
     dashboard()
 
@@ -117,7 +117,7 @@ async def oversikt():
     if not user:
         return 
     oversikt_data = await api_get_overview()
-    layout(active_step='oversikt_side', title='Oversikt', steps=STEPS_DICT)
+    layout(title='Oversikt', menu_items=STEPS_DICT, active_route="oversikt"),
     overview_page(oversikt_data)
 
 @ui.page('/oppdater_prosjekt')
@@ -132,7 +132,7 @@ async def overordnet():
         ui.notify('No email claim found in login!')
         return
 
-    layout(active_step='oppdater_prosjekt', title='Ny/ endre prosjekt', steps=STEPS_DICT)
+    layout(title='Ny/ endre prosjekt', menu_items=STEPS_DICT, active_route="oppdater_prosjekt")
     ui.label(f'Prosjekter for {user_name}').classes('text-lg font-bold mb-2')
     if email in super_user:
         ui.label('Du er logget inn som admin og ser alle prosjekter').classes('text-sm italic mb-4')
@@ -221,7 +221,7 @@ async def project_detail(prosjekt_id: str):
     user = require_login()
     if not user:
         return 
-    layout(active_step='oppdater_prosjekt', title='Prosjekt detaljer', steps=STEPS_DICT)
+    layout(title='Prosjekt detaljer', menu_items=STEPS_DICT, active_route="oppdater_prosjekt")
     user_name = user["name"]
     email = user["preferred_username"]
     if not email:
@@ -239,7 +239,7 @@ async def project_detail(prosjekt_id: str):
     user = require_login()
     if not user:
         return 
-    layout(active_step='oppdater_prosjekt', title='Prosjekt detaljer', steps=STEPS_DICT)
+    layout(menu_items=STEPS_DICT, active_route="oppdater_prosjekt")
 
     email = user["preferred_username"]
     project = await api_create_new_project(email=email, prosjekt_id=prosjekt_id)
@@ -253,7 +253,7 @@ def digdir():
     user = require_login()
     if not user:
         return 
-    layout(active_step='status_rapportering',  title='Rapportering av status',steps=STEPS_DICT)
+    layout(title='Rapportering av status',menu_items=STEPS_DICT, active_route="status_rapportering")
     # digdir_aktivitet_page('aktivitet')
     email = user["preferred_username"]
     user_name = user["name"]
@@ -267,7 +267,7 @@ def leveranse():
     user = require_login()
     if not user:
         return 
-    layout(active_step='vurdering', title='Vurdering',steps=STEPS_DICT)
+    layout(title='Vurdering',menu_items=STEPS_DICT, active_route="leveranse")
     # digdir_leveranse("leveranse")
 
 
