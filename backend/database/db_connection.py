@@ -60,6 +60,56 @@ from models.sql_models import (
 
 load_dotenv()
 
+def upload_data(engine, mod_proj, ui_models, sql_models, prosjekt_id, now, e_mail):
+        with Session(engine) as session:
+            objs = []
+
+            for model_name, ui_model in ui_models.items():
+                ui_obj = getattr(mod_proj, model_name)
+                if ui_obj is None:
+                    continue
+
+                sql_cls = sql_models[model_name]
+
+                # --- Handle ressursbruk specially (dict of years) ---
+                if model_name == "ressursbruk":
+                    for year, res_obj in ui_obj.items():
+                        # Deactivate previous row only for this year
+                        session.execute(
+                            update(sql_cls)
+                            .where(sql_cls.prosjekt_id == str(prosjekt_id).lower())
+                            .where(sql_cls.year == year)
+                            .where(sql_cls.er_gjeldende == True)
+                            .values(er_gjeldende=False)
+                        )
+
+                        sql_obj = ui_to_sqlmodel(res_obj, sql_cls)
+                        sql_obj.prosjekt_id = str(prosjekt_id).lower()
+                        sql_obj.er_gjeldende = True
+                        sql_obj.sist_endret = now
+                        sql_obj.endret_av = e_mail
+                        sql_obj.ressursbruk_id = str(uuid4())  # always new ID
+                        objs.append(sql_obj)
+
+                else:
+                    # Deactivate previous record(s) for this specific model only
+                    session.execute(
+                        update(sql_cls)
+                        .where(sql_cls.prosjekt_id == str(prosjekt_id).lower())
+                        .where(sql_cls.er_gjeldende == True)
+                        .values(er_gjeldende=False)
+                    )
+
+                    sql_obj = ui_to_sqlmodel(ui_obj, sql_cls)
+                    sql_obj.prosjekt_id = str(prosjekt_id).lower()
+                    sql_obj.er_gjeldende = True
+                    sql_obj.sist_endret = now
+                    sql_obj.endret_av = e_mail
+                    objs.append(sql_obj)
+
+            session.add_all(objs)
+            session.commit()
+
 
 def prune_unchanged_fields(original_obj, modified_obj):
     """Compare original and modified ProjectData, and remove unchanged submodels."""
@@ -398,55 +448,7 @@ class DBConnector:
         now = datetime.utcnow()
         ui_models = self.model_groups[group]["ui"]
         sql_models = self.model_groups[group]["sql"]
-        with Session(self.engine) as session:
-            objs = []
-
-            for model_name, ui_model in ui_models.items():
-                ui_obj = getattr(mod_proj, model_name)
-                if ui_obj is None:
-                    continue
-
-                sql_cls = sql_models[model_name]
-
-                # --- Handle ressursbruk specially (dict of years) ---
-                if model_name == "ressursbruk":
-                    for year, res_obj in ui_obj.items():
-                        # Deactivate previous row only for this year
-                        session.execute(
-                            update(sql_cls)
-                            .where(sql_cls.prosjekt_id == str(prosjekt_id).lower())
-                            .where(sql_cls.year == year)
-                            .where(sql_cls.er_gjeldende == True)
-                            .values(er_gjeldende=False)
-                        )
-
-                        sql_obj = ui_to_sqlmodel(res_obj, sql_cls)
-                        sql_obj.prosjekt_id = str(prosjekt_id).lower()
-                        sql_obj.er_gjeldende = True
-                        sql_obj.sist_endret = now
-                        sql_obj.endret_av = e_mail
-                        sql_obj.ressursbruk_id = str(uuid4())  # always new ID
-                        objs.append(sql_obj)
-
-                else:
-                    # Deactivate previous record(s) for this specific model only
-                    session.execute(
-                        update(sql_cls)
-                        .where(sql_cls.prosjekt_id == str(prosjekt_id).lower())
-                        .where(sql_cls.er_gjeldende == True)
-                        .values(er_gjeldende=False)
-                    )
-
-                    sql_obj = ui_to_sqlmodel(ui_obj, sql_cls)
-                    sql_obj.prosjekt_id = str(prosjekt_id).lower()
-                    sql_obj.er_gjeldende = True
-                    sql_obj.sist_endret = now
-                    sql_obj.endret_av = e_mail
-                    objs.append(sql_obj)
-
-            # ✅ Use session for both update + insert to ensure atomicity
-            session.add_all(objs)
-            session.commit()
+        upload_data(self.engine, mod_proj, ui_models, sql_models, prosjekt_id, now, e_mail)
 
     def get_overview(self):
         with Session(self.engine) as session:
@@ -480,58 +482,9 @@ class DBConnector:
         reraise=True,
     )
     def update_rapport(self, mod_proj: RapporteringData, prosjekt_id: UUID, e_mail: str, group: str = "rapportering"):
-        print(mod_proj)
         org_proj = self.get_single_project(str(prosjekt_id))
         mod_proj = prune_unchanged_fields(org_proj, mod_proj)
         now = datetime.utcnow()
         ui_models = self.model_groups[group]["ui"]
         sql_models = self.model_groups[group]["sql"]
-        with Session(self.engine) as session:
-            objs = []
-
-            for model_name, ui_model in ui_models.items():
-                ui_obj = getattr(mod_proj, model_name)
-                if ui_obj is None:
-                    continue
-
-                sql_cls = sql_models[model_name]
-
-                # --- Handle ressursbruk specially (dict of years) ---
-                if model_name == "ressursbruk":
-                    for year, res_obj in ui_obj.items():
-                        # Deactivate previous row only for this year
-                        session.execute(
-                            update(sql_cls)
-                            .where(sql_cls.prosjekt_id == str(prosjekt_id).lower())
-                            .where(sql_cls.year == year)
-                            .where(sql_cls.er_gjeldende == True)
-                            .values(er_gjeldende=False)
-                        )
-
-                        sql_obj = ui_to_sqlmodel(res_obj, sql_cls)
-                        sql_obj.prosjekt_id = str(prosjekt_id).lower()
-                        sql_obj.er_gjeldende = True
-                        sql_obj.sist_endret = now
-                        sql_obj.endret_av = e_mail
-                        sql_obj.ressursbruk_id = str(uuid4())  # always new ID
-                        objs.append(sql_obj)
-
-                else:
-                    # Deactivate previous record(s) for this specific model only
-                    session.execute(
-                        update(sql_cls)
-                        .where(sql_cls.prosjekt_id == str(prosjekt_id).lower())
-                        .where(sql_cls.er_gjeldende == True)
-                        .values(er_gjeldende=False)
-                    )
-
-                    sql_obj = ui_to_sqlmodel(ui_obj, sql_cls)
-                    sql_obj.prosjekt_id = str(prosjekt_id).lower()
-                    sql_obj.er_gjeldende = True
-                    sql_obj.sist_endret = now
-                    sql_obj.endret_av = e_mail
-                    objs.append(sql_obj)
-
-            # ✅ Use session for both update + insert to ensure atomicity
-            session.add_all(objs)
-            session.commit()
+        upload_data(self.engine, mod_proj, ui_models, sql_models, prosjekt_id, now, e_mail)
