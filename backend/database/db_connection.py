@@ -34,7 +34,11 @@ from models.ui_models import (
     VurderingUI,
     ProjectData,
     VurderingData,
-    OverviewUI
+    DeliveryRiskUI,
+    RapporteringData, 
+    RapporteringUI
+
+    
 )
 from models.sql_models import (
     PortfolioProject,
@@ -49,7 +53,9 @@ from models.sql_models import (
     Ressursbruk,
     Finansiering,
     Vurdering,
-    Overview
+    Overview,
+    Rapportering,
+    DeliveryRisk
 )
 
 load_dotenv()
@@ -93,7 +99,6 @@ def prune_unchanged_fields(original_obj, modified_obj):
             if clean_dict(original_value) == clean_dict(modified_value):
                 setattr(modified_obj, field_name, None)
     return modified_obj
-
 
 def get_single_project_data(project_id: str, sql_models: dict):
     statement_dict = {}
@@ -141,6 +146,7 @@ def clean_dict(d):
         d = d.model_dump()
    
     return {k: v for k, v in d.items() if k not in IGNORED_FIELDS}
+
 
 def get_single_page(engine, project_id: str, sql_models: dict):
     sql_model_dict = {}
@@ -211,7 +217,7 @@ class DBConnector:
             SQL_COPT_SS_ACCESS_TOKEN = 1256
             cparams["attrs_before"] = {SQL_COPT_SS_ACCESS_TOKEN: token_struct}
 
-        sql_models = {
+        prosjekt_sql_models = {
             "fremskritt": Fremskritt,
             "samarabeid": Samarabeid,
             "portfolioproject": PortfolioProject,
@@ -223,7 +229,7 @@ class DBConnector:
             "digitaliseringstrategi": DigitaliseringStrategi,
             "ressursbruk": Ressursbruk,
         }
-        ui_models = {
+        prosjekt_ui_models = {
             "fremskritt": FremskrittUI,
             "samarabeid": SamarabeidUI,
             "portfolioproject": PortfolioProjectUI,
@@ -235,11 +241,28 @@ class DBConnector:
             "digitaliseringstrategi": DigitaliseringStrategiUI,
             "ressursbruk": RessursbrukUI
         }
+        rapportering_sql_models = {
+            "fremskritt": Fremskritt,
+            "portfolioproject": PortfolioProject,
+            "delivery_risk": DeliveryRisk,
+            "rapportering": Rapportering
+        }
+        rapportering_ui_models = {
+            "fremskritt": FremskrittUI,
+            "portfolioproject": PortfolioProjectUI,
+            "delivery_risk": DeliveryRiskUI,
+            "rapportering": RapporteringUI
+        }
         model_groups = {
                 "project": {
-                    "sql": sql_models,
-                    "ui": ui_models,
+                    "sql": prosjekt_sql_models,
+                    "ui": prosjekt_ui_models,
                     "dataclass": ProjectData,
+                },
+                "rapportering": {
+                        "sql": rapportering_sql_models,
+                        "ui": rapportering_ui_models,
+                        "dataclass": RapporteringData
                 },
                 "vurdering": {
                     "sql": {
@@ -285,11 +308,9 @@ class DBConnector:
             PortfolioProject.tiltakseier,
             PortfolioProject.epost_kontakt,
         ]
-
         with Session(self.engine) as session:
             if email:
                 email_in_list = f"%{email}%"
-                print(email_in_list)
                 stmt = select(*columns).where(
                     PortfolioProject.er_gjeldende == True,
                     PortfolioProject.epost_kontakt.like(email_in_list),
@@ -330,7 +351,7 @@ class DBConnector:
             risikovurdering=RisikovurderingUI(**sql_model_dict["risikovurdering"].dict()),
             malbilde=MalbildeUI(**sql_model_dict["malbilde"].dict()),
             digitaliseringstrategi=DigitaliseringStrategiUI(**sql_model_dict["digitaliseringstrategi"].dict()),
-            ressursbruk={r.year: RessursbrukUI(**r.dict()) for r in sql_model_dict["ressursbruk"]},  # 👈 list of UI objects
+            ressursbruk={r.year: RessursbrukUI(**r.dict()) for r in sql_model_dict["ressursbruk"]},
         )
         return project_data
 
@@ -432,3 +453,25 @@ class DBConnector:
             stmt = select(Overview)
             results = session.exec(stmt).all()
         return [r.dict() for r in results]
+    
+
+
+    @retry(
+        retry=retry_if_exception_type(OperationalError),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        stop=stop_after_attempt(3),
+        reraise=True,
+    )
+    def get_single_rapport(self, project_id: str, group: str = "rapportering") -> RapporteringData:
+        sql_models = self.model_groups[group]["sql"]
+        sql_model_dict = get_single_page(self.engine, project_id, sql_models)
+        print(sql_model_dict["delivery_risk"].dict())
+        print(sql_model_dict["rapportering"].dict())
+        # Construct UI layer
+        return RapporteringData(
+            fremskritt=FremskrittUI(**sql_model_dict["fremskritt"].dict()),
+            portfolioproject=PortfolioProjectUI(**sql_model_dict["portfolioproject"].dict()),
+            delivery_risk=DeliveryRiskUI(**sql_model_dict["delivery_risk"].dict()),
+            rapportering=RapporteringUI(**sql_model_dict["rapportering"].dict())
+        )
+
