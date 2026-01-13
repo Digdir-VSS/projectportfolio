@@ -1,9 +1,11 @@
 from typing import List
 from nicegui import ui
+import asyncio, ast
 
 from models.ui_models import RapporteringData
 from models.validators import to_json, to_list, to_date_str, convert_to_int, sort_selected_values
 from frontend.static_variables import FREMSKRITT_STATUS
+from frontend.utils.backend_client import api_update_rapport
   
 
 def show_status_rapportering_overview(prosjekter):
@@ -76,7 +78,6 @@ def show_status_rapportering_overview(prosjekter):
 
   
 def show_status_rapportering(prosjekt_id: str, email: str, rapportering: RapporteringData, brukere_list):
-    print(rapportering.fremskritt.fase)
     ui.markdown(
         f"## *Rapportering på:* **{rapportering.portfolioproject.navn}**"
     ).classes('text-xl font-bold mb-4')
@@ -132,16 +133,7 @@ def show_status_rapportering(prosjekt_id: str, email: str, rapportering: Rapport
             'col-span-5 text-lg font-bold underline mt-4'
         )
 
-        with ui.element("div").classes('col-span-5'):
-            ui.label("Kommentar til fremskritt").classes('font-bold')
-            ui.input(
-            ).classes(
-                'w-full bg-white rounded-lg'
-            ).bind_value(
-                rapportering.fremskritt, "fremskritt_kommentar"
-            )
-
-        ui.label("5. Viktige endringer").classes(
+        ui.label("4. Viktige endringer").classes(
             'col-span-5 text-lg font-bold underline mt-4'
         )
 
@@ -161,7 +153,7 @@ def show_status_rapportering(prosjekt_id: str, email: str, rapportering: Rapport
                 rapportering.rapportering, "viktige_endringer_kommentar"
             )
 
-        ui.label("6. Risiko").classes(
+        ui.label("5. Risiko").classes(
             'col-span-5 text-lg font-bold underline mt-4'
         )
 
@@ -180,5 +172,25 @@ def show_status_rapportering(prosjekt_id: str, email: str, rapportering: Rapport
             ).bind_value(
                 rapportering.delivery_risk, "risiko_rapportert_begrunnet"
             )
-    ui.button("💾 Lagre").classes("mt-6")
+    async def save_object() -> "RapporteringData":
+     
+        with ui.dialog() as dialog:
+            ui.label("💾 Lagrer endringer... Vennligst vent ⏳")
+            ui.spinner(size="lg", color="primary")
+        try:
+            dialog.open()
+            await asyncio.sleep(0.1)  # Allow UI to render spinner
+            await api_update_rapport(rapportering, prosjekt_id, email)
+
+            ui.notify("✅ Endringer lagret i databasen!", type="positive", position="top")
+
+            await asyncio.sleep(1)
+            ui.navigate.to(f"/status_rapportering/{prosjekt_id}")
+        finally:
+            dialog.close()
+    async def check_or_update():
+        await save_object()
+
+
+    ui.button("💾 Lagre", on_click=check_or_update).classes("mt-4")
 
