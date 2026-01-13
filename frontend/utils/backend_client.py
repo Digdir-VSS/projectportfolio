@@ -76,12 +76,7 @@ async def api_get_rapporterings_data(email: str, prosjekt_id: str):
     headers = {"x-api-key": API_KEY}
     payload = {"email": email, "prosjekt_id": prosjekt_id}
     async with httpx.AsyncClient() as client:
-        r = await client.get(f"{BACKEND_BASE_URL}/{EndpointConfig.INNLEVERING}/prosjekt/{prosjekt_id}", headers=headers)
+        r = await client.get(f"{BACKEND_BASE_URL}/{EndpointConfig.INNLEVERING}/status_rapport/{prosjekt_id}", headers=headers)
         r.raise_for_status()
         data = r.json()
-        return RapporteringData(
-            rapportering=RapporteringUI(),
-            portfolioproject=data["portfolioproject"], 
-            fremskritt=data["fremskritt"], 
-            delivery_risk=DeliveryRiskUI()
-        )
+        return RapporteringData(**data)
