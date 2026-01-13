@@ -76,7 +76,7 @@ def show_status_rapportering_overview(prosjekter):
 
   
 def show_status_rapportering(prosjekt_id: str, email: str, rapportering: RapporteringData, brukere_list):
-
+    print(rapportering.fremskritt.fase)
     ui.markdown(
         f"## *Rapportering på:* **{rapportering.portfolioproject.navn}**"
     ).classes('text-xl font-bold mb-4')
@@ -181,5 +181,4 @@ def show_status_rapportering(prosjekt_id: str, email: str, rapportering: Rapport
                 rapportering.delivery_risk, "risiko_rapportert_begrunnet"
             )
     ui.button("💾 Lagre").classes("mt-6")
-
 

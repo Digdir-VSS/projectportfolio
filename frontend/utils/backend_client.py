@@ -82,6 +82,6 @@ async def api_get_rapporterings_data(email: str, prosjekt_id: str):
         return RapporteringData(
             rapportering=RapporteringUI(),
             portfolioproject=data["portfolioproject"], 
-            fremskritt=FremskrittUI(), 
+            fremskritt=data["fremskritt"], 
             delivery_risk=DeliveryRiskUI()
         )
