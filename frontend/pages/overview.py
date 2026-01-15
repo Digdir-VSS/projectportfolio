@@ -63,6 +63,7 @@ def overview_page(overview: List[OverviewUI]):
             column_defaults={
                 "align": "left",
                 "headerClasses": "uppercase text-primary",
+                "headerStyle": "color: #0D2B5B; font-weight: bold;",
                 "sortable": True,
                 "filterable": True,
             },

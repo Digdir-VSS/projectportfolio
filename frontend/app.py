@@ -9,11 +9,12 @@ from dotenv import load_dotenv
 from msal import ConfidentialClientApplication
 import copy
 
-from frontend.utils.backend_client import api_get_projects, api_get_project, api_create_new_project, api_get_overview
+from frontend.utils.backend_client import api_get_projects, api_get_project, api_create_new_project, api_get_overview, api_get_rapporterings_data
 from frontend.pages.login_page import register_login_pages
 from frontend.pages.dashboard import dashboard
 from frontend.pages.overview import overview_page
 from frontend.pages.single_project import project_detail as digdir_overordnet_info_page
+from frontend.pages.status_rapportering import show_status_rapportering_overview, show_status_rapportering
 from frontend.utils.azure_users import load_users
 from frontend.pages.utils import layout
 import uuid
@@ -97,7 +98,7 @@ def main_page():
     if not user:
         return 
 
-    layout(active_step='home', title='Hjemmeside', steps=STEPS_DICT)
+    layout(title='Hjemmeside', menu_items=STEPS_DICT, active_route="home")
     ui.label('Detter er hjemmesiden. Her vil vi publisere en oversikt med informasjon om prosjektene.')
     dashboard()
 
@@ -117,7 +118,7 @@ async def oversikt():
     if not user:
         return 
     oversikt_data = await api_get_overview()
-    layout(active_step='oversikt_side', title='Oversikt', steps=STEPS_DICT)
+    layout(title='Oversikt', menu_items=STEPS_DICT, active_route="oversikt"),
     overview_page(oversikt_data)
 
 @ui.page('/oppdater_prosjekt')
@@ -132,7 +133,7 @@ async def overordnet():
         ui.notify('No email claim found in login!')
         return
 
-    layout(active_step='oppdater_prosjekt', title='Ny/ endre prosjekt', steps=STEPS_DICT)
+    layout(title='Ny/ endre prosjekt', menu_items=STEPS_DICT, active_route="oppdater_prosjekt")
     ui.label(f'Prosjekter for {user_name}').classes('text-lg font-bold mb-2')
     if email in super_user:
         ui.label('Du er logget inn som admin og ser alle prosjekter').classes('text-sm italic mb-4')
@@ -221,7 +222,7 @@ async def project_detail(prosjekt_id: str):
     user = require_login()
     if not user:
         return 
-    layout(active_step='oppdater_prosjekt', title='Prosjekt detaljer', steps=STEPS_DICT)
+    layout(title='Prosjekt detaljer', menu_items=STEPS_DICT, active_route="oppdater_prosjekt")
     user_name = user["name"]
     email = user["preferred_username"]
     if not email:
@@ -239,7 +240,7 @@ async def project_detail(prosjekt_id: str):
     user = require_login()
     if not user:
         return 
-    layout(active_step='oppdater_prosjekt', title='Prosjekt detaljer', steps=STEPS_DICT)
+    layout(menu_items=STEPS_DICT, active_route="oppdater_prosjekt")
 
     email = user["preferred_username"]
     project = await api_create_new_project(email=email, prosjekt_id=prosjekt_id)
@@ -249,26 +250,43 @@ async def project_detail(prosjekt_id: str):
     digdir_overordnet_info_page(prosjekt_id=prosjekt_id, email=email, project=project, brukere_list=bruker_list)
 
 @ui.page("/status_rapportering")
-def digdir():
+async def status_rapportering_overview():
     user = require_login()
     if not user:
         return 
-    layout(active_step='status_rapportering',  title='Rapportering av status',steps=STEPS_DICT)
-    # digdir_aktivitet_page('aktivitet')
+    layout(title='Rapportering av status',menu_items=STEPS_DICT, active_route="status_rapportering")
     email = user["preferred_username"]
-    user_name = user["name"]
+
     if not email:
         ui.notify('No email claim found in login!')
         return
+    if email in super_user:
+        ui.label('Du er logget inn som admin og ser alle prosjekter').classes('text-sm italic mb-4')
+        prosjekter = await api_get_projects(None)
+    else:        
+        prosjekter = await api_get_projects(email)
+    show_status_rapportering_overview(prosjekter=prosjekter)
 
+@ui.page("/status_rapportering/{prosjekt_id}")
+async def status_rapportering(prosjekt_id):
+    user = require_login()
+    if not user:
+        return 
+    layout(title='Rapportering av status',menu_items=STEPS_DICT, active_route="status_rapportering")
+    email = user["preferred_username"]
+    rapportering = await api_get_rapporterings_data(email=email, prosjekt_id=prosjekt_id)
+    #print(rapportering)
+    if not email:
+        ui.notify('No email claim found in login!')
+        return
+    show_status_rapportering(prosjekt_id=prosjekt_id, email=email, rapportering=rapportering, brukere_list=bruker_list)
 
 @ui.page("/vurdering")
 def leveranse():
     user = require_login()
     if not user:
         return 
-    layout(active_step='vurdering', title='Vurdering',steps=STEPS_DICT)
-    # digdir_leveranse("leveranse")
+    layout(title='Vurdering',menu_items=STEPS_DICT, active_route="leveranse")
 
 
 if __name__ in {"__main__", "__mp_main__"}:

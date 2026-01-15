@@ -8,12 +8,34 @@ IGNORED_FIELDS = [
             "ressursbruk_id",
 ]
 
-STEPS_DICT = {
+STEPS_DICT_ = {
     "home": "Hjemmeside",
     "oppdater_prosjekt": "Ny/ endre prosjekt",
     "status_rapportering": "Rapportering av status",
     "leveranse": "Om Digdirs leveranse",
     "oversikt": "Oversikt"
+}
+STEPS_DICT = {
+    "home": {
+        "label": "Hjemmeside",
+        "icon": "home",
+    },
+    "oppdater_prosjekt": {
+        "label": "Ny / endre prosjekt",
+        "icon": "edit",
+    },
+    "status_rapportering": {
+        "label": "Rapportering av status",
+        "icon": "assignment",
+    },
+    "leveranse": {
+        "label": "Om Digdirs leveranse",
+        "icon": "info",
+    },
+    "oversikt": {
+        "label": "Oversikt",
+        "icon": "dashboard",
+    },
 }
 FIELD_MAPPING = {
     "navn_tiltak": "Navn prosjekt",
@@ -25,3 +47,4 @@ FIELD_MAPPING = {
 }
 AVDELINGER = ['BOD','DSS' ,'KOM','FEL','STL' ,'TUU', 'VIS'] 
 ESTIMAT_LISTE= ["Relativt sikkert","Noe usikkert","Svært usikkert"]
+FREMSKRITT_STATUS = ["Forsinket", "På plan", "Noen forsinkelse, men håndterbar"]
