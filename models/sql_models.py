@@ -130,29 +130,6 @@ class Problemstilling(SQLModel, table=True):
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
-class Rapportering(SQLModel, table=True):
-    __tablename__ = "Rapportering"
-    __table_args__ = {"schema": schema_name}
-
-    rapportering_id: uuid.UUID = Field(
-            default_factory=uuid.uuid4,
-            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True, default=uuid.uuid4),
-        )
-    email_rapportering: str | None = None
-    viktige_endringer_kommentar: str | None = None
-    konsulent_anskaffet: str | None = None
-    konsulent_anskaffet_kommentar: str | None = None
-    risiko_rapportert: str | None = None
-    risiko_rapportert_begrunnet: str | None = None
-    avhengigheter_rapportert: str | None = None
-    risiko_rapportert_tall: int | None = None
-    viktige_endringer: int | None = None
-    sist_endret: datetime | None = None
-    endret_av: str | None = None
-    er_gjeldende: bool = False
-    prosjekt_id : uuid.UUID = Field(
-        foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
-    )
 class Resursbehov(SQLModel, table=True):
     __tablename__ = "Ressursbehov"
     __table_args__ = {"schema": schema_name}
@@ -208,7 +185,7 @@ class Risikovurdering(SQLModel, table=True):
     endret_av: str | None = None
     er_gjeldende: bool = False
     prosjekt_id : uuid.UUID = Field(
-        foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
+        foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",
     )
 
 class Samarabeid(SQLModel, table=True):
@@ -226,7 +203,7 @@ class Samarabeid(SQLModel, table=True):
     endret_av: str | None = None
     er_gjeldende: bool = False
     prosjekt_id : uuid.UUID = Field(
-        foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
+        foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",
     )
 
 class Tiltak(SQLModel, table=True):
@@ -242,7 +219,7 @@ class Tiltak(SQLModel, table=True):
     endret_av: str | None = None
     er_gjeldende: bool = False
     prosjekt_id : uuid.UUID = Field(
-        foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
+        foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",
     )
 
 class UnderstøtteTildelingsbrev(SQLModel, table=True):
@@ -263,7 +240,7 @@ class UnderstøtteTildelingsbrev(SQLModel, table=True):
     endret_av: str | None = None
     er_gjeldende: bool = False
     prosjekt_id : uuid.UUID = Field(
-        foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
+        foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id", 
     )
 
 class Vurdering(SQLModel, table=True):
@@ -282,7 +259,7 @@ class Vurdering(SQLModel, table=True):
     er_gjeldende: bool = False
     mscw: str | None = None
     prosjekt_id : uuid.UUID = Field(
-        foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
+        foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  
     )
 
 class Overview(SQLModel, table=True):
@@ -303,3 +280,37 @@ class Overview(SQLModel, table=True):
     estimert_bruk_2025: int | None = None
     estimert_bruk_2026: int | None = None   
     estimert_bruk_2027: int | None = None   
+
+class DeliveryRisk(SQLModel, table = True):
+    __tablename__ = "DeliveryRisk"
+    __table_args__ = {"schema": schema_name}
+    delivery_risk: uuid.UUID = Field(
+            default_factory=uuid.uuid4,
+            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True, default=uuid.uuid4),
+        )
+    prosjekt_id: uuid.UUID = Field(
+        foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",
+    )
+    risiko_rapportert: str | None = None
+    risiko_rapportert_begrunnet: str | None = None
+    endret_av: str | None = None
+    sist_endret: datetime | None = None
+    er_gjeldende: bool = True
+
+
+class Rapportering(SQLModel, table = True):
+    __tablename__ = "Rapportering"
+    __table_args__ = {"schema": schema_name}
+    rapporterings_id: uuid.UUID = Field(
+            default_factory=uuid.uuid4,
+            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True, default=uuid.uuid4),
+        )
+    prosjekt_id: uuid.UUID = Field(
+        foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",
+    )
+    viktige_endringer: str | None = None
+    viktige_endringer_kommentar: str | None = None
+    sist_endret: datetime | None = None
+    endret_av: str | None = None
+    sist_endret: datetime | None = None
+    er_gjeldende: bool = True
