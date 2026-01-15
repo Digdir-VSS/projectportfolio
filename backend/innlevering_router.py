@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from backend.database.db import db_connector
 from backend.database.db_connection import ProjectData
 from models.sql_models import Overview
+from models.ui_models import ProjectData, RapporteringData
 
 load_dotenv()
 
@@ -54,3 +55,11 @@ async def update_innnleverings_prosjekt(project: ProjectData, prosjekt_id: UUID,
 @router.get("/get_overview", response_model=list[Overview])
 async def get_overview(access_key: str = Depends(verify_api_key)):
     return db_connector.get_overview()
+
+@router.get("/status_rapport/{prosjekt_id}", response_model=RapporteringData)
+async def get_rapport(prosjekt_id: str, access_key: str = Depends(verify_api_key)):
+    return db_connector.get_single_rapport(prosjekt_id)
+
+@router.post("/update_status_rapport")
+async def get_rapport(rapport: RapporteringData, prosjekt_id: str,  e_mail: str, access_key: str = Depends(verify_api_key)):
+    return db_connector.update_rapport(rapport, prosjekt_id, e_mail)

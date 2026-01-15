@@ -51,9 +51,11 @@ class FinansieringUI(BaseModel):
 
 class FremskrittUI(BaseModel):
     fremskritt_id: uuid.UUID = uuid.uuid4()
+    rapporterings_id: uuid.UUID | None = None
     prosjekt_id: uuid.UUID | None = None
     fremskritt: str | None = None
     fase: str | None = None
+    fremskritt_kommentar: str | None = None
     planlagt_ferdig: Annotated[datetime | None, BeforeValidator(to_datetime)] = None
     sist_endret: datetime | None = None
     endret_av: str | None = None
@@ -182,3 +184,31 @@ class OverviewUI(BaseModel):
     estimert_bruk_2025: int | None = None
     estimert_bruk_2026: int | None = None   
     estimert_bruk_2027: int | None = None   
+
+
+class DeliveryRiskUI(BaseModel):
+    delivery_risk: uuid.UUID = uuid.uuid4()
+    rapporterings_id: uuid.UUID | None = None
+    prosjekt_id: uuid.UUID | None = None
+    risiko_rapportert: str | None = None
+    risiko_rapportert_begrunnet: str | None = None
+    endret_av: str | None = None
+    er_gjeldende: bool = True
+
+
+class RapporteringUI(BaseModel):
+    rapporterings_id: uuid.UUID = uuid.uuid4() 
+    prosjekt_id: uuid.UUID | None = None
+    viktige_endringer: str | None = None
+    viktige_endringer_kommentar: str | None = None
+    sist_endret: datetime | None = None
+    endret_av: str | None = None
+    er_gjeldende: bool = True
+
+
+class RapporteringData(BaseModel):
+    rapportering: Optional[RapporteringUI]
+    portfolioproject: Optional[PortfolioProjectUI]
+    fremskritt: Optional[FremskrittUI]
+    delivery_risk: Optional[DeliveryRiskUI]
+

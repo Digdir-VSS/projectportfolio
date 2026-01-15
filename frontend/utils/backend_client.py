@@ -2,7 +2,7 @@ import httpx
 import os 
 from enum import StrEnum
 
-from models.ui_models import ProjectData
+from models.ui_models import ProjectData, RapporteringData, RapporteringUI, FremskrittUI, DeliveryRiskUI
 from models.ui_models import OverviewUI
 
 BACKEND_BASE_URL = os.getenv("BACKEND_BASE_URL")
@@ -71,3 +71,25 @@ async def api_get_overview():
         response = await client.get(f"{BACKEND_BASE_URL}/{EndpointConfig.INNLEVERING}/get_overview", headers=headers)
         response.raise_for_status()
         return [OverviewUI(**prosjekt) for prosjekt in response.json()]
+
+async def api_get_rapporterings_data(email: str, prosjekt_id: str):
+    headers = {"x-api-key": API_KEY}
+    payload = {"email": email, "prosjekt_id": prosjekt_id}
+    async with httpx.AsyncClient() as client:
+        r = await client.get(f"{BACKEND_BASE_URL}/{EndpointConfig.INNLEVERING}/status_rapport/{prosjekt_id}", headers=headers)
+        r.raise_for_status()
+        data = r.json()
+        return RapporteringData(**data)
+
+async def api_update_rapport(rapport: RapporteringData, prosjekt_id: str, email: str):
+    headers = {"x-api-key": API_KEY}
+    params = {"prosjekt_id": prosjekt_id, "e_mail": email}
+    payload = rapport.model_dump(mode="json")
+    async with httpx.AsyncClient() as client:
+        r = await client.post(
+            f"{BACKEND_BASE_URL}/{EndpointConfig.INNLEVERING}/update_status_rapport",
+            params=params,
+            json=payload,
+            headers=headers,
+        )
+        return r.json()
