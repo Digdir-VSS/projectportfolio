@@ -28,8 +28,8 @@ STEPS_DICT = {
         "label": "Rapportering av status",
         "icon": "assignment",
     },
-    "leveranse": {
-        "label": "Om Digdirs leveranse",
+    "vurdering": {
+        "label": "Vurdering",
         "icon": "info",
     },
     "oversikt": {

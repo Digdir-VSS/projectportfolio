@@ -1,8 +1,8 @@
 from nicegui import ui
 import ast
-
 from models.ui_models import ProjectData
 from models.validators import validate_budget_distribution
+import copy
 
 def validate_kontaktpersoner(kontaktpersoner: str | None, msg: str) -> tuple[bool, str]:
     if kontaktpersoner is None:
@@ -94,3 +94,14 @@ def layout(title: str, menu_items: dict[str, dict], active_route: str):
         'click',
         lambda: drawer.set_value(not drawer.value)
     )
+def get_menu_items_for_user(user: dict, super_user: list, STEPS_DICT: dict) -> dict:
+    email = user.get("preferred_username")
+
+    # start with a copy so we don’t mutate the original
+    menu = copy.deepcopy(STEPS_DICT)
+
+    # hide "vurdering" for non-super users
+    if email not in super_user:
+        menu.pop("vurdering", None)
+
+    return menu
