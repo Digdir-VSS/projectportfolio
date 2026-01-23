@@ -7,7 +7,7 @@ import pandas as pd
 
 from models.ui_models import OverviewUI
 
-def create_excel_file(overview_data: List[OverviewUI]):
+def download_excel_file(overview_data: List[OverviewUI]):
      dataframe = pd.DataFrame([row.model_dump() for row in overview_data])
 
      buffer = BytesIO()
@@ -149,6 +149,6 @@ def overview_page(overview: List[OverviewUI]):
         """
     )
     
-    ui.button('Last ned oversikt', on_click=lambda: create_excel_file(overview))
+    ui.button('Last ned oversikt', on_click=lambda: download_excel_file(overview))
 
 
