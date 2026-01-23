@@ -19,7 +19,7 @@ env:
 
   TENANT_NAME: digdir.no
   DRIVER: ODBC Driver 18 for SQL Server
-  DATABASE: PortfolioWarehouse
+  DATABASE: ${{ secrets.DATABASE }}
   SCHEMA: "portfolio"
   INNLEVERING_API_KEY: ${{ secrets.INTERNAL_API_KEY }}
   CLIENT_ID: ${{ secrets.CLIENT_ID }}
