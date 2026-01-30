@@ -36,7 +36,8 @@ from models.ui_models import (
     VurderingData,
     DeliveryRiskUI,
     RapporteringData, 
-    RapporteringUI
+    RapporteringUI,
+    SamfunnsEffektUI
 
     
 )
@@ -55,7 +56,8 @@ from models.sql_models import (
     Vurdering,
     Overview,
     Rapportering,
-    DeliveryRisk
+    DeliveryRisk,
+    SamfunnsEffekt,
 )
 
 load_dotenv()
@@ -303,6 +305,25 @@ class DBConnector:
             "delivery_risk": DeliveryRiskUI,
             "rapportering": RapporteringUI
         }
+        vurdering_sql_models = {
+            "vurdering": Vurdering,
+            "portfolioproject": PortfolioProject,
+            "fremskritt": Fremskritt,
+            "samfunnseffekt": SamfunnsEffekt,
+            "risiko": Risikovurdering,
+            "digitaliseringstrategi": DigitaliseringStrategi,
+            "malbilde": Malbilde
+            }
+        vurdering_ui_models = {
+            "vurdering": VurderingUI,
+            "portfolioproject": PortfolioProjectUI,
+            "fremskritt": FremskrittUI,
+            "samfunnseffekt": SamfunnsEffektUI,
+            "risiko": RisikovurderingUI,
+            "digitaliseringstrategi": DigitaliseringStrategiUI,
+            "malbilde": MalbildeUI
+
+            }
         model_groups = {
                 "project": {
                     "sql": prosjekt_sql_models,
@@ -315,15 +336,9 @@ class DBConnector:
                         "dataclass": RapporteringData
                 },
                 "vurdering": {
-                    "sql": {
-                        "finansiering": Finansiering,
-                        "vurdering": Vurdering,
-                    },
-                    "ui": {
-                        "finansiering": FinansieringUI,
-                        "vurdering": VurderingUI,
-                    },
-                    "dataclass": VurderingData,
+                    "sql": vurdering_sql_models,
+                    "ui": vurdering_ui_models,
+                    "dataclass": VurderingData
                 },
             }
         
@@ -473,6 +488,25 @@ class DBConnector:
             portfolioproject=PortfolioProjectUI(**sql_model_dict["portfolioproject"].dict()),
             delivery_risk=DeliveryRiskUI(**sql_model_dict["delivery_risk"].dict()),
             rapportering=RapporteringUI(**sql_model_dict["rapportering"].dict())
+        )
+    @retry(
+        retry=retry_if_exception_type(OperationalError),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        stop=stop_after_attempt(3),
+        reraise=True,
+    )
+    def get_single_vurdering(self, project_id: str, group: str = "vurdering") -> VurderingData:
+        sql_models = self.model_groups[group]["sql"]
+        sql_model_dict = get_single_page(self.engine, project_id, sql_models)
+        # Construct UI layer
+        return VurderingData(
+            vurdering=VurderingUI(**sql_model_dict["vurdering"].dict()),
+            risiko=RisikovurderingUI(**sql_model_dict["risiko"].dict()),
+            fremskritt=FremskrittUI(**sql_model_dict["fremskritt"].dict()),
+            portfolioproject=PortfolioProjectUI(**sql_model_dict["portfolioproject"].dict()),
+            digitaliseringstrategi=DigitaliseringStrategiUI(**sql_model_dict["digitaliseringstrategi"].dict()),
+            malbilde=MalbildeUI(**sql_model_dict["malbilde"].dict()),
+            samfunnseffekt=SamfunnsEffektUI(**sql_model_dict["samfunnseffekt"].dict())
         )
 
     @retry(
