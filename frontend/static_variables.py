@@ -28,8 +28,8 @@ STEPS_DICT = {
         "label": "Rapportering av status",
         "icon": "assignment",
     },
-    "leveranse": {
-        "label": "Om Digdirs leveranse",
+    "vurdering": {
+        "label": "Vurdering av tiltak",
         "icon": "info",
     },
     "oversikt": {
@@ -48,3 +48,5 @@ FIELD_MAPPING = {
 AVDELINGER = ['BOD','DSS' ,'KOM','FEL','STL' ,'TUU', 'VIS'] 
 ESTIMAT_LISTE= ["Relativt sikkert","Noe usikkert","Svært usikkert"]
 FREMSKRITT_STATUS = ["Forsinket", "På plan", "Noen forsinkelse, men håndterbar"]
+RISIKO_CATEGORIES = ["Lav", "Medium", "Høy"]
+MSCW = ["M", "S", "C", "W"]
