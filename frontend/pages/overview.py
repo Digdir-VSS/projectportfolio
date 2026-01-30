@@ -1,8 +1,18 @@
 from typing import List
 from nicegui import ui
 from datetime import datetime
+from io import BytesIO
+import pandas as pd
 
 from models.ui_models import OverviewUI
+
+def download_excel_file(overview_data: List[OverviewUI]):
+     dataframe = pd.DataFrame([row.model_dump() for row in overview_data])
+
+     buffer = BytesIO()
+     dataframe.to_excel(buffer, index=False)
+     buffer.seek(0)
+     ui.download.content(buffer.read(), "uttrekk.xlsx")
 
 def create_columns(overview_fields: List[str]):
     columns = []
@@ -137,5 +147,7 @@ def overview_page(overview: List[OverviewUI]):
         </q-td>
         """
     )
+    
+    ui.button('Last ned oversikt', on_click=lambda: download_excel_file(overview))
 
 
