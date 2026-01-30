@@ -144,16 +144,26 @@ class VurderingUI(BaseModel):
     prosjekt_id : uuid.UUID | None = None
     gruppe: str | None = None
     pulje: int | None = None
-    risiko_vurdering: str | None = None
+    mscw: str | None = None
     sist_endret: datetime | None = None
     endret_av: str | None = None
     er_gjeldende: bool = True
-    mscw: str | None = None
 
-class VurderingData(BaseModel):
-    finansiering: FinansieringUI | None
-    vurdering: VurderingUI | None
+class SamfunnsEffektUI(BaseModel):
+    samfunnseffekt_id: uuid.UUID = uuid.uuid4()
+    prosjekt_id : uuid.UUID | None = None
+    effekt: str | None = None
+    sist_endret: datetime | None = None
+    endret_av: str | None = None
+    er_gjeldende: bool = True
 
+class RisikoUI(BaseModel):
+    risiko_id: uuid.UUID = uuid.uuid4()
+    prosjekt_id : uuid.UUID | None = None
+    risiko: str | None = None
+    sist_endret: datetime | None = None
+    endret_av: str | None = None
+    er_gjeldende: bool = True
 
 class ProjectData(BaseModel):
     fremskritt: Optional[FremskrittUI]
@@ -212,3 +222,12 @@ class RapporteringData(BaseModel):
     fremskritt: Optional[FremskrittUI]
     delivery_risk: Optional[DeliveryRiskUI]
 
+
+class VurderingData(BaseModel):
+    vurdering: Optional[VurderingUI]
+    portfolioproject: Optional[PortfolioProjectUI]
+    fremskritt: Optional[FremskrittUI]
+    samfunnseffekt: Optional[SamfunnsEffektUI]
+    risiko: Optional[RisikovurderingUI]
+    digitaliseringstrategi: Optional[DigitaliseringStrategiUI]
+    malbilde: Optional[MalbildeUI]
