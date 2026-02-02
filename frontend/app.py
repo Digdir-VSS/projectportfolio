@@ -240,7 +240,7 @@ async def project_detail(prosjekt_id: str):
     user = require_login()
     if not user:
         return 
-    layout(menu_items=STEPS_DICT, active_route="oppdater_prosjekt")
+    layout(title="Oppdater prosjekt", menu_items=STEPS_DICT, active_route="oppdater_prosjekt")
 
     email = user["preferred_username"]
     project = await api_create_new_project(email=email, prosjekt_id=prosjekt_id)
