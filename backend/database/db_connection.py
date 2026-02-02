@@ -522,3 +522,18 @@ class DBConnector:
         ui_models = self.model_groups[group]["ui"]
         sql_models = self.model_groups[group]["sql"]
         upload_data(self.engine, mod_proj, ui_models, sql_models, prosjekt_id, now, e_mail)
+
+
+    @retry(
+        retry=retry_if_exception_type(OperationalError),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        stop=stop_after_attempt(3),
+        reraise=True,
+    )
+    def update_vurdering(self, mod_proj: VurderingData, prosjekt_id: UUID, e_mail: str, group: str = "vurdering"):
+        org_proj = self.get_single_project(str(prosjekt_id))
+        mod_proj = prune_unchanged_fields(org_proj, mod_proj)
+        now = datetime.utcnow()
+        ui_models = self.model_groups[group]["ui"]
+        sql_models = self.model_groups[group]["sql"]
+        upload_data(self.engine, mod_proj, ui_models, sql_models, prosjekt_id, now, e_mail)
