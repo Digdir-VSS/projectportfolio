@@ -253,7 +253,6 @@ class Vurdering(SQLModel, table=True):
     )
     gruppe: str | None = None
     pulje: int | None = None
-    risiko_vurdering: str | None = None
     sist_endret: datetime | None = None
     endret_av: str | None = None
     er_gjeldende: bool = False
@@ -297,6 +296,19 @@ class DeliveryRisk(SQLModel, table = True):
     sist_endret: datetime | None = None
     er_gjeldende: bool = True
 
+class SamfunnsEffekt(SQLModel, table = True):
+    __tablename__ = "SamfunnsEffekt"
+    __table_args__ = {"schema": schema_name}
+
+    samfunnseffekt_id: uuid.UUID = Field(
+            default_factory=uuid.uuid4,
+            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True, default=uuid.uuid4),
+        )
+    prosjekt_id : uuid.UUID | None = None
+    effekt: str | None
+    sist_endret: datetime | None = None
+    endret_av: str | None = None
+    er_gjeldende: bool = True
 
 class Rapportering(SQLModel, table = True):
     __tablename__ = "Rapportering"
