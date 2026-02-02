@@ -150,9 +150,10 @@ class VurderingUI(BaseModel):
     er_gjeldende: bool = True
     mscw: str | None = None
 
-class VurderingData(BaseModel):
+class VurderingDataUI(BaseModel):
     finansiering: FinansieringUI | None
     vurdering: VurderingUI | None
+    portfolioproject: PortfolioProjectUI | None
 
 
 class ProjectData(BaseModel):
@@ -212,3 +213,18 @@ class RapporteringData(BaseModel):
     fremskritt: Optional[FremskrittUI]
     delivery_risk: Optional[DeliveryRiskUI]
 
+class VurderingOverviewUI(BaseModel):
+    prosjekt_id: uuid.UUID
+    navn: str | None = None
+    avdeling: str | None = None
+    oppstart: datetime | None = None
+    planlagt_ferdig: datetime | None = None
+    fase: str | None = None
+    estimert_budsjet_behov: int | None = None
+    tiltakseier: str | None = None
+    kontaktpersoner: str | None = None
+    gruppe: str | None = None
+    mscw: str | None = None
+    pulje: int | None = None
+    kommentar: str | None = None
+    vedtatt_tildeling: int | None = None

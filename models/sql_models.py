@@ -314,3 +314,24 @@ class Rapportering(SQLModel, table = True):
     endret_av: str | None = None
     sist_endret: datetime | None = None
     er_gjeldende: bool = True
+
+class VurderingOverview(SQLModel, table = True):
+    __tablename__ = "vurdering_oversikt"
+    __table_args__ = {"schema": schema_name}
+    prosjekt_id: uuid.UUID = Field(
+            default_factory=uuid.uuid4,
+            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True, default=uuid.uuid4),
+        )
+    navn: str | None = None
+    avdeling: str | None = None
+    oppstart: datetime | None = None
+    planlagt_ferdig: datetime | None = None
+    fase: str | None = None
+    estimert_budsjet_behov: int | None = None
+    tiltakseier: str | None = None
+    kontaktpersoner: str | None = None
+    gruppe: str | None = None
+    mscw: str | None = None
+    pulje: int | None = None
+    kommentar: str | None = None
+    vedtatt_tildeling: int | None = None

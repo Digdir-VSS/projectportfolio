@@ -33,7 +33,7 @@ from models.ui_models import (
     FinansieringUI,
     VurderingUI,
     ProjectData,
-    VurderingData,
+    VurderingDataUI,
     DeliveryRiskUI,
     RapporteringData, 
     RapporteringUI
@@ -55,7 +55,8 @@ from models.sql_models import (
     Vurdering,
     Overview,
     Rapportering,
-    DeliveryRisk
+    DeliveryRisk,
+    VurderingOverview
 )
 
 load_dotenv()
@@ -318,12 +319,14 @@ class DBConnector:
                     "sql": {
                         "finansiering": Finansiering,
                         "vurdering": Vurdering,
+                        "portfolioproject": PortfolioProject,
                     },
                     "ui": {
                         "finansiering": FinansieringUI,
                         "vurdering": VurderingUI,
+                        "portfolioproject": PortfolioProjectUI,
                     },
-                    "dataclass": VurderingData,
+                    "dataclass": VurderingDataUI,
                 },
             }
         
@@ -487,4 +490,64 @@ class DBConnector:
         now = datetime.utcnow()
         ui_models = self.model_groups[group]["ui"]
         sql_models = self.model_groups[group]["sql"]
+        upload_data(self.engine, mod_proj, ui_models, sql_models, prosjekt_id, now, e_mail)
+
+
+    def get_all_vurderinger(self):
+        print(self.engine)
+        with Session(self.engine) as session:
+            stmt = select(VurderingOverview)
+            results = session.exec(stmt).all()
+        return [r.dict() for r in results]
+    
+
+    @retry(
+        retry=retry_if_exception_type(OperationalError),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        stop=stop_after_attempt(3),
+        reraise=True,
+    )
+    def get_single_vurdering(self, project_id: str, group: str = "vurdering") -> VurderingDataUI:
+        sql_models = self.model_groups[group]["sql"]
+        sql_model_dict = get_single_page(self.engine, project_id, sql_models)
+        with Session(self.engine) as session:
+            pp = session.exec(
+                select(PortfolioProject)
+                .where(
+                    PortfolioProject.prosjekt_id == project_id,
+                    PortfolioProject.er_gjeldende == True
+                )
+            ).first()
+
+        return VurderingDataUI(
+            finansiering=FinansieringUI(**sql_model_dict["finansiering"].dict()),
+            vurdering=VurderingUI(**sql_model_dict["vurdering"].dict()),
+            portfolioproject=PortfolioProjectUI(**pp.dict()) if pp else None,
+        )
+        # return VurderingDataUI(
+        #     finansiering=FinansieringUI(**sql_model_dict["finansiering"].dict()),
+        #     vurdering=VurderingUI(**sql_model_dict["vurdering"].dict()),
+        #     portfolioproject=PortfolioProjectUI(**sql_model_dict["portfolioproject"].dict()),
+        # )
+
+    @retry(
+        retry=retry_if_exception_type(OperationalError),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        stop=stop_after_attempt(3),
+        reraise=True,
+    )
+    def update_vurdering(
+        self,
+        mod_proj: VurderingDataUI,
+        prosjekt_id: UUID,
+        e_mail: str,
+        group: str = "vurdering",
+    ):
+        org_proj = self.get_single_vurdering(str(prosjekt_id))
+        mod_proj = prune_unchanged_fields(org_proj, mod_proj)
+        now = datetime.utcnow()
+
+        ui_models = self.model_groups[group]["ui"]
+        sql_models = self.model_groups[group]["sql"]
+
         upload_data(self.engine, mod_proj, ui_models, sql_models, prosjekt_id, now, e_mail)

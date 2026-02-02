@@ -2,8 +2,8 @@ import httpx
 import os 
 from enum import StrEnum
 
-from models.ui_models import ProjectData, RapporteringData, RapporteringUI, FremskrittUI, DeliveryRiskUI
-from models.ui_models import OverviewUI
+from models.ui_models import ProjectData, RapporteringData, RapporteringUI, FremskrittUI, DeliveryRiskUI, VurderingDataUI
+from models.ui_models import OverviewUI, VurderingUI, VurderingOverviewUI
 
 BACKEND_BASE_URL = os.getenv("BACKEND_BASE_URL")
 API_KEY = os.getenv("INNLEVERING_API_KEY")  # or whatever you use
@@ -93,3 +93,32 @@ async def api_update_rapport(rapport: RapporteringData, prosjekt_id: str, email:
             headers=headers,
         )
         return r.json()
+
+async def api_get_vurdering_overview():
+    headers = {"x-api-key": API_KEY}
+    async with httpx.AsyncClient() as client:
+        response = await client.get(f"{BACKEND_BASE_URL}/{EndpointConfig.VURDERING}/get_overview", headers=headers)
+        response.raise_for_status()
+        return [VurderingOverviewUI(**prosjekt) for prosjekt in response.json()]
+    
+async def api_get_vurdering(prosjekt_id: str):
+    headers = {"x-api-key": API_KEY}
+    async with httpx.AsyncClient() as client:
+        r = await client.get(f"{BACKEND_BASE_URL}/{EndpointConfig.VURDERING}/{prosjekt_id}", headers=headers)
+        r.raise_for_status()
+        data = r.json()
+        return VurderingDataUI(**data)
+
+async def api_update_vurdering(data:VurderingDataUI, prosjekt_id: str, email: str):
+    headers = {"x-api-key": API_KEY}
+    params = {"prosjekt_id": prosjekt_id, "e_mail": email}
+    payload = data.model_dump(mode="json")
+    async with httpx.AsyncClient() as client:
+        r = await client.post(
+            f"{BACKEND_BASE_URL}/{EndpointConfig.VURDERING}/update",
+            params=params,
+            json=payload,
+            headers=headers,
+        )
+        return r.json()
+    
