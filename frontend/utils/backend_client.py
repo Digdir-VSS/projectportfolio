@@ -68,7 +68,7 @@ async def api_get_overview():
 async def api_get_vurderings_data(prosjekt_id: str):
     headers = {"x-api-key": API_KEY}
     async with httpx.AsyncClient() as client:
-        r = await client.get(f"{BACKEND_BASE_URL}/{EndpointConfig.INNLEVERING}/vurdering/{prosjekt_id}", headers=headers)
+        r = await client.get(f"{BACKEND_BASE_URL}/vurdering/{prosjekt_id}", headers=headers)
         r.raise_for_status()
         data = r.json()
         return VurderingData(**data)
@@ -100,7 +100,7 @@ async def api_update_rapport(rapport: RapporteringData, prosjekt_id: str, email:
     payload = rapport.model_dump(mode="json")
     async with httpx.AsyncClient() as client:
         r = await client.post(
-            f"{BACKEND_BASE_URL}/{EndpointConfig.INNLEVERING}/update_status_rapport",
+            f"{BACKEND_BASE_URL}/update_status_rapport",
             params=params,
             json=payload,
             headers=headers,
@@ -114,7 +114,7 @@ async def api_update_vurdering(rapport: VurderingData, prosjekt_id: str, email: 
     payload = rapport.model_dump(mode="json")
     async with httpx.AsyncClient() as client:
         r = await client.post(
-            f"{BACKEND_BASE_URL}/{EndpointConfig.INNLEVERING}/update_vurdering",
+            f"{BACKEND_BASE_URL}/update_vurdering",
             params=params,
             json=payload,
             headers=headers,
