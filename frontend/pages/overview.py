@@ -84,21 +84,60 @@ def overview_page(overview: List[OverviewUI]):
         r""" <q-tr :props="props" class="bg-gray-200"> <q-th auto-width class="bg-gray-200"></q-th> <q-th v-for="col in props.cols" :key="col.name" :props="props" class="bg-gray-200 text-lg font-semibold"> {{ col.label }} </q-th> </q-tr> """,
     )
     table.add_slot(
-        "body-cell-prosjekt_id",
-        r"""
-        <q-td auto-width>
-            <a :href="'/project/' + props.row.prosjekt_id">
-                <q-btn
-                    size="sm"
-                    color="primary"
-                    round
-                    dense
-                    icon="edit"
-                />
-            </a>
-        </q-td>
-        """
-    )
+    "body-cell-prosjekt_id",
+    r"""
+    <q-td auto-width>
+        <q-btn-dropdown
+            size="sm"
+            color="primary"
+            dense
+            icon="menu"
+            dropdown-icon="arrow_drop_down"
+        >
+            <q-list>
+                <q-item 
+                    clickable 
+                    v-close-popup
+                    :href="'/project/' + props.row.prosjekt_id"
+                >
+                    <q-item-section avatar>
+                        <q-icon name="edit" color="primary" />
+                    </q-item-section>
+                    <q-item-section>
+                        <q-item-label>Rediger prosjekt</q-item-label>
+                    </q-item-section>
+                </q-item>
+                
+                <q-item 
+                    clickable 
+                    v-close-popup
+                    :href="'/status_rapportering/' + props.row.prosjekt_id"
+                >
+                    <q-item-section avatar>
+                        <q-icon name="assessment" color="orange" />
+                    </q-item-section>
+                    <q-item-section>
+                        <q-item-label>Rapportering</q-item-label>
+                    </q-item-section>
+                </q-item>
+                
+                <q-item 
+                    clickable 
+                    v-close-popup
+                    :href="'/vurdering/' + props.row.prosjekt_id"
+                >
+                    <q-item-section avatar>
+                        <q-icon name="fact_check" color="green" />
+                    </q-item-section>
+                    <q-item-section>
+                        <q-item-label>Vurdering</q-item-label>
+                    </q-item-section>
+                </q-item>
+            </q-list>
+        </q-btn-dropdown>
+    </q-td>
+    """
+)
     table.add_slot(
     "body-cell-planlagt_ferdig",
     r"""

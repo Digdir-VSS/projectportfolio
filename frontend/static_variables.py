@@ -29,8 +29,8 @@ STEPS_DICT = {
         "icon": "assignment",
     },
     "vurdering": {
-        "label": "Vurdering av tiltak",
-        "icon": "info",
+        "label": "Vurdering av tiltak",    
+        "icon": "fact_check",
     },
     "oversikt": {
         "label": "Oversikt",
