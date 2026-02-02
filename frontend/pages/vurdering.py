@@ -3,7 +3,7 @@ import asyncio
 
 from models.ui_models import VurderingData
 from models.validators import to_json, to_list, sort_selected_values
-from frontend.utils.backend_client import api_update_rapport
+from frontend.utils.backend_client import api_update_vurdering
 
 from frontend.static_variables import FREMSKRITT_STATUS, RISIKO_CATEGORIES, MSCW, DIGITALISERINGS_STRATEGI
 
@@ -219,7 +219,7 @@ def show_vurdering(prosjekt_id: str, email: str, vurdering: VurderingData):
         try:
             dialog.open()
             await asyncio.sleep(0.1)
-            await api_update_rapport(vurdering, prosjekt_id, email)
+            await api_update_vurdering(vurdering, prosjekt_id, email)
 
             ui.notify("✅ Endringer lagret i databasen!", type="positive", position="top")
 
