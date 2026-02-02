@@ -11,9 +11,9 @@ from models.ui_models import ProjectData, RapporteringData
 
 load_dotenv()
 
-router = APIRouter(prefix="/api/innlevering")
+router = APIRouter(prefix="/api")
 
-API_KEY = os.getenv("INNLEVERING_API_KEY")
+API_KEY = os.getenv("API_KEY")
 
 class NyProsjekt(BaseModel):
     prosjekt_id: str
