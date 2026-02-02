@@ -61,10 +61,14 @@ async def get_rapport(prosjekt_id: str, access_key: str = Depends(verify_api_key
     return db_connector.get_single_rapport(prosjekt_id)
 
 @router.post("/update_status_rapport")
-async def get_rapport(rapport: RapporteringData, prosjekt_id: str,  e_mail: str, access_key: str = Depends(verify_api_key)):
+async def update_rapport(rapport: RapporteringData, prosjekt_id: str,  e_mail: str, access_key: str = Depends(verify_api_key)):
     return db_connector.update_rapport(rapport, prosjekt_id, e_mail)
 
 
 @router.get("/vurdering/{prosjekt_id}", response_model=VurderingData)
-async def get_rapport(prosjekt_id: str, access_key: str = Depends(verify_api_key)):
+async def get_vurdering(prosjekt_id: str, access_key: str = Depends(verify_api_key)):
     return db_connector.get_single_vurdering(prosjekt_id)
+
+@router.post("/update_vurdering")
+async def update_vurdering(vudering: VurderingData, prosjekt_id: str,  e_mail: str, access_key: str = Depends(verify_api_key)):
+    return db_connector.update_vurdering(vudering, prosjekt_id, e_mail)
