@@ -199,12 +199,17 @@ class OverviewUI(BaseModel):
 class DeliveryRiskUI(BaseModel):
     delivery_risk: uuid.UUID = uuid.uuid4()
     rapporterings_id: uuid.UUID | None = None
-    prosjekt_id: uuid.UUID | None = None
     risiko_rapportert: str | None = None
     risiko_rapportert_begrunnet: str | None = None
     endret_av: str | None = None
     er_gjeldende: bool = True
 
+class AvhengigheterUI(BaseModel):
+    avhengigheter_id: uuid.UUID = uuid.uuid4()
+    prosjekt_id: uuid.UUID | None = None
+    avhengigheter: str | None = None
+    endret_av: str | None = None
+    er_gjeldende: bool = True
 
 class RapporteringUI(BaseModel):
     rapporterings_id: uuid.UUID = uuid.uuid4() 
@@ -221,6 +226,7 @@ class RapporteringData(BaseModel):
     portfolioproject: Optional[PortfolioProjectUI]
     fremskritt: Optional[FremskrittUI]
     delivery_risk: Optional[DeliveryRiskUI]
+    avhengigheter: Optional[AvhengigheterUI]
 
 
 class VurderingData(BaseModel):

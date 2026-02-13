@@ -296,6 +296,23 @@ class DeliveryRisk(SQLModel, table = True):
     sist_endret: datetime | None = None
     er_gjeldende: bool = True
 
+
+class Avhengigheter(SQLModel, table = True):
+    __tablename__ = "Avhengigheter"
+    __table_args__ = {"schema": schema_name}
+    avhengigheter_id: uuid.UUID = Field(
+            default_factory=uuid.uuid4,
+            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True, default=uuid.uuid4),
+        )
+    prosjekt_id: uuid.UUID = Field(
+        foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",
+    )
+    avhengigheter: str | None = None
+    endret_av: str | None = None
+    sist_endret: datetime | None = None
+    er_gjeldende: bool = True
+
+
 class SamfunnsEffekt(SQLModel, table = True):
     __tablename__ = "SamfunnsEffekt"
     __table_args__ = {"schema": schema_name}
