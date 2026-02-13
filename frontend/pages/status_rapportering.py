@@ -135,7 +135,7 @@ def show_status_rapportering(prosjekt_id: str, email: str, rapportering: Rapport
 
         # Row for labels
         with ui.element("div").classes('col-span-2'):
-            ui.label("Har det vært viktige endringer i forutsetninger og rammebetingelser siden siste rapportering?").classes('font-bold')
+            ui.label("Har det vært vesentlige endringer i forutsetninger og rammebetingelser siden siste rapportering?").classes('font-bold')
 
         with ui.element("div").classes('col-span-3'):
             ui.label("Er det endringer i hva tiltaket skal levere og når leveransene skal skje?").classes('font-bold')
