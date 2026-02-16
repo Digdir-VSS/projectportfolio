@@ -9,9 +9,10 @@ from dotenv import load_dotenv
 from msal import ConfidentialClientApplication
 import copy
 
-from frontend.utils.backend_client import api_get_projects, api_get_project, api_create_new_project, api_get_overview, api_get_rapporterings_data, api_get_vurderings_data
+from frontend.utils.backend_client import api_get_projects, api_get_project, api_create_new_project, api_get_overview, api_get_rapporterings_data, api_get_vurderings_data, api_get_open_overview
 from frontend.pages.login_page import register_login_pages
 from frontend.pages.dashboard import dashboard
+from frontend.pages.open_overview import open_overview_page
 from frontend.pages.overview import overview_page
 from frontend.pages.single_project import project_detail as digdir_overordnet_info_page
 from frontend.pages.status_rapportering import show_status_rapportering_overview, show_status_rapportering
@@ -94,15 +95,17 @@ def index(client: Client):
 
 
 @ui.page('/home')
-def main_page():
+async def main_page():
     user = require_login()
     if not user:
         return 
+    open_overview = await api_get_open_overview()
+
     menu = get_menu_items_for_user(user=user, super_user=super_user, STEPS_DICT=STEPS_DICT)
 
     layout(title='Hjemmeside', menu_items=menu, active_route="home")
-    ui.label('Detter er hjemmesiden. Her vil vi publisere en oversikt med informasjon om prosjektene.')
-    dashboard()
+    # ui.label('Detter er hjemmesiden. Her vil vi publisere en oversikt med informasjon om prosjektene.')
+    open_overview_page(open_overview)
 
 def new_project():
     # Create a blank ProjectData with default values
@@ -127,7 +130,7 @@ async def oversikt():
     oversikt_data = await api_get_overview()
     menu = get_menu_items_for_user(user=user, super_user=super_user, STEPS_DICT=STEPS_DICT)
 
-    layout(title='Oversikt', menu_items=menu, active_route="oversikt"),
+    layout(title='Vurdering av tiltak', menu_items=menu, active_route="vurdering"),
     overview_page(oversikt_data)
 
 @ui.page('/oppdater_prosjekt')

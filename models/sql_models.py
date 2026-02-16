@@ -262,7 +262,7 @@ class Vurdering(SQLModel, table=True):
     )
 
 class Overview(SQLModel, table=True):
-    __tablename__ = "vw_oversikt"
+    __tablename__ = "vw_oversikt_brukt"
     __table_args__ = {"schema": schema_name}
     prosjekt_id: uuid.UUID = Field(
             default_factory=uuid.uuid4,
@@ -276,9 +276,12 @@ class Overview(SQLModel, table=True):
     estimert_budsjet_behov: int | None = None
     antall_mandsverk_intern: int | None = None
     antall_mandsverk_ekstern: int | None = None
-    estimert_bruk_2025: int | None = None
-    estimert_bruk_2026: int | None = None   
+    brukt_2025: float | None = None
+    brukt_2026: float | None = None
+    estimert_bruk_2026: int | None = None
     estimert_bruk_2027: int | None = None   
+    estimert_bruk_2028: int | None = None   
+
 
 class DeliveryRisk(SQLModel, table = True):
     __tablename__ = "DeliveryRisk"
@@ -343,3 +346,19 @@ class Rapportering(SQLModel, table = True):
     endret_av: str | None = None
     sist_endret: datetime | None = None
     er_gjeldende: bool = True
+
+class OpenOverview(SQLModel, table = True):
+    __tablename__ = "open_overview"
+    __table_args__ = {"schema": schema_name}
+    prosjekt_id: uuid.UUID = Field(
+            default_factory=uuid.uuid4,
+            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True, default=uuid.uuid4),
+        )
+    navn: str | None = None
+    avdeling: str | None = None
+    tiltakseier: str | None = None
+    kontaktpersoner: str | None = None
+    fase: str | None = None
+    planlagt_ferdig: datetime | None = None
+    fremskritt_status: str | None = None
+    problem: str | None = None
