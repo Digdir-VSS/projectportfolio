@@ -2,7 +2,7 @@ import httpx
 import os 
 from enum import StrEnum
 
-from models.ui_models import ProjectData, RapporteringData, VurderingData
+from models.ui_models import ProjectData, RapporteringData, VurderingData, ProsjektListUI
 from models.ui_models import OverviewUI
 
 BACKEND_BASE_URL = os.getenv("BACKEND_BASE_URL")
@@ -120,3 +120,14 @@ async def api_update_vurdering(rapport: VurderingData, prosjekt_id: str, email: 
             headers=headers,
         )
         return r.json()
+    
+async def api_get_prosjekt_list():
+    headers = {"x-api-key": API_KEY}
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            f"{BACKEND_BASE_URL}/get_prosjekt_list",
+            headers=headers,
+        )
+        response.raise_for_status()
+        return [ProsjektListUI(**prosjekt) for prosjekt in response.json()]

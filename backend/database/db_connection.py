@@ -6,7 +6,7 @@ from datetime import datetime, date
 import urllib
 import ast
 from sqlmodel import SQLModel, Session, select, update
-from sqlalchemy import create_engine, event, Engine
+from sqlalchemy import create_engine, event, Engine, text
 from sqlalchemy.exc import OperationalError
 from azure.identity import ClientSecretCredential
 from tenacity import (
@@ -37,13 +37,15 @@ from models.ui_models import (
     DeliveryRiskUI,
     RapporteringData, 
     RapporteringUI,
-    SamfunnsEffektUI
+    SamfunnsEffektUI,
+    SaldotabellUI
 
     
 )
 from models.sql_models import (
     PortfolioProject,
     Fremskritt,
+    ProsjektList,
     Resursbehov,
     Samarabeid,
     Problemstilling,
@@ -58,6 +60,7 @@ from models.sql_models import (
     Rapportering,
     DeliveryRisk,
     SamfunnsEffekt,
+    Saldotabell
 )
 
 load_dotenv()
@@ -162,6 +165,9 @@ def get_single_project_data(project_id: str, sql_models: dict):
                 .where(schema.prosjekt_id == project_id, schema.er_gjeldende == True)
                 .order_by(schema.year)
             )
+        elif schema_name == "saldotabell":
+            statement_dict[schema_name] = select(schema).where(
+                schema.prosjekt == project_id)
         else:
             statement_dict[schema_name] = select(schema).where(
                 schema.prosjekt_id == project_id, schema.er_gjeldende == True
@@ -307,6 +313,7 @@ class DBConnector:
         }
         vurdering_sql_models = {
             "vurdering": Vurdering,
+            "finansiering": Finansiering,
             "portfolioproject": PortfolioProject,
             "fremskritt": Fremskritt,
             "samfunnseffekt": SamfunnsEffekt,
@@ -316,6 +323,7 @@ class DBConnector:
             }
         vurdering_ui_models = {
             "vurdering": VurderingUI,
+            "finansiering": FinansieringUI,
             "portfolioproject": PortfolioProjectUI,
             "fremskritt": FremskrittUI,
             "samfunnseffekt": SamfunnsEffektUI,
@@ -489,6 +497,7 @@ class DBConnector:
             delivery_risk=DeliveryRiskUI(**sql_model_dict["delivery_risk"].dict()),
             rapportering=RapporteringUI(**sql_model_dict["rapportering"].dict())
         )
+    
     @retry(
         retry=retry_if_exception_type(OperationalError),
         wait=wait_exponential(multiplier=1, min=1, max=10),
@@ -498,9 +507,24 @@ class DBConnector:
     def get_single_vurdering(self, project_id: str, group: str = "vurdering") -> VurderingData:
         sql_models = self.model_groups[group]["sql"]
         sql_model_dict = get_single_page(self.engine, project_id, sql_models)
+        # if sql_model_dict["finansiering"].dict()["prosjekt_nummer"] is not None:
+        #     sql_model_dict["saldotabell"] = get_single_project_data(sql_model_dict["finansiering"].dict()["prosjekt_nummer"], {"saldotabell": Saldotabell})
+        #     return VurderingData(
+        #         vurdering=VurderingUI(**sql_model_dict["vurdering"].dict()),
+        #         finansiering=FinansieringUI(**sql_model_dict["finansiering"].dict()),
+        #         risiko=RisikovurderingUI(**sql_model_dict["risiko"].dict()),
+        #         fremskritt=FremskrittUI(**sql_model_dict["fremskritt"].dict()),
+        #         portfolioproject=PortfolioProjectUI(**sql_model_dict["portfolioproject"].dict()),
+        #         digitaliseringstrategi=DigitaliseringStrategiUI(**sql_model_dict["digitaliseringstrategi"].dict()),
+        #         malbilde=MalbildeUI(**sql_model_dict["malbilde"].dict()),
+        #         samfunnseffekt=SamfunnsEffektUI(**sql_model_dict["samfunnseffekt"].dict()),
+        #         saldotabell=[SaldotabellUI(**r.dict()) for r in sql_model_dict["saldotabell"]]
+        #     )
+
         # Construct UI layer
         return VurderingData(
             vurdering=VurderingUI(**sql_model_dict["vurdering"].dict()),
+            finansiering=FinansieringUI(**sql_model_dict["finansiering"].dict()),
             risiko=RisikovurderingUI(**sql_model_dict["risiko"].dict()),
             fremskritt=FremskrittUI(**sql_model_dict["fremskritt"].dict()),
             portfolioproject=PortfolioProjectUI(**sql_model_dict["portfolioproject"].dict()),
@@ -537,3 +561,20 @@ class DBConnector:
         ui_models = self.model_groups[group]["ui"]
         sql_models = self.model_groups[group]["sql"]
         upload_data(self.engine, mod_proj, ui_models, sql_models, prosjekt_id, now, e_mail)
+    @retry(
+        retry=retry_if_exception_type(OperationalError),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        stop=stop_after_attempt(3),
+        reraise=True,
+    )
+    def get_prosjekt_list (self):
+        with Session(self.engine) as session:
+            stmt = select(ProsjektList)
+            results = session.exec(stmt).all()
+        return [
+            {
+                "prosjekt": r.prosjekt,
+                "prosjekt_beskrivelse": r.prosjekt_beskrivelse
+            }
+            for r in results
+        ]

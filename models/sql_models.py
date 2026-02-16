@@ -1,3 +1,4 @@
+from asyncio.windows_events import NULL
 import os
 from sqlmodel import SQLModel, Field
 from sqlalchemy import Column
@@ -56,6 +57,7 @@ class Finansiering(SQLModel, table=True):
             default_factory=uuid.uuid4,
             sa_column=Column(UNIQUEIDENTIFIER, primary_key=True, default=uuid.uuid4),
         )
+    
     potensiell_finansering: int | None = None
     mnd_verk: int | None = None
     vedtatt_tildeling: int | None = None
@@ -68,9 +70,11 @@ class Finansiering(SQLModel, table=True):
     sist_endret: datetime | None = None
     endret_av: str | None = None
     er_gjeldende: bool = False
+    prosjekt_nummer: str | None = None
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
+
     
 class Fremskritt(SQLModel, table=True):
     __tablename__ = "Fremskritt"
@@ -262,7 +266,7 @@ class Vurdering(SQLModel, table=True):
     )
 
 class Overview(SQLModel, table=True):
-    __tablename__ = "vw_oversikt"
+    __tablename__ = "vw_oversikt_brukt"
     __table_args__ = {"schema": schema_name}
     prosjekt_id: uuid.UUID = Field(
             default_factory=uuid.uuid4,
@@ -276,9 +280,11 @@ class Overview(SQLModel, table=True):
     estimert_budsjet_behov: int | None = None
     antall_mandsverk_intern: int | None = None
     antall_mandsverk_ekstern: int | None = None
-    estimert_bruk_2025: int | None = None
-    estimert_bruk_2026: int | None = None   
+    brukt_2025: float | None = None
+    brukt_2026: float | None = None
+    estimert_bruk_2026: int | None = None
     estimert_bruk_2027: int | None = None   
+    estimert_bruk_2028: int | None = None   
 
 class DeliveryRisk(SQLModel, table = True):
     __tablename__ = "DeliveryRisk"
@@ -326,3 +332,30 @@ class Rapportering(SQLModel, table = True):
     endret_av: str | None = None
     sist_endret: datetime | None = None
     er_gjeldende: bool = True
+
+class Saldotabell(SQLModel, table = True):
+    __tablename__ = "prosjekt_saldotabell"
+    __table_args__ = {"schema": "dbo"}
+    argtid: int = Field(sa_column=Column(primary_key=True))
+    konto : str
+    konto_beskrivelse: str | None = None
+    kontogruppe: str | None = None
+    kontogruppe_beskrivelse: str | None = None
+    avdeling_kode: str | None = None
+    prosjekt: str | None = None
+    prosjekt_beskrivelse: str | None = None
+    kap_post: str | None = None
+    dim7: str | None = None
+    kontant: float | None = None
+    brukt: float | None = None
+    pla_amount: float | None = None
+    plb_amount: float | None = None
+    plc_amount: float | None = None
+    plf_amount: float | None = None
+    period: int
+
+class ProsjektList(SQLModel, table = True):
+    __tablename__ = "prosjekt_list"
+    __table_args__ = {"schema": "dbo"}
+    prosjekt: str = Field(primary_key=True)
+    prosjekt_beskrivelse: str | None = None

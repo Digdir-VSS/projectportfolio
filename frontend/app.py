@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from msal import ConfidentialClientApplication
 import copy
 
-from frontend.utils.backend_client import api_get_projects, api_get_project, api_create_new_project, api_get_overview, api_get_rapporterings_data, api_get_vurderings_data
+from frontend.utils.backend_client import api_get_projects, api_get_project, api_create_new_project, api_get_overview, api_get_prosjekt_list, api_get_rapporterings_data, api_get_vurderings_data
 from frontend.pages.login_page import register_login_pages
 from frontend.pages.dashboard import dashboard
 from frontend.pages.overview import overview_page
@@ -308,10 +308,11 @@ async def vurderingen(prosjekt_id):
     layout(title='Vurdering av tiltak',menu_items=STEPS_DICT, active_route="vurdering")
     email = user["preferred_username"]
     vurdering = await api_get_vurderings_data(prosjekt_id=prosjekt_id)
+    prosjekter = await api_get_prosjekt_list()
     if not email:
         ui.notify('No email claim found in login!')
         return
-    show_vurdering(prosjekt_id=prosjekt_id, email=email, vurdering=vurdering)
+    show_vurdering(prosjekt_id=prosjekt_id, email=email, vurdering=vurdering, prosjekter=prosjekter)
 
 
 

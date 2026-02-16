@@ -3,11 +3,13 @@ import asyncio
 
 from models.ui_models import VurderingData
 from models.validators import to_json, to_list, sort_selected_values
-from frontend.utils.backend_client import api_update_vurdering
+from frontend.utils.backend_client import api_update_vurdering, api_get_prosjekt_list
 
 from frontend.static_variables import FREMSKRITT_STATUS, RISIKO_CATEGORIES, MSCW, DIGITALISERINGS_STRATEGI
 
+grouppe = ["eID","KI", "Tjenesteutvikling", "Intern styring", "Økonomi", "Kunnskap og innsikt"]
 
+prosjekt_nummer_list = []
 def show_status_vurdering_overview(prosjekter):
     with ui.column().classes("w-full gap-2"):
         if not prosjekter:
@@ -77,7 +79,12 @@ def show_status_vurdering_overview(prosjekter):
    
 
   
-def show_vurdering(prosjekt_id: str, email: str, vurdering: VurderingData):
+def show_vurdering(prosjekt_id: str, email: str, vurdering: VurderingData, prosjekter=None):
+    prosjekt_dict = {
+    p.prosjekt:f"{p.prosjekt} – {p.prosjekt_beskrivelse}"
+    for p in prosjekter
+}
+    # prosjekt_list = list(prosjekt_dict.keys())
     ui.markdown(
         f"## *Vurdering på:* **{vurdering.portfolioproject.navn}**"
     ).classes('text-xl font-bold mb-4')
@@ -210,6 +217,17 @@ def show_vurdering(prosjekt_id: str, email: str, vurdering: VurderingData):
                 "w-full bg-white rounded-lg"
             ).bind_value(
                 vurdering.vurdering, "mscw"
+            )
+        ui.label("6. Finansiering").classes(
+            'col-span-5 text-lg font-bold underline mt-4')
+        with ui.element("div").classes('col-span-2'):
+            ui.label("Gruppe").classes('text-lg font-bold')
+            ui.select(options=grouppe, with_input=True, new_value_mode=not None, clearable=True).classes('w-full bg-white rounded-lg').bind_value(vurdering.vurdering, "gruppe")
+
+        with ui.element("div").classes('col-span-5'):
+            ui.label("Prosjekt nummer i økønomisystemet").classes('font-bold')
+            ui.select(options=prosjekt_dict, with_input=True, new_value_mode=not None, clearable=True).classes('w-full bg-white rounded-lg').bind_value(
+                vurdering.finansiering, "prosjekt_nummer"
             )
 
     async def save_object() -> "VurderingData":
