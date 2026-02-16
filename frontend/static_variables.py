@@ -32,10 +32,10 @@ STEPS_DICT = {
         "label": "Vurdering av tiltak",    
         "icon": "fact_check",
     },
-    "oversikt": {
-        "label": "Oversikt",
-        "icon": "dashboard",
-    },
+    # "oversikt": {
+    #     "label": "Oversikt",
+    #     "icon": "dashboard",
+    # },
 }
 FIELD_MAPPING = {
     "navn_tiltak": "Navn prosjekt",
