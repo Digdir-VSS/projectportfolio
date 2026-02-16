@@ -6,7 +6,7 @@ import ast, asyncio
 
 from frontend.pages.utils import validate_send_schema
 from models.validators import to_json, to_list, to_date_str, convert_to_int, add_thousand_split, convert_to_int_from_thousand_sign, sort_selected_values, to_datetime
-from frontend.static_variables import DIGITALISERINGS_STRATEGI, ESTIMAT_LISTE
+from frontend.static_variables import DIGITALISERINGS_STRATEGI, ESTIMAT_LISTE, FASE
     
 avdelinger = ['BOD','DSS' ,'KOM','FEL','STL' ,'TUU', 'VIS', 'KI Norge']
 def project_detail(prosjekt_id: str, email: str, project: ProjectData, brukere_list):
@@ -24,7 +24,7 @@ def project_detail(prosjekt_id: str, email: str, project: ProjectData, brukere_l
         with ui.element("div").classes('col-span-1 row-span-1 col-start-4 row-start-4'):
             ui.label("Hvilken fase skal startes").classes('text-lg font-bold')
             ui.select(
-                ['Konsept', 'Planlegging', 'Gjennomføring','Problem/ide'],value=None
+                FASE,value=None
                 ).classes('w-full bg-white rounded-lg').bind_value(project.fremskritt, "fase")
         with ui.element("div").classes('col-span-3 row-span-1 col-start-1 row-start-5'):
             ui.label("Kontaktperson").classes('text-lg font-bold')

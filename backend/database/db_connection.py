@@ -30,7 +30,7 @@ from models.ui_models import (
     MalbildeUI,
     DigitaliseringStrategiUI,
     RessursbrukUI,
-    FinansieringUI,
+    AvhengigheterUI,
     VurderingUI,
     ProjectData,
     VurderingData,
@@ -52,7 +52,7 @@ from models.sql_models import (
     Malbilde,
     DigitaliseringStrategi,
     Ressursbruk,
-    Finansiering,
+    Avhengigheter,
     Vurdering,
     Overview,
     Rapportering,
@@ -297,13 +297,15 @@ class DBConnector:
             "fremskritt": Fremskritt,
             "portfolioproject": PortfolioProject,
             "delivery_risk": DeliveryRisk,
-            "rapportering": Rapportering
+            "rapportering": Rapportering,
+            "avhengigheter": Avhengigheter 
         }
         rapportering_ui_models = {
             "fremskritt": FremskrittUI,
             "portfolioproject": PortfolioProjectUI,
             "delivery_risk": DeliveryRiskUI,
-            "rapportering": RapporteringUI
+            "rapportering": RapporteringUI,
+            "avhengigheter": AvhengigheterUI 
         }
         vurdering_sql_models = {
             "vurdering": Vurdering,
@@ -487,7 +489,8 @@ class DBConnector:
             fremskritt=FremskrittUI(**sql_model_dict["fremskritt"].dict()),
             portfolioproject=PortfolioProjectUI(**sql_model_dict["portfolioproject"].dict()),
             delivery_risk=DeliveryRiskUI(**sql_model_dict["delivery_risk"].dict()),
-            rapportering=RapporteringUI(**sql_model_dict["rapportering"].dict())
+            rapportering=RapporteringUI(**sql_model_dict["rapportering"].dict()),
+            avhengigheter=AvhengigheterUI(**sql_model_dict["avhengigheter"].dict())
         )
     @retry(
         retry=retry_if_exception_type(OperationalError),
