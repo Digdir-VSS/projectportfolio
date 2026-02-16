@@ -120,3 +120,15 @@ async def api_update_vurdering(rapport: VurderingData, prosjekt_id: str, email: 
             headers=headers,
         )
         return r.json()
+    
+
+async def api_delete_prosjekt(prosjekt_id: str, email: str):
+    headers = {"x-api-key": API_KEY}
+    params = {"prosjekt_id": prosjekt_id, "e_mail": email}
+    async with httpx.AsyncClient() as client:
+        r = await client.post(
+            f"{BACKEND_BASE_URL}/delete_prosjekt",
+            params=params,
+            headers=headers,
+        )
+        return r.json()
