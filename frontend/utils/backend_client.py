@@ -3,7 +3,7 @@ import os
 from enum import StrEnum
 
 from models.ui_models import ProjectData, RapporteringData, VurderingData
-from models.ui_models import OverviewUI
+from models.ui_models import OverviewUI, OpenOverviewUI
 
 BACKEND_BASE_URL = os.getenv("BACKEND_BASE_URL")
 API_KEY = os.getenv("API_KEY")  # or whatever you use
@@ -120,3 +120,9 @@ async def api_update_vurdering(rapport: VurderingData, prosjekt_id: str, email: 
             headers=headers,
         )
         return r.json()
+async def api_get_open_overview():
+    headers = {"x-api-key": API_KEY}
+    async with httpx.AsyncClient() as client:
+        response = await client.get(f"{BACKEND_BASE_URL}/get_open_overview", headers=headers)
+        response.raise_for_status()
+        return [OpenOverviewUI(**prosjekt) for prosjekt in response.json()]
