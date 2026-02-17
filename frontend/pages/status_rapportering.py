@@ -119,15 +119,7 @@ def show_status_rapportering(prosjekt_id: str, email: str, rapportering: Rapport
                 rapportering.fremskritt, "fase"
             )
 
-        with ui.element("div").classes('col-span-3'):
-            ui.label("Fremdrift").classes('font-bold')
-            ui.select(
-                FREMDRIFT_STATUS
-            ).classes(
-                'w-full bg-white rounded-lg'
-            ).bind_value(
-                rapportering.fremskritt, "fremskritt"
-            )
+
 
         ui.label("3. Vesentlige endringer").classes(
             'col-span-5 text-lg font-bold underline mt-4'
@@ -165,8 +157,19 @@ def show_status_rapportering(prosjekt_id: str, email: str, rapportering: Rapport
             ).bind_value(
                 rapportering.avhengigheter, "avhengigheter"
             )
-
-        ui.label("5. Risiko").classes(
+        ui.label("5. Fremdrift").classes(
+            'col-span-5 text-lg font-bold underline mt-4'
+        )
+        with ui.element("div").classes('col-span-3'):
+            ui.label("Fremdrift").classes('font-bold')
+            ui.select(
+                FREMDRIFT_STATUS
+            ).classes(
+                'w-full bg-white rounded-lg'
+            ).bind_value(
+                rapportering.fremskritt, "fremskritt"
+            )
+        ui.label("6. Risiko").classes(
             'col-span-5 text-lg font-bold underline mt-4'
         )
         # Row for labels

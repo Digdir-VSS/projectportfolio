@@ -126,3 +126,15 @@ async def api_get_open_overview():
         response = await client.get(f"{BACKEND_BASE_URL}/get_open_overview", headers=headers)
         response.raise_for_status()
         return [OpenOverviewUI(**prosjekt) for prosjekt in response.json()]
+    
+
+async def api_delete_prosjekt(prosjekt_id: str, email: str):
+    headers = {"x-api-key": API_KEY}
+    params = {"prosjekt_id": prosjekt_id, "e_mail": email}
+    async with httpx.AsyncClient() as client:
+        r = await client.post(
+            f"{BACKEND_BASE_URL}/delete_prosjekt",
+            params=params,
+            headers=headers,
+        )
+        return r.json()

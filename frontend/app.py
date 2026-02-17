@@ -9,12 +9,13 @@ from dotenv import load_dotenv
 from msal import ConfidentialClientApplication
 import copy
 
-from frontend.utils.backend_client import api_get_projects, api_get_project, api_create_new_project, api_get_overview, api_get_rapporterings_data, api_get_vurderings_data, api_get_open_overview
+from frontend.utils.backend_client import api_get_projects, api_get_project, api_create_new_project, api_get_overview, api_get_rapporterings_data, api_get_vurderings_data, api_delete_prosjekt, api_get_open_overview
 from frontend.pages.login_page import register_login_pages
 from frontend.pages.dashboard import dashboard
 from frontend.pages.open_overview import open_overview_page
 from frontend.pages.overview import overview_page
 from frontend.pages.single_project import project_detail as digdir_overordnet_info_page
+from frontend.pages.single_project import show_projects
 from frontend.pages.status_rapportering import show_status_rapportering_overview, show_status_rapportering
 from frontend.pages.vurdering import show_status_vurdering_overview, show_vurdering
 from frontend.utils.azure_users import load_users
@@ -137,10 +138,11 @@ async def oversikt():
 async def overordnet():
     user = require_login()
     if not user:
-        return 
-
+        return
+    
     email = user["preferred_username"]
     user_name = user["name"]
+    
     if not email:
         ui.notify('No email claim found in login!')
         return
@@ -148,86 +150,22 @@ async def overordnet():
 
     layout(title='Ny/ endre prosjekt', menu_items=menu, active_route="oppdater_prosjekt")
     ui.label(f'Prosjekter for {user_name}').classes('text-lg font-bold mb-2')
+    
     if email in super_user:
         ui.label('Du er logget inn som admin og ser alle prosjekter').classes('text-sm italic mb-4')
         projects = await api_get_projects(None)
-    else:        
+    else:
         projects = await api_get_projects(email)
-    
-    # store original copy for later diff
-
-    
     
     with ui.column().classes("w-full gap-2"):
         with ui.row().classes('gap-2'):
             ui.button("➕ New Project", on_click=lambda: new_project()).props("color=secondary")
-        # create a table with editable fields
+        
         if not projects:
             ui.label('No projects found for this user.')
             return
-        visible_keys = [
-            key for key in projects[0].keys()
-            if key not in ["prosjekt_id", "epost_kontakt"]
-        ]
-
-        columns = [
-            {
-                "name": key,
-                "label": key.replace("_", " ").title(),
-                "field": key,
-                "sortable": True,
-                "align": "left",
-            }
-            for key in visible_keys
-        ]
-
-
-        rows = [
-            {**p, "prosjekt_id": str(p["prosjekt_id"])}  # ensure UUID is a string
-            for p in projects
-        ]
-
-        table =  ui.table(columns=columns,
-                    rows=rows,
-                    row_key="prosjekt_id",
-                    column_defaults={
-                        "align": "left",
-                        "headerClasses": "uppercase text-primary",
-                        "sortable": True,
-                        "filterable": True,
-                    },).classes("w-full")
-
-        table.add_slot(
-            'header',
-            r'''
-            <q-tr :props="props">
-                <q-th auto-width />
-                <q-th v-for="col in props.cols" :key="col.name" :props="props">
-                    {{ col.label }}
-                </q-th>
-            </q-tr>
-            '''
-        )
-
-        table.add_slot(
-            'body',
-            r'''
-            <q-tr :props="props">
-                <q-td auto-width>
-                    <a :href="'/project/' + props.row.prosjekt_id"><q-btn size="sm" color="primary" round dense
-                    @click="location.href = '/project/' + props.row.prosjekt_id"
-
-                    icon="edit" /></a>
-                    
-                </q-td>
-                <q-td v-for="col in props.cols" :key="col.name" :props="props">
-                    {{ col.value }}
-                </q-td>
-            </q-tr>
-            '''
-        )
-   
-
+        
+        show_projects(projects, email)
 
 @ui.page('/project/{prosjekt_id}')
 async def project_detail(prosjekt_id: str):

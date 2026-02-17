@@ -76,3 +76,6 @@ async def update_vurdering(vudering: VurderingData, prosjekt_id: str,  e_mail: s
 @router.get("/get_open_overview", response_model=list[OpenOverview])
 async def get_overview(access_key: str = Depends(verify_api_key)):
     return db_connector.get_open_overview()
+@router.post("/delete_prosjekt")
+async def delete_prosjekt(prosjekt_id: str,  e_mail: str, access_key: str = Depends(verify_api_key)):
+    return db_connector.delete_prosjekt(prosjekt_id, e_mail)
