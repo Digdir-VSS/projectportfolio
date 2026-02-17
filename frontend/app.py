@@ -9,15 +9,17 @@ from dotenv import load_dotenv
 from msal import ConfidentialClientApplication
 import copy
 
-from frontend.utils.backend_client import api_get_projects, api_get_project, api_create_new_project, api_get_overview, api_get_prosjekt_list, api_get_rapporterings_data, api_get_vurderings_data
+from frontend.utils.backend_client import api_get_projects, api_get_project, api_create_new_project, api_get_overview, api_get_prosjekt_list, api_get_rapporterings_data, api_get_vurderings_data, api_delete_prosjekt, api_get_open_overview
 from frontend.pages.login_page import register_login_pages
 from frontend.pages.dashboard import dashboard
+from frontend.pages.open_overview import open_overview_page
 from frontend.pages.overview import overview_page
 from frontend.pages.single_project import project_detail as digdir_overordnet_info_page
+from frontend.pages.single_project import show_projects
 from frontend.pages.status_rapportering import show_status_rapportering_overview, show_status_rapportering
 from frontend.pages.vurdering import show_status_vurdering_overview, show_vurdering
 from frontend.utils.azure_users import load_users
-from frontend.pages.utils import layout
+from frontend.pages.utils import layout, get_menu_items_for_user
 import uuid
 from frontend.static_variables import STEPS_DICT
 
@@ -94,14 +96,17 @@ def index(client: Client):
 
 
 @ui.page('/home')
-def main_page():
+async def main_page():
     user = require_login()
     if not user:
         return 
+    open_overview = await api_get_open_overview()
 
-    layout(title='Hjemmeside', menu_items=STEPS_DICT, active_route="home")
-    ui.label('Detter er hjemmesiden. Her vil vi publisere en oversikt med informasjon om prosjektene.')
-    dashboard()
+    menu = get_menu_items_for_user(user=user, super_user=super_user, STEPS_DICT=STEPS_DICT)
+
+    layout(title='Hjemmeside', menu_items=menu, active_route="home")
+    # ui.label('Detter er hjemmesiden. Her vil vi publisere en oversikt med informasjon om prosjektene.')
+    open_overview_page(open_overview)
 
 def new_project():
     # Create a blank ProjectData with default values
@@ -113,109 +118,54 @@ def new_project():
     # Navigate to the same project page as "edit"
     ui.navigate.to(f"/project/new/{new_id}")
 
-@ui.page('/oversikt')
+@ui.page('/vurdering')
 async def oversikt():
     user = require_login()
     if not user:
         return 
+    email = user["preferred_username"]
+    if email not in super_user:
+        ui.notify("Du har ikke tilgang til denne siden", type="negative")
+        ui.navigate.to("/oversikt")
+        return
     oversikt_data = await api_get_overview()
-    layout(title='Oversikt', menu_items=STEPS_DICT, active_route="oversikt"),
+    menu = get_menu_items_for_user(user=user, super_user=super_user, STEPS_DICT=STEPS_DICT)
+
+    layout(title='Vurdering av tiltak', menu_items=menu, active_route="vurdering"),
     overview_page(oversikt_data)
 
 @ui.page('/oppdater_prosjekt')
 async def overordnet():
     user = require_login()
     if not user:
-        return 
-
+        return
+    
     email = user["preferred_username"]
     user_name = user["name"]
+    
     if not email:
         ui.notify('No email claim found in login!')
         return
+    menu = get_menu_items_for_user(user=user, super_user=super_user, STEPS_DICT=STEPS_DICT)
 
-    layout(title='Ny/ endre prosjekt', menu_items=STEPS_DICT, active_route="oppdater_prosjekt")
+    layout(title='Ny/ endre prosjekt', menu_items=menu, active_route="oppdater_prosjekt")
     ui.label(f'Prosjekter for {user_name}').classes('text-lg font-bold mb-2')
+    
     if email in super_user:
         ui.label('Du er logget inn som admin og ser alle prosjekter').classes('text-sm italic mb-4')
         projects = await api_get_projects(None)
-    else:        
+    else:
         projects = await api_get_projects(email)
-    
-    # store original copy for later diff
-
-    
     
     with ui.column().classes("w-full gap-2"):
         with ui.row().classes('gap-2'):
             ui.button("➕ New Project", on_click=lambda: new_project()).props("color=secondary")
-        # create a table with editable fields
+        
         if not projects:
             ui.label('No projects found for this user.')
             return
-        visible_keys = [
-            key for key in projects[0].keys()
-            if key not in ["prosjekt_id", "epost_kontakt"]
-        ]
-
-        columns = [
-            {
-                "name": key,
-                "label": key.replace("_", " ").title(),
-                "field": key,
-                "sortable": True,
-                "align": "left",
-            }
-            for key in visible_keys
-        ]
-
-
-        rows = [
-            {**p, "prosjekt_id": str(p["prosjekt_id"])}  # ensure UUID is a string
-            for p in projects
-        ]
-
-        table =  ui.table(columns=columns,
-                    rows=rows,
-                    row_key="prosjekt_id",
-                    column_defaults={
-                        "align": "left",
-                        "headerClasses": "uppercase text-primary",
-                        "sortable": True,
-                        "filterable": True,
-                    },).classes("w-full")
-
-        table.add_slot(
-            'header',
-            r'''
-            <q-tr :props="props">
-                <q-th auto-width />
-                <q-th v-for="col in props.cols" :key="col.name" :props="props">
-                    {{ col.label }}
-                </q-th>
-            </q-tr>
-            '''
-        )
-
-        table.add_slot(
-            'body',
-            r'''
-            <q-tr :props="props">
-                <q-td auto-width>
-                    <a :href="'/project/' + props.row.prosjekt_id"><q-btn size="sm" color="primary" round dense
-                    @click="location.href = '/project/' + props.row.prosjekt_id"
-
-                    icon="edit" /></a>
-                    
-                </q-td>
-                <q-td v-for="col in props.cols" :key="col.name" :props="props">
-                    {{ col.value }}
-                </q-td>
-            </q-tr>
-            '''
-        )
-   
-
+        
+        show_projects(projects, email)
 
 @ui.page('/project/{prosjekt_id}')
 async def project_detail(prosjekt_id: str):
@@ -223,7 +173,9 @@ async def project_detail(prosjekt_id: str):
     user = require_login()
     if not user:
         return 
-    layout(title='Prosjekt detaljer', menu_items=STEPS_DICT, active_route="oppdater_prosjekt")
+    menu = get_menu_items_for_user(user=user, super_user=super_user, STEPS_DICT=STEPS_DICT)
+
+    layout(title='Prosjekt detaljer', menu_items=menu, active_route="oppdater_prosjekt")
     user_name = user["name"]
     email = user["preferred_username"]
     if not email:
@@ -241,7 +193,9 @@ async def project_detail(prosjekt_id: str):
     user = require_login()
     if not user:
         return 
-    layout(title="Oppdater prosjekt", menu_items=STEPS_DICT, active_route="oppdater_prosjekt")
+    menu = get_menu_items_for_user(user=user, super_user=super_user, STEPS_DICT=STEPS_DICT)
+
+    layout(title="Oppdater prosjekt", menu_items=menu, active_route="oppdater_prosjekt")
 
     email = user["preferred_username"]
     project = await api_create_new_project(email=email, prosjekt_id=prosjekt_id)
@@ -255,7 +209,8 @@ async def status_rapportering_overview():
     user = require_login()
     if not user:
         return 
-    layout(title='Rapportering av status',menu_items=STEPS_DICT, active_route="status_rapportering")
+    menu = get_menu_items_for_user(user=user, super_user=super_user, STEPS_DICT=STEPS_DICT)
+    layout(title='Rapportering av status',menu_items=menu, active_route="status_rapportering")
     email = user["preferred_username"]
 
     if not email:
@@ -273,7 +228,8 @@ async def status_rapportering(prosjekt_id):
     user = require_login()
     if not user:
         return 
-    layout(title='Rapportering av status',menu_items=STEPS_DICT, active_route="status_rapportering")
+    menu = get_menu_items_for_user(user=user, super_user=super_user, STEPS_DICT=STEPS_DICT)
+    layout(title='Rapportering av status',menu_items=menu, active_route="status_rapportering")
     email = user["preferred_username"]
     rapportering = await api_get_rapporterings_data(email=email, prosjekt_id=prosjekt_id)
     #print(rapportering)
@@ -282,30 +238,19 @@ async def status_rapportering(prosjekt_id):
         return
     show_status_rapportering(prosjekt_id=prosjekt_id, email=email, rapportering=rapportering, brukere_list=bruker_list)
 
-@ui.page("/vurdering")
-async def vurdering_overview():
-    user = require_login()
-    if not user:
-        return 
-    layout(title='Vudering tiltak',menu_items=STEPS_DICT, active_route="vurdering")
-    email = user["preferred_username"]
-
-    if not email:
-        ui.notify('No email claim found in login!')
-        return
-    if email in super_user:
-        ui.label('Du er logget inn som admin og ser alle prosjekter').classes('text-sm italic mb-4')
-        prosjekter = await api_get_projects(None)
-    else:        
-        prosjekter = await api_get_projects(email)
-    show_status_vurdering_overview(prosjekter=prosjekter)
 
 @ui.page("/vurdering/{prosjekt_id}")
 async def vurderingen(prosjekt_id):
     user = require_login()
     if not user:
         return 
-    layout(title='Vurdering av tiltak',menu_items=STEPS_DICT, active_route="vurdering")
+    email = user["preferred_username"]
+    if email not in super_user:
+        ui.notify("Du har ikke tilgang til denne siden", type="negative")
+        ui.navigate.to("/oversikt")
+        return
+    menu = get_menu_items_for_user(user=user, super_user=super_user, STEPS_DICT=STEPS_DICT)
+    layout(title='Vurdering av tiltak',menu_items=menu, active_route="vurdering")
     email = user["preferred_username"]
     vurdering = await api_get_vurderings_data(prosjekt_id=prosjekt_id)
     prosjekter = await api_get_prosjekt_list()

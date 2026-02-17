@@ -302,6 +302,23 @@ class DeliveryRisk(SQLModel, table = True):
     sist_endret: datetime | None = None
     er_gjeldende: bool = True
 
+
+class Avhengigheter(SQLModel, table = True):
+    __tablename__ = "Avhengigheter"
+    __table_args__ = {"schema": schema_name}
+    avhengigheter_id: uuid.UUID = Field(
+            default_factory=uuid.uuid4,
+            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True, default=uuid.uuid4),
+        )
+    prosjekt_id: uuid.UUID = Field(
+        foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",
+    )
+    avhengigheter: str | None = None
+    endret_av: str | None = None
+    sist_endret: datetime | None = None
+    er_gjeldende: bool = True
+
+
 class SamfunnsEffekt(SQLModel, table = True):
     __tablename__ = "SamfunnsEffekt"
     __table_args__ = {"schema": schema_name}
@@ -359,3 +376,20 @@ class ProsjektList(SQLModel, table = True):
     __table_args__ = {"schema": "dbo"}
     prosjekt: str = Field(primary_key=True)
     prosjekt_beskrivelse: str | None = None
+
+
+class OpenOverview(SQLModel, table = True):
+    __tablename__ = "open_overview"
+    __table_args__ = {"schema": schema_name}
+    prosjekt_id: uuid.UUID = Field(
+            default_factory=uuid.uuid4,
+            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True, default=uuid.uuid4),
+        )
+    navn: str | None = None
+    avdeling: str | None = None
+    tiltakseier: str | None = None
+    kontaktpersoner: str | None = None
+    fase: str | None = None
+    planlagt_ferdig: datetime | None = None
+    fremskritt_status: str | None = None
+    problem: str | None = None

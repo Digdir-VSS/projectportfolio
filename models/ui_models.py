@@ -218,16 +218,20 @@ class OverviewUI(BaseModel):
     estimert_bruk_2027: int | None = None   
     estimert_bruk_2028: int | None = None   
 
-
 class DeliveryRiskUI(BaseModel):
     delivery_risk: uuid.UUID = uuid.uuid4()
     rapporterings_id: uuid.UUID | None = None
-    prosjekt_id: uuid.UUID | None = None
     risiko_rapportert: str | None = None
     risiko_rapportert_begrunnet: str | None = None
     endret_av: str | None = None
     er_gjeldende: bool = True
 
+class AvhengigheterUI(BaseModel):
+    avhengigheter_id: uuid.UUID = uuid.uuid4()
+    prosjekt_id: uuid.UUID | None = None
+    avhengigheter: str | None = None
+    endret_av: str | None = None
+    er_gjeldende: bool = True
 
 class RapporteringUI(BaseModel):
     rapporterings_id: uuid.UUID = uuid.uuid4() 
@@ -244,6 +248,7 @@ class RapporteringData(BaseModel):
     portfolioproject: Optional[PortfolioProjectUI]
     fremskritt: Optional[FremskrittUI]
     delivery_risk: Optional[DeliveryRiskUI]
+    avhengigheter: Optional[AvhengigheterUI]
 
 class VurderingData(BaseModel):
     vurdering: Optional[VurderingUI]
@@ -258,3 +263,14 @@ class VurderingData(BaseModel):
 class ProsjektListUI(BaseModel):
     prosjekt: str
     prosjekt_beskrivelse: str | None = None
+
+class OpenOverviewUI(BaseModel):
+    prosjekt_id: uuid.UUID 
+    navn: str | None = None
+    avdeling: str | None = None
+    tiltakseier: str | None = None
+    kontaktpersoner: str | None = None
+    fase: str | None = None
+    planlagt_ferdig: datetime | None = None
+    fremskritt_status: str | None = None
+    problem: str | None = None

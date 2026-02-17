@@ -1,14 +1,130 @@
 from nicegui import ui, run
 import ast
-from frontend.utils.backend_client import api_update_project
+from frontend.utils.backend_client import api_update_project, api_delete_prosjekt
 from models.ui_models import ProjectData, RessursbrukUI
 import ast, asyncio
 
 from frontend.pages.utils import validate_send_schema
 from models.validators import to_json, to_list, to_date_str, convert_to_int, add_thousand_split, convert_to_int_from_thousand_sign, sort_selected_values, to_datetime
-from frontend.static_variables import DIGITALISERINGS_STRATEGI, ESTIMAT_LISTE
+from frontend.static_variables import DIGITALISERINGS_STRATEGI, ESTIMAT_LISTE, FASE
     
 avdelinger = ['BOD','DSS' ,'KOM','FEL','STL' ,'TUU', 'VIS', 'KI Norge']
+
+
+def show_projects(projects, email):
+
+    visible_keys = ["prosjekt_id"] + [
+            key for key in projects[0].keys() 
+            if key not in ["prosjekt_id", "epost_kontakt"]
+        ]
+        
+    columns = []
+    for key in visible_keys:
+        if key == "prosjekt_id":
+            columns.append({
+                    "name": "prosjekt_id",
+                    "label": "",
+                    "field": "prosjekt_id",
+                    "sortable": False,
+                    "align": "left",
+                    "headerClasses": "hidden",
+                })
+        else:
+            columns.append({
+                    "name": key,
+                    "label": key.replace("_", " ").title(),
+                    "field": key,
+                    "sortable": True,
+                    "align": "left",
+                })
+        
+    rows = [
+            {**p, "prosjekt_id": str(p["prosjekt_id"])}
+            for p in projects
+        ]
+        
+    table = ui.table(
+            columns=columns,
+            rows=rows,
+            row_key="prosjekt_id",
+            column_defaults={
+                "align": "left",
+                "headerClasses": "uppercase text-primary",
+                "sortable": True,
+                "filterable": True,
+            },
+        ).classes("w-full")
+        
+    async def handle_delete(e):
+        project_id = e.args
+            
+        async def confirm_delete():
+            dialog.close()
+            try:
+                # Call your API to delete the project
+                response = await api_delete_prosjekt(project_id, email)
+                    
+                ui.notify('Prosjekt slettet', type='positive')
+                    # Refresh the page to reload the project list
+                ui.navigate.reload()
+            except Exception as ex:
+                ui.notify(f'Feil ved sletting: {str(ex)}', type='negative')
+            
+            # Create and show dialog
+        with ui.dialog() as dialog, ui.card():
+            ui.label('Er du sikker på at du vil slette?')
+            with ui.row():
+                ui.button('Avbryt', on_click=dialog.close)
+                ui.button('Slett', on_click=confirm_delete).props('color=negative')
+        dialog.open()
+                
+        # Add dropdown menu for actions (only this slot)
+    table.add_slot(
+            "body-cell-prosjekt_id",
+            r"""
+            <q-td auto-width>
+                <q-btn-dropdown
+                    size="sm"
+                    color="primary"
+                    dense
+                    icon="menu"
+                    dropdown-icon="arrow_drop_down"
+                >
+                    <q-list>
+                        <q-item 
+                            clickable 
+                            v-close-popup
+                            :href="'/project/' + props.row.prosjekt_id"
+                        >
+                            <q-item-section avatar>
+                                <q-icon name="edit" color="primary" />
+                            </q-item-section>
+                            <q-item-section>
+                                <q-item-label>Rediger prosjekt</q-item-label>
+                            </q-item-section>
+                        </q-item>
+                        
+                        <q-item 
+                            clickable 
+                            v-close-popup
+                            @click="$parent.$emit('delete_project', props.row.prosjekt_id)"
+                        >
+                            <q-item-section avatar>
+                                <q-icon name="delete" color="negative" />
+                            </q-item-section>
+                            <q-item-section>
+                                <q-item-label>Slett prosjekt</q-item-label>
+                            </q-item-section>
+                        </q-item>
+                    </q-list>
+                </q-btn-dropdown>
+            </q-td>
+            """
+        )
+        
+    table.on('delete_project', handle_delete)
+
+
 def project_detail(prosjekt_id: str, email: str, project: ProjectData, brukere_list):
     ui.markdown(f"## *Porteføljeinitiativ:* **{project.portfolioproject.navn}**").classes('text-xl font-bold')
     with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-4 rounded-lg"):
@@ -24,7 +140,7 @@ def project_detail(prosjekt_id: str, email: str, project: ProjectData, brukere_l
         with ui.element("div").classes('col-span-1 row-span-1 col-start-4 row-start-4'):
             ui.label("Hvilken fase skal startes").classes('text-lg font-bold')
             ui.select(
-                ['Konsept', 'Planlegging', 'Gjennomføring','Problem/ide'],value=None
+                FASE,value=None
                 ).classes('w-full bg-white rounded-lg').bind_value(project.fremskritt, "fase")
         with ui.element("div").classes('col-span-3 row-span-1 col-start-1 row-start-5'):
             ui.label("Kontaktperson").classes('text-lg font-bold')

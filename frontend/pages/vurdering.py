@@ -5,7 +5,7 @@ from models.ui_models import VurderingData
 from models.validators import to_json, to_list, sort_selected_values
 from frontend.utils.backend_client import api_update_vurdering, api_get_prosjekt_list
 
-from frontend.static_variables import FREMSKRITT_STATUS, RISIKO_CATEGORIES, MSCW, DIGITALISERINGS_STRATEGI
+from frontend.static_variables import FREMDRIFT_STATUS, RISIKO_CATEGORIES, MSCW, DIGITALISERINGS_STRATEGI, FASE
 
 grouppe = ["eID","KI", "Tjenesteutvikling", "Intern styring", "Økonomi", "Kunnskap og innsikt"]
 
@@ -102,7 +102,7 @@ def show_vurdering(prosjekt_id: str, email: str, vurdering: VurderingData, prosj
         with ui.element("div").classes('col-span-2'):
             ui.label("Prosjektfase").classes('font-bold')
             ui.select(
-                ['Konsept', 'Planlegging', 'Gjennomføring', 'Problem/ide']
+                FASE
             ).classes(
                 'w-full bg-white rounded-lg'
             ).bind_value(
@@ -110,9 +110,9 @@ def show_vurdering(prosjekt_id: str, email: str, vurdering: VurderingData, prosj
             )
 
         with ui.element("div").classes('col-span-2'):
-            ui.label("Fremskritt").classes('font-bold')
+            ui.label("Fremdrift").classes('font-bold')
             ui.select(
-                FREMSKRITT_STATUS
+                FREMDRIFT_STATUS
             ).classes(
                 'w-full bg-white rounded-lg'
             ).bind_value(

@@ -32,10 +32,6 @@ STEPS_DICT = {
         "label": "Vurdering av tiltak",    
         "icon": "fact_check",
     },
-    "oversikt": {
-        "label": "Oversikt",
-        "icon": "dashboard",
-    },
 }
 FIELD_MAPPING = {
     "navn_tiltak": "Navn prosjekt",
@@ -47,6 +43,7 @@ FIELD_MAPPING = {
 }
 AVDELINGER = ['BOD','DSS' ,'KOM','FEL','STL' ,'TUU', 'VIS'] 
 ESTIMAT_LISTE= ["Relativt sikkert","Noe usikkert","Svært usikkert"]
-FREMSKRITT_STATUS = ["Forsinket", "På plan", "Noen forsinkelse, men håndterbar"]
+FREMDRIFT_STATUS = ["Ikke startet", "På plan",  "Noen forsinkelse, men håndterbar", "Forsinket"]
 RISIKO_CATEGORIES = ["Lav", "Medium", "Høy"]
 MSCW = ["M", "S", "C", "W"]
+FASE = ['Problem/ide', 'Konsept', 'Planlegging', 'Gjennomføring']
