@@ -2,9 +2,8 @@ from typing import Any, Optional
 from uuid import UUID, uuid4
 import struct
 from pydantic import BaseModel
-from datetime import datetime, date
+from datetime import datetime
 import urllib
-import ast
 from sqlmodel import SQLModel, Session, select, update
 from sqlalchemy import create_engine, event, Engine
 from sqlalchemy.exc import OperationalError
@@ -152,6 +151,19 @@ def prune_unchanged_fields(original_obj, modified_obj):
                 setattr(modified_obj, field_name, None)
     return modified_obj
 
+def delete_prosjekt(engine, project_id: str, sql_models: dict, change_time: datetime, epost: str):
+    with Session(engine, autoflush=False) as session:
+        for sql_model in sql_models:
+            statement = update(sql_model).where(sql_model.prosjekt_id == project_id, sql_model.er_gjeldende == True).values(
+                    er_gjeldende=False,
+                    sist_endret=change_time,
+                    endret_av=epost)
+            result = session.exec(statement)
+            print(f"Updated {result.rowcount} rows in {sql_model.__name__}")
+
+        session.commit()
+
+
 def get_single_project_data(project_id: str, sql_models: dict):
     statement_dict = {}
     for schema_name, schema in sql_models.items():
@@ -227,6 +239,21 @@ class DBConnector:
     def __init__(self, engine: Engine, model_groups: dict[str, Any]):
         self.engine = engine
         self.model_groups = model_groups
+        self.sql_models = [PortfolioProject,
+        Fremskritt,
+        Resursbehov,
+        Samarabeid,
+        Problemstilling,
+        Tiltak,
+        Risikovurdering,
+        Malbilde,
+        DigitaliseringStrategi,
+        Ressursbruk,
+        Vurdering,
+        Rapportering,
+        DeliveryRisk,
+        SamfunnsEffekt
+        ]
 
     @classmethod
     def create_engine(
@@ -374,6 +401,7 @@ class DBConnector:
             PortfolioProject.avdeling,
             PortfolioProject.tiltakseier,
             PortfolioProject.epost_kontakt,
+            PortfolioProject.er_gjeldende,
         ]
         with Session(self.engine) as session:
             if email:
@@ -385,6 +413,7 @@ class DBConnector:
             else:
                 stmt = select(*columns).where(PortfolioProject.er_gjeldende == True)
             results = session.exec(stmt).all()
+            print(results)
         return [
             {
                 "prosjekt_id": r[0],
@@ -540,3 +569,7 @@ class DBConnector:
         ui_models = self.model_groups[group]["ui"]
         sql_models = self.model_groups[group]["sql"]
         upload_data(self.engine, mod_proj, ui_models, sql_models, prosjekt_id, now, e_mail)
+
+    def delete_prosjekt(self, prosjekt_id: UUID, e_post: str):
+        now = datetime.utcnow()
+        delete_prosjekt(self.engine, prosjekt_id, self.sql_models, now, e_post)

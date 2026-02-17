@@ -72,3 +72,7 @@ async def get_vurdering(prosjekt_id: str, access_key: str = Depends(verify_api_k
 @router.post("/update_vurdering")
 async def update_vurdering(vudering: VurderingData, prosjekt_id: str,  e_mail: str, access_key: str = Depends(verify_api_key)):
     return db_connector.update_vurdering(vudering, prosjekt_id, e_mail)
+
+@router.post("/delete_prosjekt")
+async def delete_prosjekt(prosjekt_id: str,  e_mail: str, access_key: str = Depends(verify_api_key)):
+    return db_connector.delete_prosjekt(prosjekt_id, e_mail)
