@@ -191,10 +191,11 @@ class OverviewUI(BaseModel):
     estimert_budsjet_behov: int | None = None
     antall_mandsverk_intern: int | None = None
     antall_mandsverk_ekstern: int | None = None
-    estimert_bruk_2025: int | None = None
-    estimert_bruk_2026: int | None = None   
+    brukt_2025: float | None = None
+    brukt_2026: float | None = None
+    estimert_bruk_2026: int | None = None
     estimert_bruk_2027: int | None = None   
-
+    estimert_bruk_2028: int | None = None   
 
 class DeliveryRiskUI(BaseModel):
     delivery_risk: uuid.UUID = uuid.uuid4()
@@ -237,3 +238,14 @@ class VurderingData(BaseModel):
     risiko: Optional[RisikovurderingUI]
     digitaliseringstrategi: Optional[DigitaliseringStrategiUI]
     malbilde: Optional[MalbildeUI]
+
+class OpenOverviewUI(BaseModel):
+    prosjekt_id: uuid.UUID 
+    navn: str | None = None
+    avdeling: str | None = None
+    tiltakseier: str | None = None
+    kontaktpersoner: str | None = None
+    fase: str | None = None
+    planlagt_ferdig: datetime | None = None
+    fremskritt_status: str | None = None
+    problem: str | None = None

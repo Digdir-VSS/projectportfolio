@@ -6,7 +6,7 @@ from uuid import UUID
 from pydantic import BaseModel
 from backend.database.db import db_connector
 from backend.database.db_connection import ProjectData
-from models.sql_models import Overview
+from models.sql_models import Overview, OpenOverview
 from models.ui_models import ProjectData, RapporteringData, VurderingData
 
 load_dotenv()
@@ -73,6 +73,9 @@ async def get_vurdering(prosjekt_id: str, access_key: str = Depends(verify_api_k
 async def update_vurdering(vudering: VurderingData, prosjekt_id: str,  e_mail: str, access_key: str = Depends(verify_api_key)):
     return db_connector.update_vurdering(vudering, prosjekt_id, e_mail)
 
+@router.get("/get_open_overview", response_model=list[OpenOverview])
+async def get_overview(access_key: str = Depends(verify_api_key)):
+    return db_connector.get_open_overview()
 @router.post("/delete_prosjekt")
 async def delete_prosjekt(prosjekt_id: str,  e_mail: str, access_key: str = Depends(verify_api_key)):
     return db_connector.delete_prosjekt(prosjekt_id, e_mail)

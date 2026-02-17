@@ -36,7 +36,7 @@ from models.ui_models import (
     DeliveryRiskUI,
     RapporteringData, 
     RapporteringUI,
-    SamfunnsEffektUI
+    SamfunnsEffektUI,
 
     
 )
@@ -57,6 +57,7 @@ from models.sql_models import (
     Rapportering,
     DeliveryRisk,
     SamfunnsEffekt,
+    OpenOverview
 )
 
 load_dotenv()
@@ -502,6 +503,11 @@ class DBConnector:
             results = session.exec(stmt).all()
         return [r.dict() for r in results]
     
+    def get_open_overview(self):
+        with Session(self.engine) as session:
+            stmt = select(OpenOverview)
+            results = session.exec(stmt).all()
+        return [r.dict() for r in results]
 
 
     @retry(
