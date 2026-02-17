@@ -297,30 +297,6 @@ async def status_rapportering(prosjekt_id):
         return
     show_status_rapportering(prosjekt_id=prosjekt_id, email=email, rapportering=rapportering, brukere_list=bruker_list)
 
-# @ui.page("/vurdering")
-# async def vurdering_overview():
-#     user = require_login()
-#     if not user:
-#         return 
-#     email = user["preferred_username"]
-#     if email not in super_user:
-#         ui.notify("Du har ikke tilgang til denne siden", type="negative")
-#         ui.navigate.to("/oversikt")
-#         return
-#     menu = get_menu_items_for_user(user=user, super_user=super_user, STEPS_DICT=STEPS_DICT)
-
-#     layout(title='Vudering tiltak',menu_items=menu, active_route="vurdering")
-#     email = user["preferred_username"]
-
-#     if not email:
-#         ui.notify('No email claim found in login!')
-#         return
-#     if email in super_user:
-#         ui.label('Du er logget inn som admin og ser alle prosjekter').classes('text-sm italic mb-4')
-#         prosjekter = await api_get_projects(None)
-#     else:        
-#         prosjekter = await api_get_projects(email)
-#     show_status_vurdering_overview(prosjekter=prosjekter)
 
 @ui.page("/vurdering/{prosjekt_id}")
 async def vurderingen(prosjekt_id):
