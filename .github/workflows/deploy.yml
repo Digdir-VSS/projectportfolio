@@ -19,9 +19,9 @@ env:
 
   TENANT_NAME: digdir.no
   DRIVER: ODBC Driver 18 for SQL Server
-  DATABASE: PortfolioWarehouse
+  DATABASE: ${{ secrets.DATABASE }}
   SCHEMA: "portfolio_dev"
-  INNLEVERING_API_KEY: ${{ secrets.INTERNAL_API_KEY }}
+  API_KEY: ${{ secrets.INTERNAL_API_KEY }}
   CLIENT_ID: ${{ secrets.CLIENT_ID }}
   TENANT_ID: ${{ secrets.TENANT_ID }}
   SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
@@ -96,7 +96,7 @@ jobs:
                 KEY_VAULT_URL="${KEY_VAULT_URL}" \
                 FABRIC_CLIENT_ID="${FABRIC_CLIENT_ID}" \
                 FABRIC_SECRET_NAME="${FABRIC_SECRET_NAME}" \
-                INNLEVERING_API_KEY="${INNLEVERING_API_KEY}" \
+                API_KEY="${API_KEY}" \
                 TENANT_ID="${TENANT_ID}" \
                 UUID_RUN="${{ github.run_id }}" \
               --cpu 1 \
@@ -113,7 +113,7 @@ jobs:
               --revision-suffix "build-${{ github.run_number }}" \
               --set-env-vars \
                 BASE_APPLICATION_URL="${BASE_APPLICATION_URL}" \
-                INNLEVERING_API_KEY="${INNLEVERING_API_KEY}" \
+                API_KEY="${API_KEY}" \
                 BACKEND_BASE_URL="${BACKEND_BASE_URL}" \
                 SCHEMA="${SCHEMA}" \
                 TENANT_NAME="${TENANT_NAME}" \

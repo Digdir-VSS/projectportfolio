@@ -2,11 +2,10 @@ from typing import Any, Optional
 from uuid import UUID, uuid4
 import struct
 from pydantic import BaseModel
-from datetime import datetime, date
+from datetime import datetime
 import urllib
-import ast
 from sqlmodel import SQLModel, Session, select, update
-from sqlalchemy import create_engine, event, Engine
+from sqlalchemy import create_engine, event, Engine, text
 from sqlalchemy.exc import OperationalError
 from azure.identity import ClientSecretCredential
 from tenacity import (
@@ -30,14 +29,23 @@ from models.ui_models import (
     MalbildeUI,
     DigitaliseringStrategiUI,
     RessursbrukUI,
-    FinansieringUI,
+    AvhengigheterUI,
     VurderingUI,
     ProjectData,
-    VurderingData
+    VurderingData,
+    DeliveryRiskUI,
+    RapporteringData, 
+    RapporteringUI,
+    SamfunnsEffektUI,
+    SaldotabellUI,
+    FinansieringUI
+
+    
 )
 from models.sql_models import (
     PortfolioProject,
     Fremskritt,
+    ProsjektList,
     Resursbehov,
     Samarabeid,
     Problemstilling,
@@ -46,11 +54,68 @@ from models.sql_models import (
     Malbilde,
     DigitaliseringStrategi,
     Ressursbruk,
-    Finansiering,
+    Avhengigheter,
     Vurdering,
+    Overview,
+    Rapportering,
+    DeliveryRisk,
+    SamfunnsEffekt,
+    OpenOverview,
+    Saldotabell,
+    Finansiering
 )
 
 load_dotenv()
+
+def upload_data(engine, mod_proj, ui_models, sql_models, prosjekt_id, now, e_mail):
+        with Session(engine) as session:
+            objs = []
+
+            for model_name, ui_model in ui_models.items():
+                ui_obj = getattr(mod_proj, model_name)
+                if ui_obj is None:
+                    continue
+
+                sql_cls = sql_models[model_name]
+
+                # --- Handle ressursbruk specially (dict of years) ---
+                if model_name == "ressursbruk":
+                    for year, res_obj in ui_obj.items():
+                        # Deactivate previous row only for this year
+                        session.execute(
+                            update(sql_cls)
+                            .where(sql_cls.prosjekt_id == str(prosjekt_id).lower())
+                            .where(sql_cls.year == year)
+                            .where(sql_cls.er_gjeldende == True)
+                            .values(er_gjeldende=False)
+                        )
+
+                        sql_obj = ui_to_sqlmodel(res_obj, sql_cls)
+                        sql_obj.prosjekt_id = str(prosjekt_id).lower()
+                        sql_obj.er_gjeldende = True
+                        sql_obj.sist_endret = now
+                        sql_obj.endret_av = e_mail
+                        sql_obj.ressursbruk_id = str(uuid4())  # always new ID
+                        objs.append(sql_obj)
+
+                else:
+                    # Deactivate previous record(s) for this specific model only
+                    session.execute(
+                        update(sql_cls)
+                        .where(sql_cls.prosjekt_id == str(prosjekt_id).lower())
+                        .where(sql_cls.er_gjeldende == True)
+                        .values(er_gjeldende=False)
+                    )
+
+                    sql_obj = ui_to_sqlmodel(ui_obj, sql_cls)
+                    sql_obj.prosjekt_id = str(prosjekt_id).lower()
+                    sql_obj.er_gjeldende = True
+                    sql_obj.sist_endret = now
+                    sql_obj.endret_av = e_mail
+                    objs.append(sql_obj)
+
+            session.add_all(objs)
+            session.commit()
 
 
 def prune_unchanged_fields(original_obj, modified_obj):
@@ -91,6 +156,18 @@ def prune_unchanged_fields(original_obj, modified_obj):
             if clean_dict(original_value) == clean_dict(modified_value):
                 setattr(modified_obj, field_name, None)
     return modified_obj
+
+def delete_prosjekt(engine, project_id: str, sql_models: dict, change_time: datetime, epost: str):
+    with Session(engine, autoflush=False) as session:
+        for sql_model in sql_models:
+            statement = update(sql_model).where(sql_model.prosjekt_id == project_id, sql_model.er_gjeldende == True).values(
+                    er_gjeldende=False,
+                    sist_endret=change_time,
+                    endret_av=epost)
+            result = session.exec(statement)
+            print(f"Updated {result.rowcount} rows in {sql_model.__name__}")
+
+        session.commit()
 
 
 def get_single_project_data(project_id: str, sql_models: dict):
@@ -140,6 +217,7 @@ def clean_dict(d):
    
     return {k: v for k, v in d.items() if k not in IGNORED_FIELDS}
 
+
 def get_single_page(engine, project_id: str, sql_models: dict):
     sql_model_dict = {}
     project_id = UUID(project_id)
@@ -167,6 +245,21 @@ class DBConnector:
     def __init__(self, engine: Engine, model_groups: dict[str, Any]):
         self.engine = engine
         self.model_groups = model_groups
+        self.sql_models = [PortfolioProject,
+        Fremskritt,
+        Resursbehov,
+        Samarabeid,
+        Problemstilling,
+        Tiltak,
+        Risikovurdering,
+        Malbilde,
+        DigitaliseringStrategi,
+        Ressursbruk,
+        Vurdering,
+        Rapportering,
+        DeliveryRisk,
+        SamfunnsEffekt
+        ]
 
     @classmethod
     def create_engine(
@@ -181,7 +274,7 @@ class DBConnector:
         # --- Connection string (NO auth here, token comes later) ---
         connection_string = (
             "Driver={};Server=tcp:{},1433;Database={};Encrypt=yes;"
-            "TrustServerCertificate=no;Connection Timeout=30"
+            "TrustServerCertificate=no;Connection Timeout=30; encoding=utf8"
         ).format(driver_name, server_name, database_name)
 
         params = urllib.parse.quote(connection_string)
@@ -209,7 +302,7 @@ class DBConnector:
             SQL_COPT_SS_ACCESS_TOKEN = 1256
             cparams["attrs_before"] = {SQL_COPT_SS_ACCESS_TOKEN: token_struct}
 
-        sql_models = {
+        prosjekt_sql_models = {
             "fremskritt": Fremskritt,
             "samarabeid": Samarabeid,
             "portfolioproject": PortfolioProject,
@@ -221,7 +314,7 @@ class DBConnector:
             "digitaliseringstrategi": DigitaliseringStrategi,
             "ressursbruk": Ressursbruk,
         }
-        ui_models = {
+        prosjekt_ui_models = {
             "fremskritt": FremskrittUI,
             "samarabeid": SamarabeidUI,
             "portfolioproject": PortfolioProjectUI,
@@ -231,24 +324,58 @@ class DBConnector:
             "malbilde": MalbildeUI,
             "resursbehov": ResursbehovUI,
             "digitaliseringstrategi": DigitaliseringStrategiUI,
-            "ressursbruk": RessursbrukUI,
+            "ressursbruk": RessursbrukUI
         }
+        rapportering_sql_models = {
+            "fremskritt": Fremskritt,
+            "portfolioproject": PortfolioProject,
+            "delivery_risk": DeliveryRisk,
+            "rapportering": Rapportering,
+            "avhengigheter": Avhengigheter 
+        }
+        rapportering_ui_models = {
+            "fremskritt": FremskrittUI,
+            "portfolioproject": PortfolioProjectUI,
+            "delivery_risk": DeliveryRiskUI,
+            "rapportering": RapporteringUI,
+            "avhengigheter": AvhengigheterUI 
+        }
+        vurdering_sql_models = {
+            "vurdering": Vurdering,
+            "finansiering": Finansiering,
+            "portfolioproject": PortfolioProject,
+            "fremskritt": Fremskritt,
+            "samfunnseffekt": SamfunnsEffekt,
+            "risiko": Risikovurdering,
+            "digitaliseringstrategi": DigitaliseringStrategi,
+            "malbilde": Malbilde
+            }
+        vurdering_ui_models = {
+            "vurdering": VurderingUI,
+            "finansiering": FinansieringUI,
+            "portfolioproject": PortfolioProjectUI,
+            "fremskritt": FremskrittUI,
+            "samfunnseffekt": SamfunnsEffektUI,
+            "risiko": RisikovurderingUI,
+            "digitaliseringstrategi": DigitaliseringStrategiUI,
+            "malbilde": MalbildeUI
+
+            }
         model_groups = {
                 "project": {
-                    "sql": sql_models,
-                    "ui": ui_models,
+                    "sql": prosjekt_sql_models,
+                    "ui": prosjekt_ui_models,
                     "dataclass": ProjectData,
                 },
+                "rapportering": {
+                        "sql": rapportering_sql_models,
+                        "ui": rapportering_ui_models,
+                        "dataclass": RapporteringData
+                },
                 "vurdering": {
-                    "sql": {
-                        "finansiering": Finansiering,
-                        "vurdering": Vurdering,
-                    },
-                    "ui": {
-                        "finansiering": FinansieringUI,
-                        "vurdering": VurderingUI,
-                    },
-                    "dataclass": VurderingData,
+                    "sql": vurdering_sql_models,
+                    "ui": vurdering_ui_models,
+                    "dataclass": VurderingData
                 },
             }
         
@@ -282,12 +409,11 @@ class DBConnector:
             PortfolioProject.avdeling,
             PortfolioProject.tiltakseier,
             PortfolioProject.epost_kontakt,
+            PortfolioProject.er_gjeldende,
         ]
-
         with Session(self.engine) as session:
             if email:
                 email_in_list = f"%{email}%"
-                print(email_in_list)
                 stmt = select(*columns).where(
                     PortfolioProject.er_gjeldende == True,
                     PortfolioProject.epost_kontakt.like(email_in_list),
@@ -295,6 +421,7 @@ class DBConnector:
             else:
                 stmt = select(*columns).where(PortfolioProject.er_gjeldende == True)
             results = session.exec(stmt).all()
+            print(results)
         return [
             {
                 "prosjekt_id": r[0],
@@ -328,7 +455,7 @@ class DBConnector:
             risikovurdering=RisikovurderingUI(**sql_model_dict["risikovurdering"].dict()),
             malbilde=MalbildeUI(**sql_model_dict["malbilde"].dict()),
             digitaliseringstrategi=DigitaliseringStrategiUI(**sql_model_dict["digitaliseringstrategi"].dict()),
-            ressursbruk={r.year: RessursbrukUI(**r.dict()) for r in sql_model_dict["ressursbruk"]},  # 👈 list of UI objects
+            ressursbruk={r.year: RessursbrukUI(**r.dict()) for r in sql_model_dict["ressursbruk"]},
         )
         return project_data
 
@@ -375,52 +502,108 @@ class DBConnector:
         now = datetime.utcnow()
         ui_models = self.model_groups[group]["ui"]
         sql_models = self.model_groups[group]["sql"]
+        upload_data(self.engine, mod_proj, ui_models, sql_models, prosjekt_id, now, e_mail)
+
+    def get_overview(self):
         with Session(self.engine) as session:
-            objs = []
+            stmt = select(Overview)
+            results = session.exec(stmt).all()
+        return [r.dict() for r in results]
+    
+    def get_open_overview(self):
+        with Session(self.engine) as session:
+            stmt = select(OpenOverview)
+            results = session.exec(stmt).all()
+        return [r.dict() for r in results]
 
-            for model_name, ui_model in ui_models.items():
-                ui_obj = getattr(mod_proj, model_name)
-                if ui_obj is None:
-                    continue
 
-                sql_cls = sql_models[model_name]
+    @retry(
+        retry=retry_if_exception_type(OperationalError),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        stop=stop_after_attempt(3),
+        reraise=True,
+    )
+    def get_single_rapport(self, project_id: str, group: str = "rapportering") -> RapporteringData:
+        sql_models = self.model_groups[group]["sql"]
+        sql_model_dict = get_single_page(self.engine, project_id, sql_models)
+        # Construct UI layer
+        return RapporteringData(
+            fremskritt=FremskrittUI(**sql_model_dict["fremskritt"].dict()),
+            portfolioproject=PortfolioProjectUI(**sql_model_dict["portfolioproject"].dict()),
+            delivery_risk=DeliveryRiskUI(**sql_model_dict["delivery_risk"].dict()),
+            rapportering=RapporteringUI(**sql_model_dict["rapportering"].dict()),
+            avhengigheter=AvhengigheterUI(**sql_model_dict["avhengigheter"].dict())
+        )
+    
+    @retry(
+        retry=retry_if_exception_type(OperationalError),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        stop=stop_after_attempt(3),
+        reraise=True,
+    )
+    def get_single_vurdering(self, project_id: str, group: str = "vurdering") -> VurderingData:
+        sql_models = self.model_groups[group]["sql"]
+        sql_model_dict = get_single_page(self.engine, project_id, sql_models)
 
-                # --- Handle ressursbruk specially (dict of years) ---
-                if model_name == "ressursbruk":
-                    for year, res_obj in ui_obj.items():
-                        # Deactivate previous row only for this year
-                        session.execute(
-                            update(sql_cls)
-                            .where(sql_cls.prosjekt_id == str(prosjekt_id).lower())
-                            .where(sql_cls.year == year)
-                            .where(sql_cls.er_gjeldende == True)
-                            .values(er_gjeldende=False)
-                        )
+        # Construct UI layer
+        return VurderingData(
+            vurdering=VurderingUI(**sql_model_dict["vurdering"].dict()),
+            finansiering=FinansieringUI(**sql_model_dict["finansiering"].dict()),
+            risiko=RisikovurderingUI(**sql_model_dict["risiko"].dict()),
+            fremskritt=FremskrittUI(**sql_model_dict["fremskritt"].dict()),
+            portfolioproject=PortfolioProjectUI(**sql_model_dict["portfolioproject"].dict()),
+            digitaliseringstrategi=DigitaliseringStrategiUI(**sql_model_dict["digitaliseringstrategi"].dict()),
+            malbilde=MalbildeUI(**sql_model_dict["malbilde"].dict()),
+            samfunnseffekt=SamfunnsEffektUI(**sql_model_dict["samfunnseffekt"].dict())
+        )
 
-                        sql_obj = ui_to_sqlmodel(res_obj, sql_cls)
-                        sql_obj.prosjekt_id = str(prosjekt_id).lower()
-                        sql_obj.er_gjeldende = True
-                        sql_obj.sist_endret = now
-                        sql_obj.endret_av = e_mail
-                        sql_obj.ressursbruk_id = str(uuid4())  # always new ID
-                        objs.append(sql_obj)
+    @retry(
+        retry=retry_if_exception_type(OperationalError),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        stop=stop_after_attempt(3),
+        reraise=True,
+    )
+    def update_rapport(self, mod_proj: RapporteringData, prosjekt_id: UUID, e_mail: str, group: str = "rapportering"):
+        org_proj = self.get_single_project(str(prosjekt_id))
+        mod_proj = prune_unchanged_fields(org_proj, mod_proj)
+        now = datetime.utcnow()
+        ui_models = self.model_groups[group]["ui"]
+        sql_models = self.model_groups[group]["sql"]
+        upload_data(self.engine, mod_proj, ui_models, sql_models, prosjekt_id, now, e_mail)
 
-                else:
-                    # Deactivate previous record(s) for this specific model only
-                    session.execute(
-                        update(sql_cls)
-                        .where(sql_cls.prosjekt_id == str(prosjekt_id).lower())
-                        .where(sql_cls.er_gjeldende == True)
-                        .values(er_gjeldende=False)
-                    )
 
-                    sql_obj = ui_to_sqlmodel(ui_obj, sql_cls)
-                    sql_obj.prosjekt_id = str(prosjekt_id).lower()
-                    sql_obj.er_gjeldende = True
-                    sql_obj.sist_endret = now
-                    sql_obj.endret_av = e_mail
-                    objs.append(sql_obj)
+    @retry(
+        retry=retry_if_exception_type(OperationalError),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        stop=stop_after_attempt(3),
+        reraise=True,
+    )
+    def update_vurdering(self, mod_proj: VurderingData, prosjekt_id: UUID, e_mail: str, group: str = "vurdering"):
+        org_proj = self.get_single_project(str(prosjekt_id))
+        mod_proj = prune_unchanged_fields(org_proj, mod_proj)
+        now = datetime.utcnow()
+        ui_models = self.model_groups[group]["ui"]
+        sql_models = self.model_groups[group]["sql"]
+        upload_data(self.engine, mod_proj, ui_models, sql_models, prosjekt_id, now, e_mail)
+    @retry(
+        retry=retry_if_exception_type(OperationalError),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        stop=stop_after_attempt(3),
+        reraise=True,
+    )
+    def get_prosjekt_list (self):
+        with Session(self.engine) as session:
+            stmt = select(ProsjektList)
+            results = session.exec(stmt).all()
+        return [
+            {
+                "prosjekt": r.prosjekt,
+                "prosjekt_beskrivelse": r.prosjekt_beskrivelse
+            }
+            for r in results
+        ]
 
-            # ✅ Use session for both update + insert to ensure atomicity
-            session.add_all(objs)
-            session.commit()
+
+    def delete_prosjekt(self, prosjekt_id: UUID, e_post: str):
+        now = datetime.utcnow()
+        delete_prosjekt(self.engine, prosjekt_id, self.sql_models, now, e_post)

@@ -44,6 +44,7 @@ class FinansieringUI(BaseModel):
     estimert_budsjettbehov: int | None = None
     usikkerhet_estimat: str | None = None
     risiko_av_estimat_tall: int | None = None
+    prosjekt_nummer: str | None = None
     sist_endret: datetime | None = None
     endret_av: str | None = None
     er_gjeldende: bool = True
@@ -51,9 +52,11 @@ class FinansieringUI(BaseModel):
 
 class FremskrittUI(BaseModel):
     fremskritt_id: uuid.UUID = uuid.uuid4()
+    rapporterings_id: uuid.UUID | None = None
     prosjekt_id: uuid.UUID | None = None
     fremskritt: str | None = None
     fase: str | None = None
+    fremskritt_kommentar: str | None = None
     planlagt_ferdig: Annotated[datetime | None, BeforeValidator(to_datetime)] = None
     sist_endret: datetime | None = None
     endret_av: str | None = None
@@ -142,15 +145,45 @@ class VurderingUI(BaseModel):
     prosjekt_id : uuid.UUID | None = None
     gruppe: str | None = None
     pulje: int | None = None
-    risiko_vurdering: str | None = None
+    mscw: str | None = None
     sist_endret: datetime | None = None
     endret_av: str | None = None
     er_gjeldende: bool = True
-    mscw: str | None = None
 
-class VurderingData(BaseModel):
-    finansiering: FinansieringUI | None
-    vurdering: VurderingUI | None
+class SamfunnsEffektUI(BaseModel):
+    samfunnseffekt_id: uuid.UUID = uuid.uuid4()
+    prosjekt_id : uuid.UUID | None = None
+    effekt: str | None = None
+    sist_endret: datetime | None = None
+    endret_av: str | None = None
+    er_gjeldende: bool = True
+
+class RisikoUI(BaseModel):
+    risiko_id: uuid.UUID = uuid.uuid4()
+    prosjekt_id : uuid.UUID | None = None
+    risiko: str | None = None
+    sist_endret: datetime | None = None
+    endret_av: str | None = None
+    er_gjeldende: bool = True
+
+class SaldotabellUI(BaseModel):
+    argtid: int 
+    konto : str
+    konto_beskrivelse: str | None = None
+    kontogruppe: str | None = None
+    kontogruppe_beskrivelse: str | None = None
+    avdeling_kode: str | None = None
+    prosjekt: str | None = None
+    prosjekt_beskrivelse: str | None = None
+    kap_post: str | None = None
+    dim7: str | None = None
+    kontant: float | None = None
+    brukt: float | None = None
+    pla_amount: float | None = None
+    plb_amount: float | None = None
+    plc_amount: float | None = None
+    plf_amount: float | None = None
+    period: int
 
 
 class ProjectData(BaseModel):
@@ -167,3 +200,77 @@ class ProjectData(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True  # allows your UI dataclasses
+
+
+class OverviewUI(BaseModel):
+    prosjekt_id: uuid.UUID
+    navn: str | None = None
+    avdeling: str | None = None
+    fase: str | None = None
+    planlagt_ferdig: datetime | None = None
+    fremskritt_status: str | None = None
+    estimert_budsjet_behov: int | None = None
+    antall_mandsverk_intern: int | None = None
+    antall_mandsverk_ekstern: int | None = None
+    brukt_2025: float | None = None
+    brukt_2026: float | None = None
+    estimert_bruk_2026: int | None = None
+    estimert_bruk_2027: int | None = None   
+    estimert_bruk_2028: int | None = None   
+
+class DeliveryRiskUI(BaseModel):
+    delivery_risk: uuid.UUID = uuid.uuid4()
+    rapporterings_id: uuid.UUID | None = None
+    risiko_rapportert: str | None = None
+    risiko_rapportert_begrunnet: str | None = None
+    endret_av: str | None = None
+    er_gjeldende: bool = True
+
+class AvhengigheterUI(BaseModel):
+    avhengigheter_id: uuid.UUID = uuid.uuid4()
+    prosjekt_id: uuid.UUID | None = None
+    avhengigheter: str | None = None
+    endret_av: str | None = None
+    er_gjeldende: bool = True
+
+class RapporteringUI(BaseModel):
+    rapporterings_id: uuid.UUID = uuid.uuid4() 
+    prosjekt_id: uuid.UUID | None = None
+    viktige_endringer: str | None = None
+    viktige_endringer_kommentar: str | None = None
+    sist_endret: datetime | None = None
+    endret_av: str | None = None
+    er_gjeldende: bool = True
+
+
+class RapporteringData(BaseModel):
+    rapportering: Optional[RapporteringUI]
+    portfolioproject: Optional[PortfolioProjectUI]
+    fremskritt: Optional[FremskrittUI]
+    delivery_risk: Optional[DeliveryRiskUI]
+    avhengigheter: Optional[AvhengigheterUI]
+
+class VurderingData(BaseModel):
+    vurdering: Optional[VurderingUI]
+    finansiering: Optional[FinansieringUI] 
+    portfolioproject: Optional[PortfolioProjectUI]
+    fremskritt: Optional[FremskrittUI]
+    samfunnseffekt: Optional[SamfunnsEffektUI]
+    risiko: Optional[RisikovurderingUI]
+    digitaliseringstrategi: Optional[DigitaliseringStrategiUI]
+    malbilde: Optional[MalbildeUI]
+
+class ProsjektListUI(BaseModel):
+    prosjekt: str
+    prosjekt_beskrivelse: str | None = None
+
+class OpenOverviewUI(BaseModel):
+    prosjekt_id: uuid.UUID 
+    navn: str | None = None
+    avdeling: str | None = None
+    tiltakseier: str | None = None
+    kontaktpersoner: str | None = None
+    fase: str | None = None
+    planlagt_ferdig: datetime | None = None
+    fremskritt_status: str | None = None
+    problem: str | None = None

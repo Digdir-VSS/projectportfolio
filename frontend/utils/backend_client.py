@@ -2,28 +2,22 @@ import httpx
 import os 
 from enum import StrEnum
 
-from models.ui_models import ProjectData
+from models.ui_models import ProjectData, RapporteringData, VurderingData, ProsjektListUI
+from models.ui_models import OverviewUI, OpenOverviewUI
 
 BACKEND_BASE_URL = os.getenv("BACKEND_BASE_URL")
-API_KEY = os.getenv("INNLEVERING_API_KEY")  # or whatever you use
-
-
-class EndpointConfig(StrEnum):
-    INNLEVERING = "innlevering"
-    VURDERING = "vurdering"
-    STATUS_RAPPORTERING = "status_rapportering"
-    FINANSERING = "finansering"
+API_KEY = os.getenv("API_KEY")  # or whatever you use
 
 
 async def api_get_projects(email: str | None):
-    print(f"{BACKEND_BASE_URL}/{EndpointConfig.INNLEVERING}/prosjekter")
+    print(f"{BACKEND_BASE_URL}/prosjekter")
     headers = {"x-api-key": API_KEY}
     params = {}
     if email is not None:
         params["email"] = email
 
     async with httpx.AsyncClient() as client:
-        r = await client.get(f"{BACKEND_BASE_URL}/{EndpointConfig.INNLEVERING}/prosjekter", params=params, headers=headers)
+        r = await client.get(f"{BACKEND_BASE_URL}/prosjekter", params=params, headers=headers)
         r.raise_for_status()
         return r.json()
 
@@ -31,7 +25,7 @@ async def api_get_projects(email: str | None):
 async def api_get_project(prosjekt_id: str):
     headers = {"x-api-key": API_KEY}
     async with httpx.AsyncClient() as client:
-        r = await client.get(f"{BACKEND_BASE_URL}/{EndpointConfig.INNLEVERING}/prosjekt/{prosjekt_id}", headers=headers)
+        r = await client.get(f"{BACKEND_BASE_URL}/prosjekt/{prosjekt_id}", headers=headers)
         r.raise_for_status()
         data = r.json()
         return ProjectData(**data)
@@ -43,7 +37,7 @@ async def api_update_project(project: ProjectData, prosjekt_id: str, email: str)
     payload = project.model_dump(mode="json")
     async with httpx.AsyncClient() as client:
         r = await client.post(
-            f"{BACKEND_BASE_URL}/{EndpointConfig.INNLEVERING}/update_prosjekt",
+            f"{BACKEND_BASE_URL}/update_prosjekt",
             params=params,
             json=payload,
             headers=headers,
@@ -56,10 +50,102 @@ async def api_create_new_project(email: str, prosjekt_id: str):
 
     async with httpx.AsyncClient() as client:
         r = await client.post(
-            f"{BACKEND_BASE_URL}/{EndpointConfig.INNLEVERING}/ny_prosjekt",
+            f"{BACKEND_BASE_URL}/ny_prosjekt",
             json=payload,
             headers=headers,
         )
         r.raise_for_status()
         data = r.json()
         return ProjectData(**data)
+    
+async def api_get_overview():
+    headers = {"x-api-key": API_KEY}
+    async with httpx.AsyncClient() as client:
+        response = await client.get(f"{BACKEND_BASE_URL}/get_overview", headers=headers)
+        response.raise_for_status()
+        return [OverviewUI(**prosjekt) for prosjekt in response.json()]
+    
+async def api_get_vurderings_data(prosjekt_id: str):
+    headers = {"x-api-key": API_KEY}
+    async with httpx.AsyncClient() as client:
+        r = await client.get(f"{BACKEND_BASE_URL}/vurdering/{prosjekt_id}", headers=headers)
+        r.raise_for_status()
+        data = r.json()
+        return VurderingData(**data)
+    
+async def api_get_rapporterings_data(email: str, prosjekt_id: str):
+    headers = {"x-api-key": API_KEY}
+    async with httpx.AsyncClient() as client:
+        r = await client.get(f"{BACKEND_BASE_URL}/status_rapport/{prosjekt_id}", headers=headers)
+        r.raise_for_status()
+        data = r.json()
+        return RapporteringData(**data)
+
+async def api_update_rapport(rapport: RapporteringData, prosjekt_id: str, email: str):
+    headers = {"x-api-key": API_KEY}
+    params = {"prosjekt_id": prosjekt_id, "e_mail": email}
+    payload = rapport.model_dump(mode="json")
+    async with httpx.AsyncClient() as client:
+        r = await client.post(
+            f"{BACKEND_BASE_URL}/update_status_rapport",
+            params=params,
+            json=payload,
+            headers=headers,
+        )
+        return r.json()
+    
+async def api_update_rapport(rapport: RapporteringData, prosjekt_id: str, email: str):
+    headers = {"x-api-key": API_KEY}
+    params = {"prosjekt_id": prosjekt_id, "e_mail": email}
+    payload = rapport.model_dump(mode="json")
+    async with httpx.AsyncClient() as client:
+        r = await client.post(
+            f"{BACKEND_BASE_URL}/update_status_rapport",
+            params=params,
+            json=payload,
+            headers=headers,
+        )
+        return r.json()
+    
+
+async def api_update_vurdering(rapport: VurderingData, prosjekt_id: str, email: str):
+    headers = {"x-api-key": API_KEY}
+    params = {"prosjekt_id": prosjekt_id, "e_mail": email}
+    payload = rapport.model_dump(mode="json")
+    async with httpx.AsyncClient() as client:
+        r = await client.post(
+            f"{BACKEND_BASE_URL}/update_vurdering",
+            params=params,
+            json=payload,
+            headers=headers,
+        )
+        return r.json()
+    
+async def api_get_prosjekt_list():
+    headers = {"x-api-key": API_KEY}
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            f"{BACKEND_BASE_URL}/get_prosjekt_list",
+            headers=headers,
+        )
+        response.raise_for_status()
+        return [ProsjektListUI(**prosjekt) for prosjekt in response.json()]
+async def api_get_open_overview():
+    headers = {"x-api-key": API_KEY}
+    async with httpx.AsyncClient() as client:
+        response = await client.get(f"{BACKEND_BASE_URL}/get_open_overview", headers=headers)
+        response.raise_for_status()
+        return [OpenOverviewUI(**prosjekt) for prosjekt in response.json()]
+    
+
+async def api_delete_prosjekt(prosjekt_id: str, email: str):
+    headers = {"x-api-key": API_KEY}
+    params = {"prosjekt_id": prosjekt_id, "e_mail": email}
+    async with httpx.AsyncClient() as client:
+        r = await client.post(
+            f"{BACKEND_BASE_URL}/delete_prosjekt",
+            params=params,
+            headers=headers,
+        )
+        return r.json()

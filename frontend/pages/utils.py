@@ -3,6 +3,7 @@ import ast
 
 from models.ui_models import ProjectData
 from models.validators import validate_budget_distribution
+import copy
 
 def validate_kontaktpersoner(kontaktpersoner: str | None, msg: str) -> tuple[bool, str]:
     if kontaktpersoner is None:
@@ -46,26 +47,62 @@ def validate_send_schema(project: ProjectData) -> tuple[bool, str]:
             return  False, "❌ Summen av ressursbehov for 2026–2028 stemmer ikke med totalbudsjettet."
     return True, ""
 
-def layout(active_step: str, title: str, steps: dict[str, str]):
+
+def layout(title: str, menu_items: dict[str, dict], active_route: str):
+
     ui.add_head_html('''
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@digdir/designsystemet-theme/brand/digdir.css">
     ''')
-    # HEADER
-    with ui.header(elevated=True).style('background-color: var(--ds-color-accent-base-default)'):
-        ui.label(title).classes('text-h3').style('color: var(--ds-color-accent-base-contrast-default)')
 
-    # LEFT DRAWER
-    with ui.left_drawer(elevated=True, value=True).style('background-color: var(--ds-color-neutral-surface-tinted)'):
-        with ui.stepper().props(
-            'vertical header-nav'
-        ).style('''
-            --q-primary: var(--ds-color-accent-base-default);
-            --q-secondary: var(--ds-color-success-base-default);
-            --q-stepper-color: var(--ds-color-neutral-border-default);
-        ''').classes('w-full') as stepper:
-            for route, label in steps.items():
-                ui.step(label).props(f'name={route} clickable') \
-                    .on('click', lambda _, r=route: ui.navigate.to(f'/{r}'))
-        
-        # set active step
-        stepper.value = active_step
+    dark_blue = '#0D2B5B'
+    active_color = 'grey-6'
+    with ui.header(elevated=True).classes('bg-primary text-white'):
+        with ui.row().classes('items-center no-wrap w-full'):
+
+            # placeholder, assigned after drawer is created
+            menu_button = ui.button(icon='menu').props('flat dense round')
+
+            ui.label(title).classes('text-h6 q-ml-md')
+
+    # ---- LEFT DRAWER ----
+    with ui.left_drawer(elevated=True, value=True,
+    fixed=True).style('background-color: var(--ds-color-neutral-surface-tinted)') as drawer:
+
+        with ui.list().props('dense padding'):
+            for route, item in menu_items.items():
+                is_active = route == active_route
+                with ui.item(
+                    on_click=lambda _, r=route: (
+                        drawer.set_value(True),
+                        ui.navigate.to(f'/{r}')
+                    ),
+                ).classes(
+                    '' if is_active else 'text-grey-6'  # inactive items grey
+                ):
+                    if icon := item.get('icon'):
+                        with ui.item_section().props('avatar'):
+                            ui.icon(icon).style(
+                                f'color: {dark_blue if is_active else "var(--q-grey-6)"}'
+                            )
+
+                    with ui.item_section():
+                     ui.label(item['label']).style(
+                            f'color: {dark_blue if is_active else "var(--q-grey-6)"}'
+                        )
+
+    # ---- wire button AFTER drawer exists ----
+    menu_button.on(
+        'click',
+        lambda: drawer.set_value(not drawer.value)
+    )
+def get_menu_items_for_user(user: dict, super_user: list, STEPS_DICT: dict) -> dict:
+    email = user.get("preferred_username")
+
+    # start with a copy so we don’t mutate the original
+    menu = copy.deepcopy(STEPS_DICT)
+
+    # hide "vurdering" for non-super users
+    if email not in super_user:
+        menu.pop("vurdering", None)
+
+    return menu
