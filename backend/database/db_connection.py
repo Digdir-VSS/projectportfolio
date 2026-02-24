@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from datetime import datetime
 import urllib
 from sqlmodel import SQLModel, Session, select, update
-from sqlalchemy import create_engine, event, Engine
+from sqlalchemy import create_engine, event, Engine, text
 from sqlalchemy.exc import OperationalError
 from azure.identity import ClientSecretCredential
 from tenacity import (
@@ -37,12 +37,15 @@ from models.ui_models import (
     RapporteringData, 
     RapporteringUI,
     SamfunnsEffektUI,
+    SaldotabellUI,
+    FinansieringUI
 
     
 )
 from models.sql_models import (
     PortfolioProject,
     Fremskritt,
+    ProsjektList,
     Resursbehov,
     Samarabeid,
     Problemstilling,
@@ -57,7 +60,9 @@ from models.sql_models import (
     Rapportering,
     DeliveryRisk,
     SamfunnsEffekt,
-    OpenOverview
+    OpenOverview,
+    Saldotabell,
+    Finansiering
 )
 
 load_dotenv()
@@ -337,6 +342,7 @@ class DBConnector:
         }
         vurdering_sql_models = {
             "vurdering": Vurdering,
+            "finansiering": Finansiering,
             "portfolioproject": PortfolioProject,
             "fremskritt": Fremskritt,
             "samfunnseffekt": SamfunnsEffekt,
@@ -346,6 +352,7 @@ class DBConnector:
             }
         vurdering_ui_models = {
             "vurdering": VurderingUI,
+            "finansiering": FinansieringUI,
             "portfolioproject": PortfolioProjectUI,
             "fremskritt": FremskrittUI,
             "samfunnseffekt": SamfunnsEffektUI,
@@ -527,6 +534,7 @@ class DBConnector:
             rapportering=RapporteringUI(**sql_model_dict["rapportering"].dict()),
             avhengigheter=AvhengigheterUI(**sql_model_dict["avhengigheter"].dict())
         )
+    
     @retry(
         retry=retry_if_exception_type(OperationalError),
         wait=wait_exponential(multiplier=1, min=1, max=10),
@@ -536,9 +544,11 @@ class DBConnector:
     def get_single_vurdering(self, project_id: str, group: str = "vurdering") -> VurderingData:
         sql_models = self.model_groups[group]["sql"]
         sql_model_dict = get_single_page(self.engine, project_id, sql_models)
+
         # Construct UI layer
         return VurderingData(
             vurdering=VurderingUI(**sql_model_dict["vurdering"].dict()),
+            finansiering=FinansieringUI(**sql_model_dict["finansiering"].dict()),
             risiko=RisikovurderingUI(**sql_model_dict["risiko"].dict()),
             fremskritt=FremskrittUI(**sql_model_dict["fremskritt"].dict()),
             portfolioproject=PortfolioProjectUI(**sql_model_dict["portfolioproject"].dict()),
@@ -575,6 +585,24 @@ class DBConnector:
         ui_models = self.model_groups[group]["ui"]
         sql_models = self.model_groups[group]["sql"]
         upload_data(self.engine, mod_proj, ui_models, sql_models, prosjekt_id, now, e_mail)
+    @retry(
+        retry=retry_if_exception_type(OperationalError),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        stop=stop_after_attempt(3),
+        reraise=True,
+    )
+    def get_prosjekt_list (self):
+        with Session(self.engine) as session:
+            stmt = select(ProsjektList)
+            results = session.exec(stmt).all()
+        return [
+            {
+                "prosjekt": r.prosjekt,
+                "prosjekt_beskrivelse": r.prosjekt_beskrivelse
+            }
+            for r in results
+        ]
+
 
     def delete_prosjekt(self, prosjekt_id: UUID, e_post: str):
         now = datetime.utcnow()

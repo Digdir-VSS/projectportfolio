@@ -57,7 +57,11 @@ def overview_page(overview: List[OverviewUI]):
 
     with ui.column().classes("w-full gap-2"):
 
-        columns = create_columns(OverviewUI.model_fields)
+        columns = [
+            {"name": "expand", "label": "", "field": "expand"},
+            *create_columns(OverviewUI.model_fields),
+        ]
+        # columns = create_columns(OverviewUI.model_fields)
 
         rows = sorted(
             [
@@ -186,7 +190,55 @@ def overview_page(overview: List[OverviewUI]):
         </q-td>
         """
     )
-    
+    table.add_slot(
+        "body-cell-expand",
+        r"""
+        <q-td auto-width>
+            <q-btn
+                size="sm"
+                flat
+                dense
+                icon="expand_more"
+                @click="props.expand = !props.expand"
+            />
+        </q-td>
+        """
+    )
+    table.add_slot(
+        "body-row",
+        r"""
+        <q-tr :props="props">
+            <q-td auto-width>
+                <q-btn
+                    size="sm"
+                    flat
+                    dense
+                    icon="expand_more"
+                    @click="props.expand = !props.expand"
+                />
+            </q-td>
+
+            <q-td v-for="col in props.cols" :key="col.name" :props="props">
+                {{ col.value }}
+            </q-td>
+        </q-tr>
+
+        <q-tr v-show="props.expand" :props="props">
+            <q-td colspan="100%">
+                <div class="q-pa-md">
+                    <div class="text-subtitle2 q-mb-sm">
+                        Detaljer for brukt 2025 / 2026 (TODO)
+                    </div>
+
+                    <!-- Here you will render another table or list -->
+                    <div>
+                        Klikk for å hente saldo-detaljer fra backend.
+                    </div>
+                </div>
+            </q-td>
+        </q-tr>
+        """
+    )
     ui.button('Last ned oversikt', on_click=lambda: download_excel_file(overview))
 
 

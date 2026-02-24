@@ -44,6 +44,7 @@ class FinansieringUI(BaseModel):
     estimert_budsjettbehov: int | None = None
     usikkerhet_estimat: str | None = None
     risiko_av_estimat_tall: int | None = None
+    prosjekt_nummer: str | None = None
     sist_endret: datetime | None = None
     endret_av: str | None = None
     er_gjeldende: bool = True
@@ -165,6 +166,26 @@ class RisikoUI(BaseModel):
     endret_av: str | None = None
     er_gjeldende: bool = True
 
+class SaldotabellUI(BaseModel):
+    argtid: int 
+    konto : str
+    konto_beskrivelse: str | None = None
+    kontogruppe: str | None = None
+    kontogruppe_beskrivelse: str | None = None
+    avdeling_kode: str | None = None
+    prosjekt: str | None = None
+    prosjekt_beskrivelse: str | None = None
+    kap_post: str | None = None
+    dim7: str | None = None
+    kontant: float | None = None
+    brukt: float | None = None
+    pla_amount: float | None = None
+    plb_amount: float | None = None
+    plc_amount: float | None = None
+    plf_amount: float | None = None
+    period: int
+
+
 class ProjectData(BaseModel):
     fremskritt: Optional[FremskrittUI]
     samarabeid: Optional[SamarabeidUI]
@@ -229,15 +250,19 @@ class RapporteringData(BaseModel):
     delivery_risk: Optional[DeliveryRiskUI]
     avhengigheter: Optional[AvhengigheterUI]
 
-
 class VurderingData(BaseModel):
     vurdering: Optional[VurderingUI]
+    finansiering: Optional[FinansieringUI] 
     portfolioproject: Optional[PortfolioProjectUI]
     fremskritt: Optional[FremskrittUI]
     samfunnseffekt: Optional[SamfunnsEffektUI]
     risiko: Optional[RisikovurderingUI]
     digitaliseringstrategi: Optional[DigitaliseringStrategiUI]
     malbilde: Optional[MalbildeUI]
+
+class ProsjektListUI(BaseModel):
+    prosjekt: str
+    prosjekt_beskrivelse: str | None = None
 
 class OpenOverviewUI(BaseModel):
     prosjekt_id: uuid.UUID 
