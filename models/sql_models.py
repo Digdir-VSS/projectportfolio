@@ -1,4 +1,3 @@
-from asyncio.windows_events import NULL
 import os
 from sqlmodel import SQLModel, Field
 from sqlalchemy import Column

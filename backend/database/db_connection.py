@@ -180,9 +180,6 @@ def get_single_project_data(project_id: str, sql_models: dict):
                 .where(schema.prosjekt_id == project_id, schema.er_gjeldende == True)
                 .order_by(schema.year)
             )
-        elif schema_name == "saldotabell":
-            statement_dict[schema_name] = select(schema).where(
-                schema.prosjekt == project_id)
         else:
             statement_dict[schema_name] = select(schema).where(
                 schema.prosjekt_id == project_id, schema.er_gjeldende == True
@@ -547,19 +544,6 @@ class DBConnector:
     def get_single_vurdering(self, project_id: str, group: str = "vurdering") -> VurderingData:
         sql_models = self.model_groups[group]["sql"]
         sql_model_dict = get_single_page(self.engine, project_id, sql_models)
-        # if sql_model_dict["finansiering"].dict()["prosjekt_nummer"] is not None:
-        #     sql_model_dict["saldotabell"] = get_single_project_data(sql_model_dict["finansiering"].dict()["prosjekt_nummer"], {"saldotabell": Saldotabell})
-        #     return VurderingData(
-        #         vurdering=VurderingUI(**sql_model_dict["vurdering"].dict()),
-        #         finansiering=FinansieringUI(**sql_model_dict["finansiering"].dict()),
-        #         risiko=RisikovurderingUI(**sql_model_dict["risiko"].dict()),
-        #         fremskritt=FremskrittUI(**sql_model_dict["fremskritt"].dict()),
-        #         portfolioproject=PortfolioProjectUI(**sql_model_dict["portfolioproject"].dict()),
-        #         digitaliseringstrategi=DigitaliseringStrategiUI(**sql_model_dict["digitaliseringstrategi"].dict()),
-        #         malbilde=MalbildeUI(**sql_model_dict["malbilde"].dict()),
-        #         samfunnseffekt=SamfunnsEffektUI(**sql_model_dict["samfunnseffekt"].dict()),
-        #         saldotabell=[SaldotabellUI(**r.dict()) for r in sql_model_dict["saldotabell"]]
-        #     )
 
         # Construct UI layer
         return VurderingData(
