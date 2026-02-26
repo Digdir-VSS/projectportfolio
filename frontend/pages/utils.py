@@ -49,7 +49,7 @@ def validate_send_schema(project: ProjectData) -> tuple[bool, str]:
 
 
 def layout(title: str, menu_items: dict[str, dict], active_route: str):
-
+    ui.timer(interval=30, callback=lambda: ui.run_javascript('0'), once=False)
     ui.add_head_html('''
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@digdir/designsystemet-theme/brand/digdir.css">
     ''')
