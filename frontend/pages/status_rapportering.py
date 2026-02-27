@@ -134,14 +134,14 @@ def show_status_rapportering(prosjekt_id: str, email: str, rapportering: Rapport
 
         # Row for inputs (aligned)
         with ui.element("div").classes('col-span-2'):
-            ui.input().classes(
+            ui.textarea().classes(
                 "w-full bg-white rounded-lg"
             ).bind_value(
                 rapportering.rapportering, "viktige_endringer"
             )
 
         with ui.element("div").classes('col-span-3'):
-            ui.input().classes(
+            ui.textarea().classes(
                 "w-full bg-white rounded-lg"
             ).bind_value(
                 rapportering.rapportering, "viktige_endringer_kommentar"
@@ -152,7 +152,7 @@ def show_status_rapportering(prosjekt_id: str, email: str, rapportering: Rapport
         )
         with ui.element("div").classes('col-span-5'):
             ui.label("Er det noen avhengigheter som er spesielt viktig for tiltaket?").classes('font-bold')
-            ui.input().classes(
+            ui.textarea().classes(
                 "w-full bg-white rounded-lg"
             ).bind_value(
                 rapportering.avhengigheter, "avhengigheter"
@@ -189,7 +189,7 @@ def show_status_rapportering(prosjekt_id: str, email: str, rapportering: Rapport
             )
 
         with ui.element("div").classes('col-span-3'):
-            ui.input().classes(
+            ui.textarea().classes(
                 "w-full bg-white rounded-lg"
             ).bind_value(
                 rapportering.delivery_risk, "risiko_rapportert_begrunnet"
