@@ -9,7 +9,6 @@ from models.validators import to_datetime, convert_to_int
 
 
 class PortfolioProjectUI(BaseModel):
-    prosjekt_sk_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
     navn: str | None = None
     oppstart: Annotated[datetime | None, BeforeValidator(to_datetime)] = None
@@ -23,7 +22,6 @@ class PortfolioProjectUI(BaseModel):
 
 
 class DigitaliseringStrategiUI(BaseModel):
-    digitalisering_strategi_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
     sammenheng_digital_strategi: str | None = None
     digital_strategi_kommentar: str | None = None
@@ -33,7 +31,6 @@ class DigitaliseringStrategiUI(BaseModel):
 
 
 class FinansieringUI(BaseModel):
-    finansering_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
     potensiell_finansering: int | None = None
     mnd_verk: int | None = None
@@ -51,7 +48,6 @@ class FinansieringUI(BaseModel):
     
 
 class FremskrittUI(BaseModel):
-    fremskritt_id: uuid.UUID = uuid.uuid4()
     rapporterings_id: uuid.UUID | None = None
     prosjekt_id: uuid.UUID | None = None
     fremskritt: str | None = None
@@ -64,7 +60,6 @@ class FremskrittUI(BaseModel):
 
 
 class MalbildeUI(BaseModel):
-    malbilde_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
     malbilde_1_beskrivelse: str | None = None
     malbilde_1_vurdering: str | None = None
@@ -79,7 +74,6 @@ class MalbildeUI(BaseModel):
     er_gjeldende: bool = True
 
 class ProblemstillingUI(BaseModel):
-    problem_stilling_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
     problem: str | None = None
     sist_endret: datetime | None = None
@@ -88,7 +82,6 @@ class ProblemstillingUI(BaseModel):
 
 
 class ResursbehovUI(BaseModel):
-    ressursbehov_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
     estimert_budsjet_forklaring: str | None = None
     estimert_budsjet_behov: Annotated[int | None, BeforeValidator(convert_to_int)] = None
@@ -105,7 +98,6 @@ class ResursbehovUI(BaseModel):
 
 
 class RessursbrukUI(BaseModel):
-    ressursbruk_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
     year: int | None = None
     predicted_resources: Annotated[int | None, BeforeValidator(convert_to_int)] = None
@@ -114,7 +106,6 @@ class RessursbrukUI(BaseModel):
     er_gjeldende: bool = True
 
 class RisikovurderingUI(BaseModel):
-    risiko_vurdering_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
     vurdering: str | None = None
     sist_endret: datetime | None = None
@@ -123,7 +114,6 @@ class RisikovurderingUI(BaseModel):
 
 
 class SamarabeidUI(BaseModel):
-    samarbeid_id: uuid.UUID = uuid.uuid4() 
     prosjekt_id : uuid.UUID | None = None
     samarbeid_intern: str | None = None
     samarbeid_eksternt: str | None = None
@@ -133,7 +123,6 @@ class SamarabeidUI(BaseModel):
     er_gjeldende: bool = True
 
 class TiltakUI(BaseModel):
-    tiltak_id: uuid.UUID = uuid.uuid4()
     prosjekt_id : uuid.UUID | None = None
     tiltak_beskrivelse: str | None = None
     sist_endret: datetime | None = None
@@ -141,7 +130,6 @@ class TiltakUI(BaseModel):
     er_gjeldende: bool = True
 
 class VurderingUI(BaseModel):
-    vurdering_id: uuid.UUID = uuid.uuid4()
     prosjekt_id : uuid.UUID | None = None
     gruppe: str | None = None
     pulje: int | None = None
@@ -151,7 +139,6 @@ class VurderingUI(BaseModel):
     er_gjeldende: bool = True
 
 class SamfunnsEffektUI(BaseModel):
-    samfunnseffekt_id: uuid.UUID = uuid.uuid4()
     prosjekt_id : uuid.UUID | None = None
     effekt: str | None = None
     sist_endret: datetime | None = None
@@ -159,7 +146,6 @@ class SamfunnsEffektUI(BaseModel):
     er_gjeldende: bool = True
 
 class RisikoUI(BaseModel):
-    risiko_id: uuid.UUID = uuid.uuid4()
     prosjekt_id : uuid.UUID | None = None
     risiko: str | None = None
     sist_endret: datetime | None = None
@@ -219,22 +205,18 @@ class OverviewUI(BaseModel):
     estimert_bruk_2028: int | None = None   
 
 class DeliveryRiskUI(BaseModel):
-    delivery_risk: uuid.UUID = uuid.uuid4()
-    rapporterings_id: uuid.UUID | None = None
     risiko_rapportert: str | None = None
     risiko_rapportert_begrunnet: str | None = None
     endret_av: str | None = None
     er_gjeldende: bool = True
 
 class AvhengigheterUI(BaseModel):
-    avhengigheter_id: uuid.UUID = uuid.uuid4()
     prosjekt_id: uuid.UUID | None = None
     avhengigheter: str | None = None
     endret_av: str | None = None
     er_gjeldende: bool = True
 
 class RapporteringUI(BaseModel):
-    rapporterings_id: uuid.UUID = uuid.uuid4() 
     prosjekt_id: uuid.UUID | None = None
     viktige_endringer: str | None = None
     viktige_endringer_kommentar: str | None = None

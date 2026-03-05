@@ -16,7 +16,7 @@ class PortfolioProject(SQLModel, table=True):
     __table_args__ = {"schema": schema_name}
     prosjekt_sk_id: uuid.UUID = Field(
             default_factory=uuid.uuid4,
-            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True, default=uuid.uuid4),
+            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True),
         )
     prosjekt_id: uuid.UUID
     navn: str | None = None
@@ -36,7 +36,7 @@ class DigitaliseringStrategi(SQLModel, table=True):
 
     digitalisering_strategi_id: uuid.UUID = Field(
             default_factory=uuid.uuid4,
-            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True, default=uuid.uuid4),
+            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True),
         )
     sammenheng_digital_strategi: str | None = None
     digital_strategi_kommentar: str | None = None
@@ -54,7 +54,7 @@ class Finansiering(SQLModel, table=True):
 
     finansering_id: uuid.UUID = Field(
             default_factory=uuid.uuid4,
-            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True, default=uuid.uuid4),
+            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True),
         )
     
     potensiell_finansering: int | None = None
@@ -81,7 +81,7 @@ class Fremskritt(SQLModel, table=True):
 
     fremskritt_id: uuid.UUID = Field(
             default_factory=uuid.uuid4,
-            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True, default=uuid.uuid4),
+            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True),
         )
     fremskritt: str | None = None
     fase: str | None = None
@@ -100,7 +100,7 @@ class Malbilde(SQLModel, table=True):
 
     malbilde_id: uuid.UUID = Field(
             default_factory=uuid.uuid4,
-            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True, default=uuid.uuid4),
+            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True),
         )
     malbilde_1_beskrivelse: str | None = None
     malbilde_1_vurdering: str | None = None
@@ -123,7 +123,7 @@ class Problemstilling(SQLModel, table=True):
 
     problem_stilling_id: uuid.UUID = Field(
             default_factory=uuid.uuid4,
-            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True, default=uuid.uuid4),
+            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True),
         )
     problem: str | None = None
     sist_endret: datetime | None = None
@@ -139,7 +139,7 @@ class Resursbehov(SQLModel, table=True):
 
     ressursbehov_id: uuid.UUID = Field(
             default_factory=uuid.uuid4,
-            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True, default=uuid.uuid4),
+            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True),
         )
     estimert_budsjet_forklaring: str | None = None
     estimert_budsjet_behov: int | None = None
@@ -163,7 +163,7 @@ class Ressursbruk(SQLModel, table=True):
 
     ressursbruk_id: uuid.UUID = Field(
             default_factory=uuid.uuid4,
-            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True, default=uuid.uuid4),
+            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True),
         )
     year: int | None = None
     predicted_resources: int | None = None
@@ -181,7 +181,7 @@ class Risikovurdering(SQLModel, table=True):
 
     risiko_vurdering_id: uuid.UUID = Field(
             default_factory=uuid.uuid4,
-            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True, default=uuid.uuid4),
+            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True),
         )
     vurdering: str | None = None
     sist_endret: datetime | None = None
@@ -197,7 +197,7 @@ class Samarabeid(SQLModel, table=True):
 
     samarbeid_id: uuid.UUID = Field(
             default_factory=uuid.uuid4,
-            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True, default=uuid.uuid4),
+            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True),
         )
     samarbeid_intern: str | None = None
     samarbeid_eksternt: str | None = None
@@ -215,7 +215,7 @@ class Tiltak(SQLModel, table=True):
 
     tiltak_id: uuid.UUID = Field(
             default_factory=uuid.uuid4,
-            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True, default=uuid.uuid4),
+            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True),
         )
     tiltak_beskrivelse: str | None = None
     sist_endret: datetime | None = None
@@ -231,7 +231,7 @@ class UnderstøtteTildelingsbrev(SQLModel, table=True):
 
     strategisk_forankring_id: uuid.UUID = Field(
             default_factory=uuid.uuid4,
-            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True, default=uuid.uuid4),
+            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True),
         )
     mål_1_beskrivelse: str | None = None
     mål_2_beskrivelse: str | None = None
@@ -252,7 +252,7 @@ class Vurdering(SQLModel, table=True):
 
     vurdering_id: uuid.UUID = Field(
         default_factory=uuid.uuid4,
-        sa_column=Column(UNIQUEIDENTIFIER, primary_key=True, default=uuid.uuid4),
+        sa_column=Column(UNIQUEIDENTIFIER, primary_key=True),
     )
     gruppe: str | None = None
     pulje: int | None = None
@@ -269,7 +269,7 @@ class Overview(SQLModel, table=True):
     __table_args__ = {"schema": schema_name}
     prosjekt_id: uuid.UUID = Field(
             default_factory=uuid.uuid4,
-            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True, default=uuid.uuid4),
+            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True),
         )
     navn: str | None = None
     avdeling: str | None = None
@@ -290,7 +290,7 @@ class DeliveryRisk(SQLModel, table = True):
     __table_args__ = {"schema": schema_name}
     delivery_risk: uuid.UUID = Field(
             default_factory=uuid.uuid4,
-            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True, default=uuid.uuid4),
+            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True),
         )
     prosjekt_id: uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",
@@ -307,7 +307,7 @@ class Avhengigheter(SQLModel, table = True):
     __table_args__ = {"schema": schema_name}
     avhengigheter_id: uuid.UUID = Field(
             default_factory=uuid.uuid4,
-            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True, default=uuid.uuid4),
+            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True),
         )
     prosjekt_id: uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",
@@ -324,7 +324,7 @@ class SamfunnsEffekt(SQLModel, table = True):
 
     samfunnseffekt_id: uuid.UUID = Field(
             default_factory=uuid.uuid4,
-            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True, default=uuid.uuid4),
+            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True),
         )
     prosjekt_id : uuid.UUID | None = None
     effekt: str | None
@@ -337,7 +337,7 @@ class Rapportering(SQLModel, table = True):
     __table_args__ = {"schema": schema_name}
     rapporterings_id: uuid.UUID = Field(
             default_factory=uuid.uuid4,
-            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True, default=uuid.uuid4),
+            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True),
         )
     prosjekt_id: uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",
@@ -382,7 +382,7 @@ class OpenOverview(SQLModel, table = True):
     __table_args__ = {"schema": schema_name}
     prosjekt_id: uuid.UUID = Field(
             default_factory=uuid.uuid4,
-            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True, default=uuid.uuid4),
+            sa_column=Column(UNIQUEIDENTIFIER, primary_key=True),
         )
     navn: str | None = None
     avdeling: str | None = None
