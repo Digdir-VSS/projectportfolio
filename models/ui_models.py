@@ -5,7 +5,7 @@ from pydantic import BaseModel, BeforeValidator
 import uuid
 from datetime import datetime
 
-from models.validators import to_datetime, convert_to_int
+from models.validators import to_datetime, convert_to_int, convert_to_float
 
 
 class PortfolioProjectUI(BaseModel):
@@ -92,9 +92,9 @@ class ResursbehovUI(BaseModel):
     prosjekt_id: uuid.UUID | None = None
     estimert_budsjet_forklaring: str | None = None
     estimert_budsjet_behov: Annotated[int | None, BeforeValidator(convert_to_int)] = None
-    antall_mandsverk_intern: Annotated[int | None, BeforeValidator(convert_to_int)] = None
-    antall_mandsverk_ekstern: Annotated[int | None, BeforeValidator(convert_to_int)] = None
-    antall_mandsverk_ekstern_betalt:Annotated[int | None, BeforeValidator(convert_to_int)] = None
+    antall_mandsverk_intern: Annotated[float | None, BeforeValidator(convert_to_float)] = None
+    antall_mandsverk_ekstern: Annotated[float | None, BeforeValidator(convert_to_float)] = None
+    antall_mandsverk_ekstern_betalt:Annotated[float | None, BeforeValidator(convert_to_float)] = None
     risiko_av_estimat: str | None = None
     risiko_av_estimat_tall: int | None = None
     kompetanse_som_trengs: str | None = None
@@ -146,6 +146,7 @@ class VurderingUI(BaseModel):
     gruppe: str | None = None
     pulje: int | None = None
     mscw: str | None = None
+    publisert: bool = False
     sist_endret: datetime | None = None
     endret_av: str | None = None
     er_gjeldende: bool = True
@@ -210,8 +211,8 @@ class OverviewUI(BaseModel):
     planlagt_ferdig: datetime | None = None
     fremskritt_status: str | None = None
     estimert_budsjet_behov: int | None = None
-    antall_mandsverk_intern: int | None = None
-    antall_mandsverk_ekstern: int | None = None
+    antall_mandsverk_intern: float | None = None
+    antall_mandsverk_ekstern: float | None = None
     brukt_2025: float | None = None
     brukt_2026: float | None = None
     estimert_bruk_2026: int | None = None

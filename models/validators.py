@@ -34,7 +34,13 @@ def convert_to_int(number: Union[str, int, None]) -> Union[int, None]:
             return number
     else:
         return None
-
+def convert_to_float(number: Union[str, int, float, None]) -> Union[float, None]:
+    if number is None or number == "":
+        return None
+    try:
+        return float(number)
+    except (ValueError, TypeError):
+        return None
 def convert_to_int_from_thousand_sign(text: Optional[str]) -> Optional[int]:
     if text is None:
         return None
