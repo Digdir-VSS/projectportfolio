@@ -91,22 +91,7 @@ def index(client: Client):
             ui.button("Login with Microsoft", on_click=lambda: ui.navigate.to("/login"))
     else:
         # If the user is logged in, store their information and redirect them to the actual app
-        ui.navigate.to("/oppdater_prosjekt")
-
-
-
-@ui.page('/home')
-async def main_page():
-    user = require_login()
-    if not user:
-        return 
-    open_overview = await api_get_open_overview()
-
-    menu = get_menu_items_for_user(user=user, super_user=super_user, STEPS_DICT=STEPS_DICT)
-
-    layout(title='Hjemmeside', menu_items=menu, active_route="home")
-    # ui.label('Detter er hjemmesiden. Her vil vi publisere en oversikt med informasjon om prosjektene.')
-    open_overview_page(open_overview)
+        ui.navigate.to("/home")
 
 def new_project():
     # Create a blank ProjectData with default values
@@ -118,7 +103,7 @@ def new_project():
     # Navigate to the same project page as "edit"
     ui.navigate.to(f"/project/new/{new_id}")
 
-@ui.page('/vurdering')
+@ui.page('/home')
 async def oversikt():
     user = require_login()
     if not user:
@@ -131,7 +116,7 @@ async def oversikt():
     oversikt_data = await api_get_overview()
     menu = get_menu_items_for_user(user=user, super_user=super_user, STEPS_DICT=STEPS_DICT)
 
-    layout(title='Vurdering av tiltak', menu_items=menu, active_route="vurdering"),
+    layout(title='Home', menu_items=menu, active_route="home"),
     overview_page(oversikt_data)
 
 @ui.page('/oppdater_prosjekt')
