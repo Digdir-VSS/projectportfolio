@@ -253,11 +253,11 @@ async def vurderingen(prosjekt_id):
     layout(title='Vurdering av tiltak',menu_items=menu, active_route="vurdering")
     email = user["preferred_username"]
     vurdering = await api_get_vurderings_data(prosjekt_id=prosjekt_id)
-    prosjekter = await api_get_prosjekt_list()
+    prosjekt_data = await api_get_project(prosjekt_id=prosjekt_id)
     if not email:
         ui.notify('No email claim found in login!')
         return
-    show_vurdering(prosjekt_id=prosjekt_id, email=email, vurdering=vurdering, prosjekter=prosjekter)
+    show_vurdering(prosjekt_id=prosjekt_id, email=email, vurdering=vurdering, project_data=prosjekt_data)
 
 
 
