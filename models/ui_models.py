@@ -32,15 +32,8 @@ class DigitaliseringStrategiUI(BaseModel):
 
 class FinansieringUI(BaseModel):
     prosjekt_id: uuid.UUID | None = None
-    potensiell_finansering: int | None = None
-    mnd_verk: int | None = None
-    vedtatt_tildeling: int | None = None
-    prognose_innmeldt: int | None = None
-    prognose_tildelt: int | None = None
-    tentatitv_forpliktelse: int | None = None
-    estimert_budsjettbehov: int | None = None
-    usikkerhet_estimat: str | None = None
-    risiko_av_estimat_tall: int | None = None
+    tildelte_midler: float | None = None
+    tildelte_midler_dekker: str | None = None
     prosjekt_nummer: str | None = None
     sist_endret: datetime | None = None
     endret_av: str | None = None
@@ -134,7 +127,7 @@ class VurderingUI(BaseModel):
     gruppe: str | None = None
     pulje: int | None = None
     mscw: str | None = None
-    publisert: bool = False
+    begrunnelse: str | None = None
     sist_endret: datetime | None = None
     endret_av: str | None = None
     er_gjeldende: bool = True

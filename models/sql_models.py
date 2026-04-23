@@ -47,7 +47,6 @@ class DigitaliseringStrategi(SQLModel, table=True):
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
 
-
 class Finansiering(SQLModel, table=True):
     __tablename__ = "Finansering"
     __table_args__ = {"schema": schema_name}
@@ -55,21 +54,13 @@ class Finansiering(SQLModel, table=True):
     finansering_id: uuid.UUID = Field(
             default_factory=uuid.uuid4,
             sa_column=Column(UNIQUEIDENTIFIER, primary_key=True),
-        )
-    
-    potensiell_finansering: int | None = None
-    mnd_verk: int | None = None
-    vedtatt_tildeling: int | None = None
-    prognose_innmeldt: int | None = None
-    prognose_tildelt: int | None = None
-    tentatitv_forpliktelse: int | None = None
-    estimert_budsjettbehov: int | None = None
-    usikkerhet_estimat: str | None = None
-    risiko_av_estimat_tall: int | None = None
+        )    
+    tildelte_midler: float | None = None
+    tildelte_midler_dekker: str | None = None
+    prosjekt_nummer: str | None = None
     sist_endret: datetime | None = None
     endret_av: str | None = None
-    er_gjeldende: bool = False
-    prosjekt_nummer: str | None = None
+    er_gjeldende: bool = True
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  # 👈 link to users
     )
@@ -260,7 +251,6 @@ class Vurdering(SQLModel, table=True):
     endret_av: str | None = None
     er_gjeldende: bool = False
     mscw: str | None = None
-    publisert: bool = False
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  
     )
