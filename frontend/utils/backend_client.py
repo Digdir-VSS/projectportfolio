@@ -2,17 +2,16 @@ import httpx
 import os 
 from enum import StrEnum
 
-from models.ui_models import ProjectData, RapporteringData, VurderingData, ProsjektListUI
+from models.ui_models import ProjectData, RapporteringData, VurderingData, ProsjektListUI, VedtakData
 from models.ui_models import OverviewUI, OpenOverviewUI
 
 BACKEND_BASE_URL = os.getenv("BACKEND_BASE_URL")
 API_KEY = os.getenv("API_KEY")  # or whatever you use
 
 
-async def api_get_projects(email: str | None):
-    print(f"{BACKEND_BASE_URL}/prosjekter")
+async def api_get_projects(email: str | None, assessed: bool = False):
     headers = {"x-api-key": API_KEY}
-    params = {}
+    params = {"assessed": assessed}
     if email is not None:
         params["email"] = email
 
@@ -121,16 +120,20 @@ async def api_update_vurdering(rapport: VurderingData, prosjekt_id: str, email: 
         )
         return r.json()
     
-async def api_get_prosjekt_list():
+async def api_get_prosjekt_list(assessed: bool = False):
     headers = {"x-api-key": API_KEY}
+    params = {"assessed": assessed}
 
     async with httpx.AsyncClient() as client:
         response = await client.get(
             f"{BACKEND_BASE_URL}/get_prosjekt_list",
             headers=headers,
+            params=params
+
         )
         response.raise_for_status()
         return [ProsjektListUI(**prosjekt) for prosjekt in response.json()]
+    
 async def api_get_open_overview():
     headers = {"x-api-key": API_KEY}
     async with httpx.AsyncClient() as client:
@@ -146,6 +149,27 @@ async def api_delete_prosjekt(prosjekt_id: str, email: str):
         r = await client.post(
             f"{BACKEND_BASE_URL}/delete_prosjekt",
             params=params,
+            headers=headers,
+        )
+        return r.json()
+
+async def api_get_vedtak_data(prosjekt_id: str):
+    headers = {"x-api-key": API_KEY}
+    async with httpx.AsyncClient() as client:
+        r = await client.get(f"{BACKEND_BASE_URL}/vedtak/{prosjekt_id}", headers=headers)
+        r.raise_for_status()
+        data = r.json()
+        return VedtakData(**data)
+    
+async def api_update_vedtak(vedtak: VedtakData, prosjekt_id: str, email: str):
+    headers = {"x-api-key": API_KEY}
+    params = {"prosjekt_id": prosjekt_id, "e_mail": email}
+    payload = vedtak.model_dump(mode="json")
+    async with httpx.AsyncClient() as client:
+        r = await client.post(
+            f"{BACKEND_BASE_URL}/update_vedtak",
+            params=params,
+            json=payload,
             headers=headers,
         )
         return r.json()
