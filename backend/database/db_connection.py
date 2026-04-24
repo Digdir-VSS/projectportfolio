@@ -433,10 +433,6 @@ class DBConnector:
             stmt = stmt.where(PortfolioProject.prosjekt_id.in_(
                 select(Vurdering.prosjekt_id).where(Vurdering.er_gjeldende == True)
             ))
-        elif assessed is False:
-            stmt = stmt.where(PortfolioProject.prosjekt_id.notin_(
-                select(Vurdering.prosjekt_id).where(Vurdering.er_gjeldende == True)
-            ))
                 
         with Session(self.engine) as session:
             
