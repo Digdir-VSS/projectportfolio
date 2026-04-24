@@ -105,16 +105,11 @@ async def oversikt():
     user = require_login()
     if not user:
         return 
-    email = user["preferred_username"]
-    if email not in super_user:
-        ui.notify("Du har ikke tilgang til denne siden", type="negative")
-        ui.navigate.to("/oversikt")
-        return
     oversikt_data = await api_get_overview()
     menu = get_menu_items_for_user(user=user, super_user=super_user, STEPS_DICT=STEPS_DICT)
 
     layout(title='Home', menu_items=menu, active_route="home"),
-    overview_page(oversikt_data)
+    overview_page(oversikt_data, access_allowance= user["preferred_username"] in super_user)
 
 @ui.page('/oppdater_prosjekt')
 async def overordnet():
@@ -133,12 +128,8 @@ async def overordnet():
     layout(title='Ny/ endre prosjekt', menu_items=menu, active_route="oppdater_prosjekt")
     ui.label(f'Prosjekter for {user_name}').classes('text-lg font-bold mb-2')
     
-    if email in super_user:
-        ui.label('Du er logget inn som admin og ser alle prosjekter').classes('text-sm italic mb-4')
-        projects = await api_get_projects(None)
-    else:
-        projects = await api_get_projects(email)
-    
+
+    projects = await api_get_projects(None)
     with ui.column().classes("w-full gap-2"):
         with ui.row().classes('gap-2'):
             ui.button("➕ New Project", on_click=lambda: new_project()).props("color=secondary")
@@ -147,7 +138,7 @@ async def overordnet():
             ui.label('No projects found for this user.')
             return
         
-        show_projects(projects, email)
+        show_projects(projects, email, access_allowance=email in super_user)
 
 @ui.page('/project/{prosjekt_id}')
 async def project_detail(prosjekt_id: str):
@@ -158,16 +149,20 @@ async def project_detail(prosjekt_id: str):
     menu = get_menu_items_for_user(user=user, super_user=super_user, STEPS_DICT=STEPS_DICT)
 
     layout(title='Prosjekt detaljer', menu_items=menu, active_route="oppdater_prosjekt")
-    user_name = user["name"]
     email = user["preferred_username"]
     if not email:
         ui.notify('No email claim found in login!')
         return
+    if email in super_user:
+        ui.label('Du er logget inn som admin og ser alle prosjekter').classes('text-sm italic mb-4')
+        access_allowance = True
+    else:
+        access_allowance = False
     project = await api_get_project(prosjekt_id=prosjekt_id)
     if not project:
         ui.label('Prosjektet ble ikke funnet, eller du har ikke tilgang til det.')
         return
-    digdir_overordnet_info_page(prosjekt_id=prosjekt_id, email=email, project=project, brukere_list=bruker_list)
+    digdir_overordnet_info_page(prosjekt_id=prosjekt_id, email=email, project=project, brukere_list=bruker_list, access_allowance=access_allowance)
 
 @ui.page('/project/new/{prosjekt_id}')
 async def project_detail(prosjekt_id: str):
@@ -198,11 +193,8 @@ async def status_rapportering_overview():
     if not email:
         ui.notify('No email claim found in login!')
         return
-    if email in super_user:
-        ui.label('Du er logget inn som admin og ser alle prosjekter').classes('text-sm italic mb-4')
-        prosjekter = await api_get_projects(None)
-    else:        
-        prosjekter = await api_get_projects(email)
+
+    prosjekter = await api_get_projects(None)
     show_status_rapportering_overview(prosjekter=prosjekter)
 
 @ui.page("/status_rapportering/{prosjekt_id}")
@@ -218,7 +210,7 @@ async def status_rapportering(prosjekt_id):
     if not email:
         ui.notify('No email claim found in login!')
         return
-    show_status_rapportering(prosjekt_id=prosjekt_id, email=email, rapportering=rapportering, brukere_list=bruker_list)
+    show_status_rapportering(prosjekt_id=prosjekt_id, email=email, rapportering=rapportering, brukere_list=bruker_list, access_allowance= email in super_user)
 
 
 @ui.page("/vurdering/{prosjekt_id}")
@@ -229,7 +221,7 @@ async def vurderingen(prosjekt_id):
     email = user["preferred_username"]
     if email not in super_user:
         ui.notify("Du har ikke tilgang til denne siden", type="negative")
-        ui.navigate.to("/oversikt")
+        ui.navigate.to("/home")
         return
     menu = get_menu_items_for_user(user=user, super_user=super_user, STEPS_DICT=STEPS_DICT)
     layout(title='Vurdering av tiltak',menu_items=menu, active_route="vurdering")
@@ -249,7 +241,7 @@ async def show_vedtakk():
     email = user["preferred_username"]
     if email not in super_user:
         ui.notify("Du har ikke tilgang til denne siden", type="negative")
-        ui.navigate.to("/oversikt")
+        ui.navigate.to("/home")
         return
     all_prosjekts = await api_get_projects(email=None, assessed=True)
     menu = get_menu_items_for_user(user=user, super_user=super_user, STEPS_DICT=STEPS_DICT)
@@ -264,7 +256,7 @@ async def vedtak(prosjekt_id):
     email = user["preferred_username"]
     if email not in super_user:
         ui.notify("Du har ikke tilgang til denne siden", type="negative")
-        ui.navigate.to("/oversikt")
+        ui.navigate.to("/home")
         return
     menu = get_menu_items_for_user(user=user, super_user=super_user, STEPS_DICT=STEPS_DICT)
     layout(title='Vurdering av tiltak',menu_items=menu, active_route="vurdering")
