@@ -2,12 +2,10 @@ from nicegui import ui
 import asyncio
 
 from models.ui_models import VurderingData, ProjectData
-from models.validators import to_json, to_list, sort_selected_values
-from frontend.utils.backend_client import api_update_vurdering, api_get_prosjekt_list
+from models.validators import to_list
+from frontend.utils.backend_client import api_update_vurdering
 
-from frontend.static_variables import FREMDRIFT_STATUS, RISIKO_CATEGORIES, MSCW, DIGITALISERINGS_STRATEGI, FASE
-
-grouppe = ["eID","KI", "Tjenesteutvikling", "Intern styring", "Økonomi", "Kunnskap og innsikt"]
+from frontend.static_variables import MSCW
 
 prosjekt_nummer_list = []
 def show_status_vurdering_overview(prosjekter):
