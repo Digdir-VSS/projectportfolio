@@ -27,7 +27,11 @@ STEPS_DICT = {
     "status_rapportering": {
         "label": "Rapportering av status",
         "icon": "assignment",
-    }
+    },
+    "vedtak": {
+        "label": "Tiltak vedtakkelse",
+        "icon": "gavel",
+    },
 }
 FIELD_MAPPING = {
     "navn_tiltak": "Navn prosjekt",

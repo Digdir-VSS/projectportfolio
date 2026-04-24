@@ -11,19 +11,16 @@ import copy
 
 from frontend.utils.backend_client import api_get_projects, api_get_project, api_create_new_project, api_get_overview, api_get_prosjekt_list, api_get_rapporterings_data, api_get_vurderings_data, api_delete_prosjekt, api_get_open_overview
 from frontend.pages.login_page import register_login_pages
-from frontend.pages.dashboard import dashboard
-from frontend.pages.open_overview import open_overview_page
 from frontend.pages.overview import overview_page
+from frontend.pages.vedtak import show_vedtak_overview
 from frontend.pages.single_project import project_detail as digdir_overordnet_info_page
 from frontend.pages.single_project import show_projects
 from frontend.pages.status_rapportering import show_status_rapportering_overview, show_status_rapportering
-from frontend.pages.vurdering import show_status_vurdering_overview, show_vurdering
+from frontend.pages.vurdering import show_vurdering
 from frontend.utils.azure_users import load_users
 from frontend.pages.utils import layout, get_menu_items_for_user
 import uuid
 from frontend.static_variables import STEPS_DICT
-
-#app.include_router(innleverings_router)
 
 load_dotenv()
 
@@ -244,7 +241,20 @@ async def vurderingen(prosjekt_id):
         return
     show_vurdering(prosjekt_id=prosjekt_id, email=email, vurdering=vurdering, project_data=prosjekt_data)
 
-
+@ui.page("/vedtak")
+async def show_vedtakk():
+    user = require_login()
+    if not user:
+        return 
+    email = user["preferred_username"]
+    if email not in super_user:
+        ui.notify("Du har ikke tilgang til denne siden", type="negative")
+        ui.navigate.to("/oversikt")
+        return
+    all_prosjekts = await api_get_prosjekt_list()
+    menu = get_menu_items_for_user(user=user, super_user=super_user, STEPS_DICT=STEPS_DICT)
+    layout(title='Tiltak vedtakkelse', menu_items=menu, active_route="vedtak"),
+    show_vedtak_overview(all_prosjekts)
 
 if __name__ in {"__main__", "__mp_main__"}:
     
