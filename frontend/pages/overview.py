@@ -53,7 +53,7 @@ def create_columns(overview_fields: List[str]):
 
 
 
-def overview_page(overview: List[OverviewUI]):
+def overview_page(overview: List[OverviewUI], access_allowance: bool):
 
     with ui.column().classes("w-full gap-2"):
 
@@ -108,7 +108,7 @@ def overview_page(overview: List[OverviewUI]):
                         <q-icon name="edit" color="primary" />
                     </q-item-section>
                     <q-item-section>
-                        <q-item-label>Rediger prosjekt</q-item-label>
+                        <q-item-label>Vis prosjekt</q-item-label>
                     </q-item-section>
                 </q-item>
                 
@@ -126,10 +126,11 @@ def overview_page(overview: List[OverviewUI]):
                 </q-item>
                 
                 <q-item 
-                    clickable 
-                    v-close-popup
-                    :href="'/vurdering/' + props.row.prosjekt_id"
-                >
+                        v-if='""" + str(access_allowance).lower() + r"""'
+                        clickable 
+                        v-close-popup
+                        :href="'/vurdering/' + props.row.prosjekt_id"
+                    >
                     <q-item-section avatar>
                         <q-icon name="fact_check" color="green" />
                     </q-item-section>
