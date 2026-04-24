@@ -7,9 +7,8 @@ from azure.keyvault.secrets import SecretClient
 import os
 from dotenv import load_dotenv
 from msal import ConfidentialClientApplication
-import copy
 
-from frontend.utils.backend_client import api_get_projects, api_get_project, api_create_new_project, api_get_overview, api_get_rapporterings_data, api_get_vurderings_data, api_get_vedtak_data
+from frontend.utils.backend_client import api_get_admins, api_get_projects, api_get_project, api_create_new_project, api_get_overview, api_get_rapporterings_data, api_get_vurderings_data, api_get_vedtak_data
 from frontend.pages.login_page import register_login_pages
 from frontend.pages.overview import overview_page
 from frontend.pages.vedtak import show_vedtak_overview, show_vedtak
@@ -66,7 +65,15 @@ def require_login() -> dict[str, Any] | None:
         return None
     return claims
 
-super_user = os.getenv("SUPER_USER")
+def require_login_decorator(func):
+    async def wrapper():
+        user = require_login()
+        if not user:
+            return
+        return await func()
+    return wrapper
+
+super_user = api_get_admins()
 # keep a global cache of loaded projects for comparison
 @ui.page("/")
 def index(client: Client):
@@ -101,10 +108,9 @@ def new_project():
     ui.navigate.to(f"/project/new/{new_id}")
 
 @ui.page('/home')
+@require_login_decorator
 async def oversikt():
     user = require_login()
-    if not user:
-        return 
     oversikt_data = await api_get_overview()
     menu = get_menu_items_for_user(user=user, super_user=super_user, STEPS_DICT=STEPS_DICT)
 
