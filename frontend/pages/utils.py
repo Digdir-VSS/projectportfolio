@@ -103,6 +103,6 @@ def get_menu_items_for_user(user: dict, super_user: list, STEPS_DICT: dict) -> d
 
     # hide "vurdering" for non-super users
     if email not in super_user:
-        menu.pop("vurdering", None)
+        menu.pop("vedtak", None)
 
     return menu
