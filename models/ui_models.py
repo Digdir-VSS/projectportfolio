@@ -250,3 +250,33 @@ class OpenOverviewUI(BaseModel):
     planlagt_ferdig: datetime | None = None
     fremskritt_status: str | None = None
     problem: str | None = None
+
+
+class VedtakUI(BaseModel):
+    vedtak_id: uuid.UUID 
+    vedtak_dato: datetime | None = None
+    vedtak_beskrivelse: str | None = None
+    fremskritt_id: uuid.UUID | None = None
+    samarabeid_id: uuid.UUID | None = None
+    portfolioproject_id: uuid.UUID | None = None
+    tiltak_id: uuid.UUID | None = None
+    risikovurdering_id: uuid.UUID | None = None
+    malbilde_id: uuid.UUID | None = None
+    resursbehov_id: uuid.UUID | None = None
+    digitaliseringstrategi_id: uuid.UUID | None = None
+    ressursbruk_id: uuid.UUID | None = None
+    vurdering_id: uuid.UUID | None = None
+    finansiering_id: uuid.UUID | None = None
+    samfunnseffekt_id: uuid.UUID | None = None
+    risiko_id: uuid.UUID | None = None
+    rapportering_id: uuid.UUID | None = None
+    delivery_risk_id: uuid.UUID | None = None
+    avhengigheter_id: uuid.UUID | None = None
+    sist_endret: datetime | None = None
+    endret_av: str | None = None
+    er_gjeldende: bool = False
+    prosjekt_id: uuid.UUID
+
+class VedtakData(BaseModel):
+    finansering: Optional[FinansieringUI]
+    vedtak: Optional[VedtakUI]
