@@ -414,3 +414,9 @@ class Vedtak(SQLModel, table=True):
     prosjekt_id: uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",
     )
+
+class Admin(SQLModel, table=True):
+    __tablename__ = "Admin"
+    __table_args__ = {"schema": schema_name}
+    navn: str = Field(primary_key=True)
+    epost: str
