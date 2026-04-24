@@ -26,56 +26,68 @@ def show_vedtak_overview(prosjekter: list[ProjectData]):
                     ui.icon("chevron_right").classes("text-gray-400 text-2xl")
 
 
-def show_vedtak(prosjekt_id: str, vedtak_data: VedtakData, vurdering: VurderingData, email: str):
+def show_vedtak(prosjekt_id: str, vedtak_data: VedtakData, vurdering: VurderingData, email: str, access_allowance: bool = True):
 
-    with ui.element("div").classes("w-full p-6 flex flex-col gap-6"):
+    def lock(element):
+        if not access_allowance:
+            element.props('disable')
+        return element
 
-        # ── Header: title + dato ──────────────────────────────────────────────
-        with ui.element("div").classes("flex items-center gap-6"):
-            ui.markdown("## Porteføljestyrets vedtak").classes(
-                "text-2xl font-bold underline m-0"
-            )
-            ui.label('Dato for vedtak').classes('text-lg font-bold')
-            ui.input().bind_value(vedtak_data.vedtak, "vedtak_dato", backward=to_date_str, forward=to_datetime).props("outlined dense type=date clearable color=primary").classes("w-full")
+    with ui.element("div").classes("w-full p-6 flex flex-col gap-4"):
 
-        # ── Tildeling ─────────────────────────────────────────────────────────
-        with ui.element("div").classes("flex flex-col gap-1 mt-4"):
-            ui.label("Tildeling").classes("font-bold text-base")
-
-            with ui.element("div").classes("flex border border-gray-300 rounded w-fit"):
-                ui.label("2026").style(
-                    "font-weight: bold; padding: 6px 24px; border-right: 1px solid #d1d5db;"
+        # ── Header card ───────────────────────────────────────────────────────
+        with ui.element("div").classes("flex items-center gap-6 bg-white border border-gray-200 rounded-xl p-5"):
+            ui.label("Porteføljestyrets vedtak").classes("text-xl font-bold")
+            with ui.element("div").classes("ml-auto flex items-center gap-3"):
+                ui.label("Dato for vedtak").classes("text-sm text-gray-500 whitespace-nowrap")
+                lock(
+                    ui.input()
+                    .bind_value(vedtak_data.vedtak, "vedtak_dato", backward=to_date_str, forward=to_datetime)
+                    .props("outlined dense type=date clearable color=primary")
                 )
-                ui.label(
-                    f"{vedtak_data.finansering.tildelte_midler:,} NOK"
-                    if vedtak_data.finansering and vedtak_data.finansering.tildelte_midler
-                    else "—"
-                ).style("font-weight: bold; padding: 6px 24px;")
 
-        # ── Vedtak ────────────────────────────────────────────────────────────
-        with ui.element("div").classes("flex flex-col gap-2 mt-4"):
-            ui.label("Vedtak").classes("font-bold text-xl")
-            ui.textarea(
-                placeholder="Eksempel: Tildeles midler for konseptfase. Tiltaket kommer tilbake for ny behandling høsten 2026. Tidsplan koordineres med tiltak xx."
-            ).classes(
-                "w-full rounded-lg border border-gray-300 bg-white min-h-[220px] p-4"
-            ).bind_value(vedtak_data.vedtak, "vedtak_beskrivelse")
+        # ── Main card ─────────────────────────────────────────────────────────
+        with ui.element("div").classes("bg-white border border-gray-200 rounded-xl p-5 flex flex-col gap-5"):
 
-    # ── Save ──────────────────────────────────────────────────────────────────
-    async def save_object():
-        with ui.dialog() as dialog:
-            ui.label("💾 Lagrer vedtak... Vennligst vent ⏳")
-            ui.spinner(size="lg", color="primary")
-        try:
-            dialog.open()
-            await asyncio.sleep(0.1)
-            await api_update_vedtak(vedtak_data, prosjekt_id, email)
-            ui.notify("✅ Vedtak lagret!", type="positive", position="top")
-            await asyncio.sleep(1)
-            ui.navigate.to(f"/vedtak/{prosjekt_id}")
-        finally:
-            dialog.close()
+            # Tildeling
+            with ui.element("div"):
+                ui.label("TILDELING").classes("text-xs font-medium text-gray-400 tracking-widest mb-2")
+                with ui.element("div").classes("inline-flex border border-gray-200 rounded-lg overflow-hidden"):
+                    ui.label("2026").classes("text-sm font-medium px-4 py-1.5 bg-gray-50 border-r border-gray-200 text-gray-500")
+                    ui.label(
+                        f"{vedtak_data.finansering.tildelte_midler:,} NOK"
+                        if vedtak_data.finansering and vedtak_data.finansering.tildelte_midler
+                        else "—"
+                    ).classes("text-sm font-medium px-4 py-1.5")
 
-    ui.button("💾 Lagre vedtak", on_click=save_object).classes(
-        "mt-4 border border-gray-300 font-bold"
-    )
+            ui.separator()
+
+            # Vedtak text
+            with ui.element("div"):
+                ui.label("VEDTAK").classes("text-xs font-medium text-gray-400 tracking-widest mb-2")
+                lock(
+                    ui.textarea(
+                        placeholder="Eksempel: Tildeles midler for konseptfase. Tiltaket kommer tilbake for ny behandling høsten 2026. Tidsplan koordineres med tiltak xx."
+                    )
+                    .classes("w-full bg-white rounded-lg")
+                    .props("outlined rows=7")
+                    .bind_value(vedtak_data.vedtak, "vedtak_beskrivelse")
+                )
+
+        # ── Save ──────────────────────────────────────────────────────────────
+        async def save_object():
+            with ui.dialog() as dialog:
+                ui.label("💾 Lagrer vedtak... Vennligst vent ⏳")
+                ui.spinner(size="lg", color="primary")
+            try:
+                dialog.open()
+                await asyncio.sleep(0.1)
+                await api_update_vedtak(vedtak_data, prosjekt_id, email)
+                ui.notify("✅ Vedtak lagret!", type="positive", position="top")
+                await asyncio.sleep(1)
+                ui.navigate.to(f"/vedtak/{prosjekt_id}")
+            finally:
+                dialog.close()
+
+        if access_allowance:
+            ui.button("💾 Lagre vedtak", on_click=save_object).classes("self-end mt-2")
