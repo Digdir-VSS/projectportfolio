@@ -698,8 +698,6 @@ class DBConnector:
                     .where(sql_cls.er_gjeldende == True)
                 ).first()
                 resolved_ids[vedtak_field] = getattr(result, pk_attr) if result else None
-            print(resolved_ids)
-            # Deactivate previous Vedtak row
             session.execute(
                 update(Vedtak)
                 .where(Vedtak.prosjekt_id == project_id_str)
@@ -707,7 +705,6 @@ class DBConnector:
                 .values(er_gjeldende=False)
             )
 
-            # Build and insert the new Vedtak row
             vedtak_ui: VedtakUI = mod_proj.vedtak
             new_vedtak = Vedtak(
                 prosjekt_id=prosjekt_id,

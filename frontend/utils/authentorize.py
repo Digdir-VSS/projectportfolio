@@ -3,6 +3,9 @@ import jwt
 from jwt.algorithms import RSAAlgorithm
 import os 
 from dotenv import load_dotenv
+import json
+
+from models.ui_models import ProjectData
 
 load_dotenv()
 
@@ -47,3 +50,10 @@ def validate_token(jwt_token, tenant_name):
     except jwt.PyJWTError as e:
         print(f"Token validation error: {e}")
         return None
+
+def validate_access(prosjekt: ProjectData, email: str, admins: list[str]) -> bool:
+    if email in admins:
+        return True 
+    if email in prosjekt.portfolioproject.epost_kontakt:
+        return True
+    return False
