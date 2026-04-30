@@ -1,13 +1,21 @@
 import httpx
 import os 
-from enum import StrEnum
+from dotenv import load_dotenv
 
 from models.ui_models import ProjectData, RapporteringData, VurderingData, ProsjektListUI, VedtakData
 from models.ui_models import OverviewUI, OpenOverviewUI
 
+load_dotenv()
+
 BACKEND_BASE_URL = os.getenv("BACKEND_BASE_URL")
 API_KEY = os.getenv("API_KEY")  # or whatever you use
 
+def api_get_admins():
+    headers = {"x-api-key": API_KEY}
+    with httpx.Client() as client:
+        r = client.get(f"{BACKEND_BASE_URL}/admins", headers=headers)
+        r.raise_for_status()
+        return r.json()
 
 async def api_get_projects(email: str | None, assessed: bool = False):
     headers = {"x-api-key": API_KEY}

@@ -42,6 +42,9 @@ async def get_innnleverings_prosjekt(prosjekt_id: str, access_key: str = Depends
 async def create_new_innnleverings_prosjekt(ny_prosjekt: NyProsjekt, access_key: str = Depends(verify_api_key)):
     return db_connector.create_empty_project(ny_prosjekt.email, ny_prosjekt.prosjekt_id)
 
+@router.get("/admins")
+async def get_admins(access_key: str = Depends(verify_api_key)):
+    return db_connector.get_admin_emails()
 
 @router.get("/prosjekter")
 async def get_innnleverings_prosjekt(email: str | None = None, assessed: bool = False,  access_key: str = Depends(verify_api_key)) -> list[dict[str, Any]]:

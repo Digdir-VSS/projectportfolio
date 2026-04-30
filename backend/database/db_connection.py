@@ -63,7 +63,8 @@ from models.sql_models import (
     SamfunnsEffekt,
     OpenOverview,
     Vedtak,
-    Finansiering
+    Finansiering,
+    Admin
 )
 
 load_dotenv()
@@ -644,6 +645,18 @@ class DBConnector:
             finansering=FinansieringUI(**sql_model_dict["finansering"].dict()),
             vedtak=VedtakUI(**sql_model_dict["vedtak"].dict()),
         )
+
+    def get_admin_emails(self):
+        stmt = select(Admin)
+        with Session(self.engine) as session:
+            results = session.exec(stmt).all()
+        return [
+                {
+                    "navn": r.navn,
+                    "epost": r.epost
+                }
+                for r in results
+            ]
 
     @retry(
         retry=retry_if_exception_type(OperationalError),
