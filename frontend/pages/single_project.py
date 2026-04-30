@@ -105,7 +105,6 @@ def show_projects(projects, email: str, access_allowance: bool):
                         </q-item>
                         
                             <q-item 
-                            v-if='""" + str(access_allowance).lower() + r"""'
                             clickable 
                             v-close-popup
                             @click="$parent.$emit('delete_project', props.row.prosjekt_id)"
