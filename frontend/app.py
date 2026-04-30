@@ -77,7 +77,6 @@ def require_login_decorator(func):
 super_user =  api_get_admins()
 
 super_user = [value["epost"] for value in super_user]
-print(super_user)
 # keep a global cache of loaded projects for comparison
 @ui.page("/")
 def index(client: Client):
