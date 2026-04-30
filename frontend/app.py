@@ -74,7 +74,9 @@ def require_login_decorator(func):
         return await func()
     return wrapper
 
-super_user = api_get_admins()
+super_user =  api_get_admins()
+
+super_user = [value["epost"] for value in super_user]
 # keep a global cache of loaded projects for comparison
 @ui.page("/")
 def index(client: Client):
@@ -85,6 +87,7 @@ def index(client: Client):
 
     # Obtain the browser ID and use it to determine whether the user is logged in or not
     claims = app.storage.user.get("claims")
+
     # if "user" was not initialised
     if not claims:
         # Display log in components
