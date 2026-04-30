@@ -7,23 +7,20 @@ from azure.keyvault.secrets import SecretClient
 import os
 from dotenv import load_dotenv
 from msal import ConfidentialClientApplication
-import copy
 
-from frontend.utils.backend_client import api_get_projects, api_get_project, api_create_new_project, api_get_overview, api_get_prosjekt_list, api_get_rapporterings_data, api_get_vurderings_data, api_delete_prosjekt, api_get_open_overview
+from frontend.utils.backend_client import api_get_admins, api_get_projects, api_get_project, api_create_new_project, api_get_overview, api_get_rapporterings_data, api_get_vurderings_data, api_get_vedtak_data
+from frontend.utils.authentorize import validate_access
 from frontend.pages.login_page import register_login_pages
-from frontend.pages.dashboard import dashboard
-from frontend.pages.open_overview import open_overview_page
 from frontend.pages.overview import overview_page
+from frontend.pages.vedtak import show_vedtak_overview, show_vedtak
 from frontend.pages.single_project import project_detail as digdir_overordnet_info_page
 from frontend.pages.single_project import show_projects
 from frontend.pages.status_rapportering import show_status_rapportering_overview, show_status_rapportering
-from frontend.pages.vurdering import show_status_vurdering_overview, show_vurdering
+from frontend.pages.vurdering import show_vurdering
 from frontend.utils.azure_users import load_users
 from frontend.pages.utils import layout, get_menu_items_for_user
 import uuid
 from frontend.static_variables import STEPS_DICT
-
-#app.include_router(innleverings_router)
 
 load_dotenv()
 
@@ -69,7 +66,15 @@ def require_login() -> dict[str, Any] | None:
         return None
     return claims
 
-super_user = os.getenv("SUPER_USER")
+def require_login_decorator(func):
+    async def wrapper():
+        user = require_login()
+        if not user:
+            return
+        return await func()
+    return wrapper
+
+super_user = api_get_admins()
 # keep a global cache of loaded projects for comparison
 @ui.page("/")
 def index(client: Client):
@@ -91,22 +96,7 @@ def index(client: Client):
             ui.button("Login with Microsoft", on_click=lambda: ui.navigate.to("/login"))
     else:
         # If the user is logged in, store their information and redirect them to the actual app
-        ui.navigate.to("/oppdater_prosjekt")
-
-
-
-@ui.page('/home')
-async def main_page():
-    user = require_login()
-    if not user:
-        return 
-    open_overview = await api_get_open_overview()
-
-    menu = get_menu_items_for_user(user=user, super_user=super_user, STEPS_DICT=STEPS_DICT)
-
-    layout(title='Hjemmeside', menu_items=menu, active_route="home")
-    # ui.label('Detter er hjemmesiden. Her vil vi publisere en oversikt med informasjon om prosjektene.')
-    open_overview_page(open_overview)
+        ui.navigate.to("/home")
 
 def new_project():
     # Create a blank ProjectData with default values
@@ -118,21 +108,15 @@ def new_project():
     # Navigate to the same project page as "edit"
     ui.navigate.to(f"/project/new/{new_id}")
 
-@ui.page('/vurdering')
+@ui.page('/home')
+@require_login_decorator
 async def oversikt():
     user = require_login()
-    if not user:
-        return 
-    email = user["preferred_username"]
-    if email not in super_user:
-        ui.notify("Du har ikke tilgang til denne siden", type="negative")
-        ui.navigate.to("/oversikt")
-        return
     oversikt_data = await api_get_overview()
     menu = get_menu_items_for_user(user=user, super_user=super_user, STEPS_DICT=STEPS_DICT)
 
-    layout(title='Vurdering av tiltak', menu_items=menu, active_route="vurdering"),
-    overview_page(oversikt_data)
+    layout(title='Home', menu_items=menu, active_route="home"),
+    overview_page(oversikt_data, access_allowance= user["preferred_username"] in super_user)
 
 @ui.page('/oppdater_prosjekt')
 async def overordnet():
@@ -152,11 +136,9 @@ async def overordnet():
     ui.label(f'Prosjekter for {user_name}').classes('text-lg font-bold mb-2')
     
     if email in super_user:
-        ui.label('Du er logget inn som admin og ser alle prosjekter').classes('text-sm italic mb-4')
-        projects = await api_get_projects(None)
+        projects = await api_get_projects(email=None)
     else:
-        projects = await api_get_projects(email)
-    
+        projects = await api_get_projects(email=email)
     with ui.column().classes("w-full gap-2"):
         with ui.row().classes('gap-2'):
             ui.button("➕ New Project", on_click=lambda: new_project()).props("color=secondary")
@@ -165,7 +147,7 @@ async def overordnet():
             ui.label('No projects found for this user.')
             return
         
-        show_projects(projects, email)
+        show_projects(projects, email, super_user)
 
 @ui.page('/project/{prosjekt_id}')
 async def project_detail(prosjekt_id: str):
@@ -176,16 +158,21 @@ async def project_detail(prosjekt_id: str):
     menu = get_menu_items_for_user(user=user, super_user=super_user, STEPS_DICT=STEPS_DICT)
 
     layout(title='Prosjekt detaljer', menu_items=menu, active_route="oppdater_prosjekt")
-    user_name = user["name"]
     email = user["preferred_username"]
     if not email:
         ui.notify('No email claim found in login!')
         return
+    if email in super_user:
+        ui.label('Du er logget inn som admin og ser alle prosjekter').classes('text-sm italic mb-4')
+        access_allowance = True
+    else:
+        access_allowance = False
     project = await api_get_project(prosjekt_id=prosjekt_id)
     if not project:
         ui.label('Prosjektet ble ikke funnet, eller du har ikke tilgang til det.')
         return
-    digdir_overordnet_info_page(prosjekt_id=prosjekt_id, email=email, project=project, brukere_list=bruker_list)
+    access_allowance = validate_access(project, email, super_user)
+    digdir_overordnet_info_page(prosjekt_id=prosjekt_id, email=email, project=project, brukere_list=bruker_list, access_allowance=access_allowance)
 
 @ui.page('/project/new/{prosjekt_id}')
 async def project_detail(prosjekt_id: str):
@@ -216,11 +203,11 @@ async def status_rapportering_overview():
     if not email:
         ui.notify('No email claim found in login!')
         return
+
     if email in super_user:
-        ui.label('Du er logget inn som admin og ser alle prosjekter').classes('text-sm italic mb-4')
-        prosjekter = await api_get_projects(None)
-    else:        
-        prosjekter = await api_get_projects(email)
+        prosjekter = await api_get_projects(email=None)
+    else:
+        prosjekter = await api_get_projects(email=email)
     show_status_rapportering_overview(prosjekter=prosjekter)
 
 @ui.page("/status_rapportering/{prosjekt_id}")
@@ -232,11 +219,13 @@ async def status_rapportering(prosjekt_id):
     layout(title='Rapportering av status',menu_items=menu, active_route="status_rapportering")
     email = user["preferred_username"]
     rapportering = await api_get_rapporterings_data(email=email, prosjekt_id=prosjekt_id)
+    prosjekt = await api_get_project(prosjekt_id=prosjekt_id)
     #print(rapportering)
     if not email:
         ui.notify('No email claim found in login!')
         return
-    show_status_rapportering(prosjekt_id=prosjekt_id, email=email, rapportering=rapportering, brukere_list=bruker_list)
+    access_allowance = validate_access(prosjekt, email, super_user)
+    show_status_rapportering(prosjekt_id=prosjekt_id, email=email, rapportering=rapportering, brukere_list=bruker_list, access_allowance= access_allowance)
 
 
 @ui.page("/vurdering/{prosjekt_id}")
@@ -247,19 +236,51 @@ async def vurderingen(prosjekt_id):
     email = user["preferred_username"]
     if email not in super_user:
         ui.notify("Du har ikke tilgang til denne siden", type="negative")
-        ui.navigate.to("/oversikt")
+        ui.navigate.to("/home")
         return
     menu = get_menu_items_for_user(user=user, super_user=super_user, STEPS_DICT=STEPS_DICT)
     layout(title='Vurdering av tiltak',menu_items=menu, active_route="vurdering")
     email = user["preferred_username"]
     vurdering = await api_get_vurderings_data(prosjekt_id=prosjekt_id)
-    prosjekter = await api_get_prosjekt_list()
+    prosjekt_data = await api_get_project(prosjekt_id=prosjekt_id)
     if not email:
         ui.notify('No email claim found in login!')
         return
-    show_vurdering(prosjekt_id=prosjekt_id, email=email, vurdering=vurdering, prosjekter=prosjekter)
+    show_vurdering(prosjekt_id=prosjekt_id, email=email, vurdering=vurdering, project_data=prosjekt_data)
 
+@ui.page("/vedtak")
+async def show_vedtakk():
+    user = require_login()
+    if not user:
+        return 
+    email = user["preferred_username"]
+    if email not in super_user:
+        ui.notify("Du har ikke tilgang til denne siden", type="negative")
+        ui.navigate.to("/home")
+        return
+    all_prosjekts = await api_get_projects(email=None, assessed=True)
+    menu = get_menu_items_for_user(user=user, super_user=super_user, STEPS_DICT=STEPS_DICT)
+    layout(title='Tiltak vedtakkelse', menu_items=menu, active_route="vedtak"),
+    show_vedtak_overview(all_prosjekts)
 
+@ui.page("/vedtak/{prosjekt_id}")
+async def vedtak(prosjekt_id):
+    user = require_login()
+    if not user:
+        return 
+    email = user["preferred_username"]
+    if email not in super_user:
+        ui.notify("Du har ikke tilgang til denne siden", type="negative")
+        ui.navigate.to("/home")
+        return
+    menu = get_menu_items_for_user(user=user, super_user=super_user, STEPS_DICT=STEPS_DICT)
+    layout(title='Vurdering av tiltak',menu_items=menu, active_route="vurdering")
+    vurdering = await api_get_vurderings_data(prosjekt_id=prosjekt_id)
+    vedtak_data = await api_get_vedtak_data(prosjekt_id=prosjekt_id)
+    if not email:
+        ui.notify('No email claim found in login!')
+        return
+    show_vedtak(prosjekt_id=prosjekt_id, vedtak_data=vedtak_data, vurdering=vurdering, email=email)
 
 if __name__ in {"__main__", "__mp_main__"}:
     

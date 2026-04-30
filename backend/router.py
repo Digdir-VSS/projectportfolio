@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from backend.database.db import db_connector
 from backend.database.db_connection import ProjectData
 from models.sql_models import Overview, OpenOverview
-from models.ui_models import ProjectData, RapporteringData, VurderingData
+from models.ui_models import ProjectData, RapporteringData, VurderingData, VedtakData
 
 load_dotenv()
 
@@ -42,11 +42,14 @@ async def get_innnleverings_prosjekt(prosjekt_id: str, access_key: str = Depends
 async def create_new_innnleverings_prosjekt(ny_prosjekt: NyProsjekt, access_key: str = Depends(verify_api_key)):
     return db_connector.create_empty_project(ny_prosjekt.email, ny_prosjekt.prosjekt_id)
 
+@router.get("/admins")
+async def get_admins(access_key: str = Depends(verify_api_key)):
+    return db_connector.get_admin_emails()
 
 @router.get("/prosjekter")
-async def get_innnleverings_prosjekt(email: str | None = None, access_key: str = Depends(verify_api_key)) -> list[dict[str, Any]]:
+async def get_innnleverings_prosjekt(email: str | None = None, assessed: bool = False,  access_key: str = Depends(verify_api_key)) -> list[dict[str, Any]]:
     """ Remember that email needs to be passed as search query parameter in request"""
-    return db_connector.get_projects(email)
+    return db_connector.get_projects(email, assessed)
 
 @router.post("/update_prosjekt")
 async def update_innnleverings_prosjekt(project: ProjectData, prosjekt_id: UUID, e_mail: str, access_key: str = Depends(verify_api_key)):
@@ -74,12 +77,24 @@ async def update_vurdering(vudering: VurderingData, prosjekt_id: str,  e_mail: s
     return db_connector.update_vurdering(vudering, prosjekt_id, e_mail)
 
 @router.get("/get_prosjekt_list")
-async def get_prosjekt_list(access_key: str = Depends(verify_api_key)):
-    return db_connector.get_prosjekt_list()
+async def get_prosjekt_list(
+    assessed: bool | None = None,
+    access_key: str = Depends(verify_api_key)
+):
+    return db_connector.get_prosjekt_list(assessed=assessed)
 
 @router.get("/get_open_overview", response_model=list[OpenOverview])
 async def get_overview(access_key: str = Depends(verify_api_key)):
     return db_connector.get_open_overview()
+
 @router.post("/delete_prosjekt")
 async def delete_prosjekt(prosjekt_id: str,  e_mail: str, access_key: str = Depends(verify_api_key)):
     return db_connector.delete_prosjekt(prosjekt_id, e_mail)
+
+@router.get("/vedtak/{prosjekt_id}", response_model=VedtakData)
+async def get_vedtak(prosjekt_id: str, access_key: str = Depends(verify_api_key)):
+    return db_connector.get_single_vedtak(prosjekt_id)
+
+@router.post("/update_vedtak")
+async def update_vedtak(vedtak: VedtakData, prosjekt_id: str,  e_mail: str, access_key: str = Depends(verify_api_key)):
+    return db_connector.update_vedtak(vedtak, prosjekt_id, e_mail)

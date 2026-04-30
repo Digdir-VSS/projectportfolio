@@ -17,7 +17,7 @@ STEPS_DICT_ = {
 }
 STEPS_DICT = {
     "home": {
-        "label": "Hjemmeside",
+        "label": "Home",
         "icon": "home",
     },
     "oppdater_prosjekt": {
@@ -28,9 +28,9 @@ STEPS_DICT = {
         "label": "Rapportering av status",
         "icon": "assignment",
     },
-    "vurdering": {
-        "label": "Vurdering av tiltak",    
-        "icon": "fact_check",
+    "vedtak": {
+        "label": "Tiltak vedtakkelse",
+        "icon": "gavel",
     },
 }
 FIELD_MAPPING = {

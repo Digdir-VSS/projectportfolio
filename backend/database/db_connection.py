@@ -37,8 +37,9 @@ from models.ui_models import (
     RapporteringData, 
     RapporteringUI,
     SamfunnsEffektUI,
-    SaldotabellUI,
-    FinansieringUI
+    VedtakData,
+    FinansieringUI,
+    VedtakUI
 
     
 )
@@ -61,8 +62,9 @@ from models.sql_models import (
     DeliveryRisk,
     SamfunnsEffekt,
     OpenOverview,
-    Saldotabell,
-    Finansiering
+    Vedtak,
+    Finansiering,
+    Admin
 )
 
 load_dotenv()
@@ -169,7 +171,6 @@ def delete_prosjekt(engine, project_id: str, sql_models: dict, change_time: date
 
         session.commit()
 
-
 def get_single_project_data(project_id: str, sql_models: dict):
     statement_dict = {}
     for schema_name, schema in sql_models.items():
@@ -258,7 +259,8 @@ class DBConnector:
         Vurdering,
         Rapportering,
         DeliveryRisk,
-        SamfunnsEffekt
+        SamfunnsEffekt,
+        Vedtak
         ]
 
     @classmethod
@@ -359,7 +361,14 @@ class DBConnector:
             "risiko": RisikovurderingUI,
             "digitaliseringstrategi": DigitaliseringStrategiUI,
             "malbilde": MalbildeUI
-
+            }
+        vedtak_sql_models = {
+            "finansering": Finansiering,
+            "vedtak": Vedtak
+            }
+        vedtak_ui_models = {
+            "finansering": FinansieringUI,
+            "vedtak": VedtakUI
             }
         model_groups = {
                 "project": {
@@ -376,6 +385,11 @@ class DBConnector:
                     "sql": vurdering_sql_models,
                     "ui": vurdering_ui_models,
                     "dataclass": VurderingData
+                },
+                "vedtak": {
+                    "sql": vedtak_sql_models,
+                    "ui": vedtak_ui_models,
+                    "dataclass": VedtakData
                 },
             }
         
@@ -402,7 +416,7 @@ class DBConnector:
         stop=stop_after_attempt(3),
         reraise=True,
     )
-    def get_projects(self, email: str | None = None):
+    def get_projects(self, email: str | None = None, assessed: bool = False):
         columns = [
             PortfolioProject.prosjekt_id,
             PortfolioProject.navn,
@@ -411,15 +425,18 @@ class DBConnector:
             PortfolioProject.epost_kontakt,
             PortfolioProject.er_gjeldende,
         ]
+        stmt = select(*columns).where(PortfolioProject.er_gjeldende == True)
+
+        if email:
+            stmt = stmt.where(PortfolioProject.epost_kontakt.like(f"%{email}%"))
+
+        if assessed is True:
+            stmt = stmt.where(PortfolioProject.prosjekt_id.in_(
+                select(Vurdering.prosjekt_id).where(Vurdering.er_gjeldende == True)
+            ))
+                
         with Session(self.engine) as session:
-            if email:
-                email_in_list = f"%{email}%"
-                stmt = select(*columns).where(
-                    PortfolioProject.er_gjeldende == True,
-                    PortfolioProject.epost_kontakt.like(email_in_list),
-                )
-            else:
-                stmt = select(*columns).where(PortfolioProject.er_gjeldende == True)
+            
             results = session.exec(stmt).all()
             print(results)
         return [
@@ -591,19 +608,112 @@ class DBConnector:
         stop=stop_after_attempt(3),
         reraise=True,
     )
-    def get_prosjekt_list (self):
-        with Session(self.engine) as session:
+    def get_prosjekt_list(self, assessed: bool = False):
+        if assessed:
+            stmt = stmt.where(ProsjektList.prosjekt.in_(
+                select(Vurdering.prosjekt_id).where(Vurdering.er_gjeldende == True)
+            ))
+        else:
             stmt = select(ProsjektList)
+        
+        with Session(self.engine) as session:
             results = session.exec(stmt).all()
         return [
-            {
-                "prosjekt": r.prosjekt,
-                "prosjekt_beskrivelse": r.prosjekt_beskrivelse
-            }
-            for r in results
-        ]
+                {
+                    "prosjekt": r.prosjekt,
+                    "prosjekt_beskrivelse": r.prosjekt_beskrivelse
+                }
+                for r in results
+            ]
 
 
     def delete_prosjekt(self, prosjekt_id: UUID, e_post: str):
         now = datetime.utcnow()
         delete_prosjekt(self.engine, prosjekt_id, self.sql_models, now, e_post)
+    
+    
+    @retry(
+        retry=retry_if_exception_type(OperationalError),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        stop=stop_after_attempt(3),
+        reraise=True,
+    )
+    def get_single_vedtak(self, project_id: str, group: str = "vedtak") -> VurderingData:
+        sql_models = self.model_groups[group]["sql"]
+        sql_model_dict = get_single_page(self.engine, project_id, sql_models)
+        return VedtakData(
+            finansering=FinansieringUI(**sql_model_dict["finansering"].dict()),
+            vedtak=VedtakUI(**sql_model_dict["vedtak"].dict()),
+        )
+
+    def get_admin_emails(self):
+        stmt = select(Admin)
+        with Session(self.engine) as session:
+            results = session.exec(stmt).all()
+        return [
+                {
+                    "navn": r.navn,
+                    "epost": r.epost
+                }
+                for r in results
+            ]
+
+    @retry(
+        retry=retry_if_exception_type(OperationalError),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+
+        stop=stop_after_attempt(3),
+        reraise=True,
+    )
+    def update_vedtak(self, mod_proj: VedtakData, prosjekt_id: UUID, e_mail: str, group: str = "vedtak"):
+        now = datetime.utcnow()
+        project_id_str = str(prosjekt_id).lower()
+
+        id_map = {
+            "fremskritt_id":            (Fremskritt,            "fremskritt_id"),
+            "samarabeid_id":            (Samarabeid,            "samarbeid_id"),
+            "portfolioproject_id":      (PortfolioProject,      "prosjekt_sk_id"),
+            "tiltak_id":                (Tiltak,                "tiltak_id"),
+            "risikovurdering_id":       (Risikovurdering,       "risiko_vurdering_id"),
+            "malbilde_id":              (Malbilde,              "malbilde_id"),
+            "resursbehov_id":           (Resursbehov,           "ressursbehov_id"),
+            "digitaliseringstrategi_id":(DigitaliseringStrategi,"digitalisering_strategi_id"),
+            "ressursbruk_id":           (Ressursbruk,           "ressursbruk_id"),
+            "vurdering_id":             (Vurdering,             "vurdering_id"),
+            "finansiering_id":          (Finansiering,          "finansering_id"),
+            "samfunnseffekt_id":        (SamfunnsEffekt,        "samfunnseffekt_id"),
+            "risiko_id":                (Risikovurdering,       "risiko_vurdering_id"),
+            "rapportering_id":          (Rapportering,          "rapporterings_id"),
+            "delivery_risk_id":         (DeliveryRisk,          "delivery_risk"),
+            "avhengigheter_id":         (Avhengigheter,         "avhengigheter_id"),
+        }
+
+        with Session(self.engine) as session:
+            # Resolve each FK by querying the current (er_gjeldende) row per table
+            resolved_ids: dict[str, UUID | None] = {}
+            for vedtak_field, (sql_cls, pk_attr) in id_map.items():
+                result = session.exec(
+                    select(sql_cls)
+                    .where(sql_cls.prosjekt_id == project_id_str)
+                    .where(sql_cls.er_gjeldende == True)
+                ).first()
+                resolved_ids[vedtak_field] = getattr(result, pk_attr) if result else None
+            session.execute(
+                update(Vedtak)
+                .where(Vedtak.prosjekt_id == project_id_str)
+                .where(Vedtak.er_gjeldende == True)
+                .values(er_gjeldende=False)
+            )
+
+            vedtak_ui: VedtakUI = mod_proj.vedtak
+            new_vedtak = Vedtak(
+                prosjekt_id=prosjekt_id,
+                vedtak_dato=vedtak_ui.vedtak_dato,
+                vedtak_beskrivelse=vedtak_ui.vedtak_beskrivelse,
+                er_gjeldende=True,
+                sist_endret=now,
+                endret_av=e_mail,
+                **resolved_ids,
+            )
+            session.add(new_vedtak)
+            session.commit()

@@ -1,13 +1,11 @@
 from nicegui import ui
 import asyncio
 
-from models.ui_models import VurderingData
-from models.validators import to_json, to_list, sort_selected_values
-from frontend.utils.backend_client import api_update_vurdering, api_get_prosjekt_list
+from models.ui_models import VurderingData, ProjectData
+from models.validators import to_list
+from frontend.utils.backend_client import api_update_vurdering
 
-from frontend.static_variables import FREMDRIFT_STATUS, RISIKO_CATEGORIES, MSCW, DIGITALISERINGS_STRATEGI, FASE
-
-grouppe = ["eID","KI", "Tjenesteutvikling", "Intern styring", "Økonomi", "Kunnskap og innsikt"]
+from frontend.static_variables import MSCW
 
 prosjekt_nummer_list = []
 def show_status_vurdering_overview(prosjekter):
@@ -78,159 +76,149 @@ def show_status_vurdering_overview(prosjekter):
         )
    
 
-  
-def show_vurdering(prosjekt_id: str, email: str, vurdering: VurderingData, prosjekter=None):
-    prosjekt_dict = {
-    p.prosjekt:f"{p.prosjekt} – {p.prosjekt_beskrivelse}"
-    for p in prosjekter
-}
-    # prosjekt_list = list(prosjekt_dict.keys())
-    ui.markdown(
-        f"## *Vurdering på:* **{vurdering.portfolioproject.navn}**"
-    ).classes('text-xl font-bold mb-4')
+def show_vurdering(
+    prosjekt_id: str,
+    email: str,
+    vurdering: VurderingData,
+    project_data: ProjectData = None,  # pass the full project data for the read-only section
+):
+    # ── Section 1: Fakta om tiltaket (read-only) ─────────────────────────────
+    with ui.grid(columns=5).classes("w-full gap-5 bg-white border border-gray-200 p-6 rounded-lg mb-6"):
 
+        # Title row
+        with ui.element("div").classes("col-span-3"):
+            ui.markdown(f"## Fakta om {vurdering.portfolioproject.navn}").classes("text-xl font-bold underline m-0")
+
+        # Start + Planlagt ferdig + Fase (top right)
+        with ui.element("div").classes("col-span-2 flex flex-col gap-2"):
+            with ui.element("div").classes("flex gap-4"):
+                with ui.element("div"):
+                    ui.label("Start").classes("text-sm text-gray-500 font-bold")
+                    ui.input(
+                        value=vurdering.portfolioproject.oppstart.strftime("%d.%m.%Y")
+                        if vurdering.portfolioproject.oppstart else "—"
+                    ).classes("bg-gray-100 text-gray-600 rounded w-full").props("readonly")
+
+                with ui.element("div"):
+                    ui.label("Planlagt ferdig").classes("text-sm text-gray-500 font-bold")
+                    ui.input(
+                        value=vurdering.fremskritt.planlagt_ferdig.strftime("%d.%m.%Y")
+                        if vurdering.fremskritt and vurdering.fremskritt.planlagt_ferdig else "—"
+                    ).classes("bg-gray-100 text-gray-600 rounded w-full").props("readonly")
+
+            with ui.element("div").classes("flex items-center gap-2"):
+                ui.label("Fase:").classes("font-bold text-gray-600")
+                ui.input(
+                    value=vurdering.fremskritt.fase if vurdering.fremskritt and vurdering.fremskritt.fase else "—"
+                ).classes("bg-gray-100 text-gray-600 rounded flex-1").props("readonly")
+
+        # Tiltakseier + Kontaktperson
+        with ui.element("div").classes("col-span-2"):
+            ui.label("Tiltakseier").classes("font-bold text-gray-600")
+            ui.input(
+                value=vurdering.portfolioproject.tiltakseier or "—"
+            ).classes("bg-gray-100 text-gray-600 rounded w-full").props("readonly")
+
+        with ui.element("div").classes("col-span-2"):
+            ui.label("Kontaktperson").classes("font-bold text-gray-600")
+            ui.input(
+                value=", ".join(to_list(vurdering.portfolioproject.kontaktpersoner)) or "—"
+            ).classes("bg-gray-100 text-gray-600 rounded w-full").props("readonly").props('use-chips')
+
+        # Spacer to keep layout aligned (col 5 is taken by dates above)
+        ui.element("div").classes("col-span-1")
+
+        # Problemstilling + Hovedleveranser (side by side, tall)
+        with ui.element("div").classes("col-span-2"):
+            ui.label("Problemstilling").classes("font-bold text-gray-600")
+            ui.textarea(
+                value=project_data.problemstilling.problem if project_data and project_data.problemstilling else "—"
+            ).classes("bg-gray-100 text-gray-600 rounded w-full min-h-[160px]").props("readonly")
+
+        with ui.element("div").classes("col-span-3"):
+            ui.label("Hovedleveranser").classes("font-bold text-gray-600")
+            ui.textarea(
+                value=project_data.tiltak.tiltak_beskrivelse if project_data and project_data.tiltak else "—"
+            ).classes("bg-gray-100 text-gray-600 rounded w-full min-h-[160px]").props("readonly")
+
+        # Ressurs- og finansieringsbehov table + Risiko side by side
+        with ui.element("div").classes("col-span-2"):
+            ui.label("Ressurs- og finansieringsbehov").classes("font-bold text-gray-600 mb-2")
+            columns = [
+                {"name": "year",      "label": "",                   "field": "year",      "align": "left"},
+                {"name": "intern",    "label": "Mnd.v. Interne",     "field": "intern",    "align": "left"},
+                {"name": "ekstern",   "label": "mnd.v. Eksterne",    "field": "ekstern",   "align": "left"},
+                {"name": "budsjett",  "label": "Finansieringsbehov", "field": "budsjett",  "align": "left"},
+            ]
+            rows = []
+            if project_data and project_data.ressursbruk:
+                for year, rb in sorted(project_data.ressursbruk.items()):
+                    rows.append({
+                        "year":     str(year),
+                        "intern":   str(project_data.resursbehov.antall_mandsverk_intern or "")
+                                    if project_data.resursbehov else "",
+                        "ekstern":  str(project_data.resursbehov.antall_mandsverk_ekstern or "")
+                                    if project_data.resursbehov else "",
+                        "budsjett": str(rb.predicted_resources or "") if rb else "",
+                    })
+            else:
+                rows = [
+                    {"year": "2026", "intern": "", "ekstern": "", "budsjett": ""},
+                    {"year": "2027", "intern": "", "ekstern": "", "budsjett": ""},
+                    {"year": "2028", "intern": "", "ekstern": "", "budsjett": ""},
+                ]
+            ui.table(columns=columns, rows=rows).classes(
+                "w-full text-sm border border-gray-200 rounded"
+            ).props("dense flat")
+
+        with ui.element("div").classes("col-span-3"):
+            ui.label("Risiko hvis tiltaket ikke gjennomføres").classes("font-bold text-gray-600")
+            ui.textarea(
+                value=project_data.risikovurdering.vurdering
+                      if project_data and project_data.risikovurdering else "—"
+            ).classes("bg-gray-100 text-gray-600 rounded w-full min-h-[160px]").props("readonly")
+
+    # ── Section 2: Porteføljekontorets anbefaling (editable) ─────────────────
     with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-6 rounded-lg"):
 
-        ui.label("1. Kontaktpersoner").classes(
-            'col-span-5 text-lg font-bold underline mt-4'
-        )
+        with ui.element("div").classes("col-span-5"):
+            ui.markdown(
+                f"## *Porteføljekontorets anbefaling på:* **{vurdering.portfolioproject.navn}**"
+            ).classes("text-xl font-bold")
 
-        ui.label("2. Status og fase").classes(
-            'col-span-5 text-lg font-bold underline mt-4'
-        )
-
-        with ui.element("div").classes('col-span-2'):
-            ui.label("Prosjektfase").classes('font-bold')
-            ui.select(
-                FASE
-            ).classes(
-                'w-full bg-white rounded-lg'
-            ).bind_value(
-                vurdering.fremskritt, "fase"
-            )
-
-        with ui.element("div").classes('col-span-2'):
-            ui.label("Fremdrift").classes('font-bold')
-            ui.select(
-                FREMDRIFT_STATUS
-            ).classes(
-                'w-full bg-white rounded-lg'
-            ).bind_value(
-                vurdering.fremskritt, "fremskritt"
-            )
-
-        with ui.element("div").classes('col-span-1'):
-            ui.label("Risiko").classes('font-bold')
-            ui.select(
-                RISIKO_CATEGORIES
-            ).classes(
-                'w-full bg-white rounded-lg'
-            ).bind_value(
-                vurdering.risiko, "vurdering"
-            )
-
-        ui.label("3. Tilknytning til strategier").classes(
-            'col-span-5 text-lg font-bold underline mt-4'
-        )
-
-        ui.label("Beskriv hvordan tiltaket understøtter målbildet").classes(
-            'col-span-5 font-bold mt-2'
-        )
-
-        with ui.element("div").classes('col-span-5'):
-            ui.label("1. Vi fremmer samordning og prioritering for en mer effektiv offentlig sektor").classes('font-bold')
-            ui.textarea().classes(
-                'w-full bg-white rounded-lg'
-            ).bind_value(
-                vurdering.malbilde, "malbilde_1_beskrivelse"
-            )
-
-        with ui.element("div").classes('col-span-5'):
-            ui.label("2. Vi leder an i ansvarlig og innovativ bruk av data og kunstig intelligens").classes('font-bold')
-            ui.textarea().classes(
-                'w-full bg-white rounded-lg'
-            ).bind_value(
-                vurdering.malbilde, "malbilde_2_beskrivelse"
-            )
-
-        with ui.element("div").classes('col-span-5'):
-            ui.label("3. Vi sikrer trygg tilgang til digitale tjenester for alle").classes('font-bold')
-            ui.textarea().classes(
-                'w-full bg-white rounded-lg'
-            ).bind_value(
-                vurdering.malbilde, "malbilde_3_beskrivelse"
-            )
-
-        with ui.element("div").classes('col-span-5'):
-            ui.label("4. Vi løser komplekse utfordringer sammen og tilpasser oss en verden i rask endring").classes('font-bold')
-            ui.textarea().classes(
-                'w-full bg-white rounded-lg'
-            ).bind_value(
-                vurdering.malbilde, "malbilde_4_beskrivelse"
-            )
-
-        with ui.element("div").classes('col-span-5'):
-            ui.label('Tilknyttet tiltak i Digitaliseringsstrategien').classes('font-bold')
-            ui.select(
-                DIGITALISERINGS_STRATEGI,
-                multiple=True,
-                on_change=sort_selected_values
-            ).classes(
-                'w-full bg-white rounded-lg'
-            ).props(
-                'use-chips'
-            ).bind_value(
-                vurdering.digitaliseringstrategi,
-                "sammenheng_digital_strategi",
-                forward=to_json,
-                backward=to_list
-            )
-
-        with ui.element("div").classes('col-span-5'):
-            ui.label('Eventuell beskrivelse av kobling til Digitaliseringsstrategien').classes('font-bold')
-            ui.textarea().bind_value(
-                vurdering.digitaliseringstrategi,
-                "digital_strategi_kommentar"
-            ).classes(
-                'w-full bg-white rounded-lg'
-            )
-
-        ui.label("4. Samfunnseffekt").classes(
-            'col-span-5 text-lg font-bold underline mt-4'
-        )
-
-        with ui.element("div").classes('col-span-5'):
-            ui.label("Hvor store bruker- og samfunnseffekter").classes('font-bold')
-            ui.input().classes(
-                "w-full bg-white rounded-lg"
-            ).bind_value(
-                vurdering.samfunnseffekt, "effekt"
-            )
-
-        ui.label("5. MSCW").classes(
-            'col-span-5 text-lg font-bold underline mt-4'
-        )
-
-        with ui.element("div").classes('col-span-5'):
-            ui.label("Vurdering").classes('font-bold')
+        ui.label("MSCW").classes("col-span-5 text-lg font-bold underline mt-4")
+        with ui.element("div").classes("col-span-5"):
+            ui.label("Vurdering").classes("font-bold")
             ui.select(MSCW).classes(
-                "w-full bg-white rounded-lg"
-            ).bind_value(
-                vurdering.vurdering, "mscw"
-            )
-        ui.label("6. Finansiering").classes(
-            'col-span-5 text-lg font-bold underline mt-4')
-        with ui.element("div").classes('col-span-2'):
-            ui.label("Gruppe").classes('text-lg font-bold')
-            ui.select(options=grouppe, with_input=True, new_value_mode=not None, clearable=True).classes('w-full bg-white rounded-lg').bind_value(vurdering.vurdering, "gruppe")
+                "w-full bg-white rounded-lg border-2 border-green-600"
+            ).bind_value(vurdering.vurdering, "mscw")
 
-        with ui.element("div").classes('col-span-5'):
-            ui.label("Prosjekt nummer i økønomisystemet").classes('font-bold')
-            ui.select(options=prosjekt_dict, with_input=True, new_value_mode=not None, clearable=True).classes('w-full bg-white rounded-lg').bind_value(
-                vurdering.finansiering, "prosjekt_nummer"
-            )
+        ui.label("Finansiering").classes("col-span-5 text-lg font-bold underline mt-4")
 
-    async def save_object() -> "VurderingData":
+        with ui.element("div").classes("col-span-2"):
+            ui.label("Tildeling").classes("font-bold")
+            ui.number(
+                label="NOK",
+                min=0,
+                format="%.0f",
+            ).classes(
+                "w-full bg-white rounded-lg border-2 border-green-600"
+            ).bind_value(vurdering.finansiering, "tildelte_midler")
+
+        with ui.element("div").classes("col-span-3"):
+            ui.label("Tildelingen dekker").classes("font-bold")
+            ui.textarea(placeholder="Beskriv hva tildelingen dekker...").classes(
+                "w-full bg-white rounded-lg border-2 border-green-600"
+            ).bind_value(vurdering.finansiering, "tildelte_midler_dekker")
+
+        with ui.element("div").classes("col-span-5"):
+            ui.label("Begrunnelse for anbefaling").classes("font-bold")
+            ui.textarea(placeholder="Skriv begrunnelsen her...").classes(
+                "w-full bg-white rounded-lg border-2 border-green-600 min-h-[200px]"
+            ).bind_value(vurdering.vurdering, "begrunnelse")
+
+    # ── Save ──────────────────────────────────────────────────────────────────
+    async def save_object():
         with ui.dialog() as dialog:
             ui.label("💾 Lagrer endringer... Vennligst vent ⏳")
             ui.spinner(size="lg", color="primary")
@@ -238,15 +226,10 @@ def show_vurdering(prosjekt_id: str, email: str, vurdering: VurderingData, prosj
             dialog.open()
             await asyncio.sleep(0.1)
             await api_update_vurdering(vurdering, prosjekt_id, email)
-
-            ui.notify("✅ Endringer lagret i databasen!", type="positive", position="top")
-
+            ui.notify("✅ Endringer lagret!", type="positive", position="top")
             await asyncio.sleep(1)
             ui.navigate.to(f"/vurdering/{prosjekt_id}")
         finally:
             dialog.close()
 
-    async def check_or_update():
-        await save_object()
-
-    ui.button("💾 Lagre", on_click=check_or_update).classes("mt-4")
+    ui.button("💾 Lagre", on_click=save_object).classes("mt-4")
