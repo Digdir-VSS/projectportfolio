@@ -1,9 +1,11 @@
 import httpx
 import os 
-from enum import StrEnum
+from dotenv import load_dotenv
 
 from models.ui_models import ProjectData, RapporteringData, VurderingData, ProsjektListUI, VedtakData
 from models.ui_models import OverviewUI, OpenOverviewUI
+
+load_dotenv()
 
 BACKEND_BASE_URL = os.getenv("BACKEND_BASE_URL")
 API_KEY = os.getenv("API_KEY")  # or whatever you use
