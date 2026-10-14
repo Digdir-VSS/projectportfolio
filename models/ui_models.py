@@ -146,6 +146,7 @@ class VurderingUI(BaseModel):
     gruppe: str | None = None
     pulje: int | None = None
     mscw: str | None = None
+    beslutningsstatus: str | None = None
     sist_endret: datetime | None = None
     endret_av: str | None = None
     er_gjeldende: bool = True
@@ -209,6 +210,7 @@ class OverviewUI(BaseModel):
     fase: str | None = None
     planlagt_ferdig: datetime | None = None
     fremskritt_status: str | None = None
+    beslutningsstatus: str | None = None
     estimert_budsjet_behov: int | None = None
     antall_mandsverk_intern: int | None = None
     antall_mandsverk_ekstern: int | None = None

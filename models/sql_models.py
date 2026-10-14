@@ -260,6 +260,7 @@ class Vurdering(SQLModel, table=True):
     endret_av: str | None = None
     er_gjeldende: bool = False
     mscw: str | None = None
+    beslutningsstatus: str | None = None
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  
     )
@@ -276,6 +277,7 @@ class Overview(SQLModel, table=True):
     fase: str | None = None
     planlagt_ferdig: datetime | None = None
     fremskritt_status: str | None = None
+    beslutningsstatus: str | None = None
     estimert_budsjet_behov: int | None = None
     antall_mandsverk_intern: int | None = None
     antall_mandsverk_ekstern: int | None = None

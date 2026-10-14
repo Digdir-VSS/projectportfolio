@@ -6,6 +6,7 @@ from models.ui_models import RapporteringData
 from models.validators import to_json, to_list, to_date_str, convert_to_int, sort_selected_values
 from frontend.static_variables import FREMDRIFT_STATUS, RISIKO_CATEGORIES, FASE
 from frontend.utils.backend_client import api_update_rapport
+from frontend.pages.utils import make_read_only
   
 
 def show_status_rapportering_overview(prosjekter):
@@ -77,123 +78,131 @@ def show_status_rapportering_overview(prosjekter):
    
 
   
-def show_status_rapportering(prosjekt_id: str, email: str, rapportering: RapporteringData, brukere_list):
-    ui.markdown(
-        f"## *Rapportering på:* **{rapportering.portfolioproject.navn}**"
-    ).classes('text-xl font-bold mb-4')
+def show_status_rapportering(prosjekt_id: str, email: str, rapportering: RapporteringData, brukere_list, read_only: bool = False):
+    with ui.column().classes('w-full') as form:
+        ui.markdown(
+            f"## *Rapportering på:* **{rapportering.portfolioproject.navn}**"
+        ).classes('text-xl font-bold mb-4')
+        if read_only:
+            ui.label('Du har kun lesetilgang til dette prosjektet.').classes('text-sm italic')
 
-    with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-6 rounded-lg"):
+        with ui.grid(columns=5).classes("w-full gap-5 bg-[#f9f9f9] p-6 rounded-lg"):
 
-        ui.label("1. Kontaktpersoner").classes(
-            'col-span-5 text-lg font-bold underline mt-4'
-        )
-
-        with ui.element("div").classes('col-span-5'):
-            ui.select(
-                list(brukere_list.keys()),
-                with_input=True,
-                multiple=True,
-                on_change=sort_selected_values
-            ).props(
-                "clearable options-dense color=primary use-chips"
-            ).classes(
-                "w-full bg-white rounded-lg"
-            ).bind_value(
-                rapportering.portfolioproject,
-                "kontaktpersoner",
-                forward=to_json,
-                backward=to_list
+            ui.label("1. Kontaktpersoner").classes(
+                'col-span-5 text-lg font-bold underline mt-4'
             )
 
-        ui.label("2. Status og fase").classes(
-            'col-span-5 text-lg font-bold underline mt-4'
-        )
+            with ui.element("div").classes('col-span-5'):
+                ui.select(
+                    list(brukere_list.keys()),
+                    with_input=True,
+                    multiple=True,
+                    on_change=sort_selected_values
+                ).props(
+                    "clearable options-dense color=primary use-chips"
+                ).classes(
+                    "w-full bg-white rounded-lg"
+                ).bind_value(
+                    rapportering.portfolioproject,
+                    "kontaktpersoner",
+                    forward=to_json,
+                    backward=to_list
+                )
 
-        with ui.element("div").classes('col-span-2'):
-            ui.label("Prosjektfase").classes('font-bold')
-            ui.select(
-                FASE
-            ).classes(
-                'w-full bg-white rounded-lg'
-            ).bind_value(
-                rapportering.fremskritt, "fase"
+            ui.label("2. Status og fase").classes(
+                'col-span-5 text-lg font-bold underline mt-4'
             )
 
+            with ui.element("div").classes('col-span-2'):
+                ui.label("Prosjektfase").classes('font-bold')
+                ui.select(
+                    FASE
+                ).classes(
+                    'w-full bg-white rounded-lg'
+                ).bind_value(
+                    rapportering.fremskritt, "fase"
+                )
 
 
-        ui.label("3. Vesentlige endringer").classes(
-            'col-span-5 text-lg font-bold underline mt-4'
-        )
 
-        # Row for labels
-        with ui.element("div").classes('col-span-2'):
-            ui.label("Har det vært vesentlige endringer i forutsetninger og rammebetingelser siden siste rapportering?").classes('font-bold')
-
-        with ui.element("div").classes('col-span-3'):
-            ui.label("Er det endringer i hva tiltaket skal levere og når leveransene skal skje?").classes('font-bold')
-
-        # Row for inputs (aligned)
-        with ui.element("div").classes('col-span-2'):
-            ui.textarea().classes(
-                "w-full bg-white rounded-lg"
-            ).bind_value(
-                rapportering.rapportering, "viktige_endringer"
+            ui.label("3. Vesentlige endringer").classes(
+                'col-span-5 text-lg font-bold underline mt-4'
             )
 
-        with ui.element("div").classes('col-span-3'):
-            ui.textarea().classes(
-                "w-full bg-white rounded-lg"
-            ).bind_value(
-                rapportering.rapportering, "viktige_endringer_kommentar"
-            )
+            # Row for labels
+            with ui.element("div").classes('col-span-2'):
+                ui.label("Har det vært vesentlige endringer i forutsetninger og rammebetingelser siden siste rapportering?").classes('font-bold')
+
+            with ui.element("div").classes('col-span-3'):
+                ui.label("Er det endringer i hva tiltaket skal levere og når leveransene skal skje?").classes('font-bold')
+
+            # Row for inputs (aligned)
+            with ui.element("div").classes('col-span-2'):
+                ui.textarea().classes(
+                    "w-full bg-white rounded-lg"
+                ).bind_value(
+                    rapportering.rapportering, "viktige_endringer"
+                )
+
+            with ui.element("div").classes('col-span-3'):
+                ui.textarea().classes(
+                    "w-full bg-white rounded-lg"
+                ).bind_value(
+                    rapportering.rapportering, "viktige_endringer_kommentar"
+                )
         
-        ui.label("4. Avhengigheter").classes(
-            'col-span-5 text-lg font-bold underline mt-4'
-        )
-        with ui.element("div").classes('col-span-5'):
-            ui.label("Er det noen avhengigheter som er spesielt viktig for tiltaket?").classes('font-bold')
-            ui.textarea().classes(
-                "w-full bg-white rounded-lg"
-            ).bind_value(
-                rapportering.avhengigheter, "avhengigheter"
+            ui.label("4. Avhengigheter").classes(
+                'col-span-5 text-lg font-bold underline mt-4'
             )
-        ui.label("5. Fremdrift").classes(
-            'col-span-5 text-lg font-bold underline mt-4'
-        )
-        with ui.element("div").classes('col-span-3'):
-            ui.label("Fremdrift").classes('font-bold')
-            ui.select(
-                FREMDRIFT_STATUS
-            ).classes(
-                'w-full bg-white rounded-lg'
-            ).bind_value(
-                rapportering.fremskritt, "fremskritt"
+            with ui.element("div").classes('col-span-5'):
+                ui.label("Er det noen avhengigheter som er spesielt viktig for tiltaket?").classes('font-bold')
+                ui.textarea().classes(
+                    "w-full bg-white rounded-lg"
+                ).bind_value(
+                    rapportering.avhengigheter, "avhengigheter"
+                )
+            ui.label("5. Fremdrift").classes(
+                'col-span-5 text-lg font-bold underline mt-4'
             )
-        ui.label("6. Risiko").classes(
-            'col-span-5 text-lg font-bold underline mt-4'
-        )
-        # Row for labels
-        with ui.element("div").classes('col-span-2'):
-            ui.label(" Risiko for at tiltaket ikke oppnå planlagte resultater innen avtalt tid, kostnad og kvalitet ").classes('font-bold')
+            with ui.element("div").classes('col-span-3'):
+                ui.label("Fremdrift").classes('font-bold')
+                ui.select(
+                    FREMDRIFT_STATUS
+                ).classes(
+                    'w-full bg-white rounded-lg'
+                ).bind_value(
+                    rapportering.fremskritt, "fremskritt"
+                )
+            ui.label("6. Risiko").classes(
+                'col-span-5 text-lg font-bold underline mt-4'
+            )
+            # Row for labels
+            with ui.element("div").classes('col-span-2'):
+                ui.label(" Risiko for at tiltaket ikke oppnå planlagte resultater innen avtalt tid, kostnad og kvalitet ").classes('font-bold')
 
 
-        with ui.element("div").classes('col-span-3'):
-            ui.label("Begrunnelse for risiko").classes('font-bold')
+            with ui.element("div").classes('col-span-3'):
+                ui.label("Begrunnelse for risiko").classes('font-bold')
 
  
-        with ui.element("div").classes('col-span-2'):
-            ui.select(RISIKO_CATEGORIES).classes(
-                "w-full bg-white rounded-lg"
-            ).bind_value(
-                rapportering.delivery_risk, "risiko_rapportert"
-            )
+            with ui.element("div").classes('col-span-2'):
+                ui.select(RISIKO_CATEGORIES).classes(
+                    "w-full bg-white rounded-lg"
+                ).bind_value(
+                    rapportering.delivery_risk, "risiko_rapportert"
+                )
 
-        with ui.element("div").classes('col-span-3'):
-            ui.textarea().classes(
-                "w-full bg-white rounded-lg"
-            ).bind_value(
-                rapportering.delivery_risk, "risiko_rapportert_begrunnet"
-            )
+            with ui.element("div").classes('col-span-3'):
+                ui.textarea().classes(
+                    "w-full bg-white rounded-lg"
+                ).bind_value(
+                    rapportering.delivery_risk, "risiko_rapportert_begrunnet"
+                )
+
+    if read_only:
+        make_read_only(form)
+        return
+
     async def save_object() -> "RapporteringData":
      
         with ui.dialog() as dialog:

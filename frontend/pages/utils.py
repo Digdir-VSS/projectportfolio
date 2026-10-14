@@ -1,9 +1,37 @@
 from nicegui import ui
 import ast
 
-from models.ui_models import ProjectData
+from models.ui_models import ProjectData, RapporteringData
 from models.validators import validate_budget_distribution
 import copy
+
+def can_edit_project(email: str | None, project: ProjectData | RapporteringData, super_user: str | None) -> bool:
+    """A user may edit a project if they are an admin or listed in the project's epost_kontakt."""
+    if not email:
+        return False
+    if super_user and email in super_user:
+        return True
+    if project.portfolioproject is None:
+        return False
+    epost_kontakt = project.portfolioproject.epost_kontakt
+    if not epost_kontakt:
+        return False
+    # epost_kontakt is stored either as a single email (new projects) or as a stringified list
+    try:
+        kontakter = ast.literal_eval(epost_kontakt)
+    except (ValueError, SyntaxError):
+        kontakter = [epost_kontakt]
+    if isinstance(kontakter, str):
+        kontakter = [kontakter]
+    return email.lower() in {k.strip().lower() for k in kontakter if isinstance(k, str)}
+
+def make_read_only(container: ui.element) -> None:
+    """Lock every input field inside container so the values can be seen but not changed."""
+    for element in container.descendants():
+        if isinstance(element, (ui.input, ui.select)):
+            element.props("readonly")
+        elif isinstance(element, ui.radio):
+            element.disable()
 
 def validate_kontaktpersoner(kontaktpersoner: str | None, msg: str) -> tuple[bool, str]:
     if kontaktpersoner is None:

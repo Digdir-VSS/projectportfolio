@@ -53,14 +53,18 @@ def create_columns(overview_fields: List[str]):
 
 
 
-def overview_page(overview: List[OverviewUI]):
+def overview_page(overview: List[OverviewUI], show_admin_actions: bool = True):
+    """Render the project overview table.
+
+    With show_admin_actions=False (home page) each row only gets a "Vis" button,
+    and the expand column and Excel download are left out.
+    """
 
     with ui.column().classes("w-full gap-2"):
 
-        columns = [
-            {"name": "expand", "label": "", "field": "expand"},
-            *create_columns(OverviewUI.model_fields),
-        ]
+        columns = create_columns(OverviewUI.model_fields)
+        if show_admin_actions:
+            columns = [{"name": "expand", "label": "", "field": "expand"}, *columns]
         # columns = create_columns(OverviewUI.model_fields)
 
         rows = sorted(
@@ -87,61 +91,78 @@ def overview_page(overview: List[OverviewUI]):
         "header",
         r""" <q-tr :props="props" class="bg-gray-200"> <q-th auto-width class="bg-gray-200"></q-th> <q-th v-for="col in props.cols" :key="col.name" :props="props" class="bg-gray-200 text-lg font-semibold"> {{ col.label }} </q-th> </q-tr> """,
     )
-    table.add_slot(
-    "body-cell-prosjekt_id",
-    r"""
-    <q-td auto-width>
-        <q-btn-dropdown
-            size="sm"
-            color="primary"
-            dense
-            icon="menu"
-            dropdown-icon="arrow_drop_down"
-        >
-            <q-list>
-                <q-item 
-                    clickable 
-                    v-close-popup
+    if show_admin_actions:
+        table.add_slot(
+        "body-cell-prosjekt_id",
+        r"""
+        <q-td auto-width>
+            <q-btn-dropdown
+                size="sm"
+                color="primary"
+                dense
+                icon="menu"
+                dropdown-icon="arrow_drop_down"
+            >
+                <q-list>
+                    <q-item 
+                        clickable 
+                        v-close-popup
+                        :href="'/project/' + props.row.prosjekt_id"
+                    >
+                        <q-item-section avatar>
+                            <q-icon name="edit" color="primary" />
+                        </q-item-section>
+                        <q-item-section>
+                            <q-item-label>Rediger prosjekt</q-item-label>
+                        </q-item-section>
+                    </q-item>
+                
+                    <q-item 
+                        clickable 
+                        v-close-popup
+                        :href="'/status_rapportering/' + props.row.prosjekt_id"
+                    >
+                        <q-item-section avatar>
+                            <q-icon name="assessment" color="orange" />
+                        </q-item-section>
+                        <q-item-section>
+                            <q-item-label>Rapportering</q-item-label>
+                        </q-item-section>
+                    </q-item>
+                
+                    <q-item 
+                        clickable 
+                        v-close-popup
+                        :href="'/vurdering/' + props.row.prosjekt_id"
+                    >
+                        <q-item-section avatar>
+                            <q-icon name="fact_check" color="green" />
+                        </q-item-section>
+                        <q-item-section>
+                            <q-item-label>Vurdering</q-item-label>
+                        </q-item-section>
+                    </q-item>
+                </q-list>
+            </q-btn-dropdown>
+        </q-td>
+        """
+    )
+    else:
+        table.add_slot(
+            "body-cell-prosjekt_id",
+            r"""
+            <q-td auto-width>
+                <q-btn
+                    size="sm"
+                    color="primary"
+                    dense
+                    icon="visibility"
+                    label="Vis"
                     :href="'/project/' + props.row.prosjekt_id"
-                >
-                    <q-item-section avatar>
-                        <q-icon name="edit" color="primary" />
-                    </q-item-section>
-                    <q-item-section>
-                        <q-item-label>Rediger prosjekt</q-item-label>
-                    </q-item-section>
-                </q-item>
-                
-                <q-item 
-                    clickable 
-                    v-close-popup
-                    :href="'/status_rapportering/' + props.row.prosjekt_id"
-                >
-                    <q-item-section avatar>
-                        <q-icon name="assessment" color="orange" />
-                    </q-item-section>
-                    <q-item-section>
-                        <q-item-label>Rapportering</q-item-label>
-                    </q-item-section>
-                </q-item>
-                
-                <q-item 
-                    clickable 
-                    v-close-popup
-                    :href="'/vurdering/' + props.row.prosjekt_id"
-                >
-                    <q-item-section avatar>
-                        <q-icon name="fact_check" color="green" />
-                    </q-item-section>
-                    <q-item-section>
-                        <q-item-label>Vurdering</q-item-label>
-                    </q-item-section>
-                </q-item>
-            </q-list>
-        </q-btn-dropdown>
-    </q-td>
-    """
-)
+                />
+            </q-td>
+            """
+        )
     table.add_slot(
     "body-cell-planlagt_ferdig",
     r"""
@@ -171,6 +192,24 @@ def overview_page(overview: List[OverviewUI]):
         """
     )
     table.add_slot(
+        "body-cell-beslutningsstatus",
+        r"""
+        <q-td :props="props">
+            <q-badge
+                v-if="props.value"
+                :color="
+                    props.value === 'Vedtatt' ? 'green' :
+                    props.value === 'Ikke vedtatt' ? 'orange' :
+                    'grey'
+                "
+                outline
+            >
+                {{ props.value }}
+            </q-badge>
+        </q-td>
+        """
+    )
+    table.add_slot(
         "body-cell-fremskritt_status",
         r"""
         <q-td :props="props">
@@ -190,24 +229,10 @@ def overview_page(overview: List[OverviewUI]):
         </q-td>
         """
     )
-    table.add_slot(
-        "body-cell-expand",
-        r"""
-        <q-td auto-width>
-            <q-btn
-                size="sm"
-                flat
-                dense
-                icon="expand_more"
-                @click="props.expand = !props.expand"
-            />
-        </q-td>
-        """
-    )
-    table.add_slot(
-        "body-row",
-        r"""
-        <q-tr :props="props">
+    if show_admin_actions:
+        table.add_slot(
+            "body-cell-expand",
+            r"""
             <q-td auto-width>
                 <q-btn
                     size="sm"
@@ -217,28 +242,43 @@ def overview_page(overview: List[OverviewUI]):
                     @click="props.expand = !props.expand"
                 />
             </q-td>
+            """
+        )
+        table.add_slot(
+            "body-row",
+            r"""
+            <q-tr :props="props">
+                <q-td auto-width>
+                    <q-btn
+                        size="sm"
+                        flat
+                        dense
+                        icon="expand_more"
+                        @click="props.expand = !props.expand"
+                    />
+                </q-td>
 
-            <q-td v-for="col in props.cols" :key="col.name" :props="props">
-                {{ col.value }}
-            </q-td>
-        </q-tr>
+                <q-td v-for="col in props.cols" :key="col.name" :props="props">
+                    {{ col.value }}
+                </q-td>
+            </q-tr>
 
-        <q-tr v-show="props.expand" :props="props">
-            <q-td colspan="100%">
-                <div class="q-pa-md">
-                    <div class="text-subtitle2 q-mb-sm">
-                        Detaljer for brukt 2025 / 2026 (TODO)
+            <q-tr v-show="props.expand" :props="props">
+                <q-td colspan="100%">
+                    <div class="q-pa-md">
+                        <div class="text-subtitle2 q-mb-sm">
+                            Detaljer for brukt 2025 / 2026 (TODO)
+                        </div>
+
+                        <!-- Here you will render another table or list -->
+                        <div>
+                            Klikk for å hente saldo-detaljer fra backend.
+                        </div>
                     </div>
-
-                    <!-- Here you will render another table or list -->
-                    <div>
-                        Klikk for å hente saldo-detaljer fra backend.
-                    </div>
-                </div>
-            </q-td>
-        </q-tr>
-        """
-    )
-    ui.button('Last ned oversikt', on_click=lambda: download_excel_file(overview))
+                </q-td>
+            </q-tr>
+            """
+        )
+        ui.button('Last ned oversikt', on_click=lambda: download_excel_file(overview))
 
 
