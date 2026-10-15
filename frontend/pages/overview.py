@@ -172,6 +172,24 @@ def overview_page(overview: List[OverviewUI], access_allowance: bool):
         """
     )
     table.add_slot(
+        "body-cell-beslutningsstatus",
+        r"""
+        <q-td :props="props">
+            <q-badge
+                v-if="props.value"
+                :color="
+                    props.value === 'Vedtatt' ? 'green' :
+                    props.value === 'Ikke vedtatt' ? 'orange' :
+                    'grey'
+                "
+                outline
+            >
+                {{ props.value }}
+            </q-badge>
+        </q-td>
+        """
+    )
+    table.add_slot(
         "body-cell-fremskritt_status",
         r"""
         <q-td :props="props">

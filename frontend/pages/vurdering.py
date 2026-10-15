@@ -5,7 +5,7 @@ from models.ui_models import VurderingData, ProjectData
 from models.validators import to_list
 from frontend.utils.backend_client import api_update_vurdering
 
-from frontend.static_variables import MSCW
+from frontend.static_variables import MSCW, BESLUTNINGSSTATUS
 
 prosjekt_nummer_list = []
 def show_status_vurdering_overview(prosjekter):
@@ -187,11 +187,17 @@ def show_vurdering(
             ).classes("text-xl font-bold")
 
         ui.label("MSCW").classes("col-span-5 text-lg font-bold underline mt-4")
-        with ui.element("div").classes("col-span-5"):
+        with ui.element("div").classes("col-span-2"):
             ui.label("Vurdering").classes("font-bold")
             ui.select(MSCW).classes(
                 "w-full bg-white rounded-lg border-2 border-green-600"
             ).bind_value(vurdering.vurdering, "mscw")
+
+        with ui.element("div").classes("col-span-2"):
+            ui.label("Beslutningsstatus").classes("font-bold")
+            ui.select(BESLUTNINGSSTATUS).classes(
+                "w-full bg-white rounded-lg border-2 border-green-600"
+            ).bind_value(vurdering.vurdering, "beslutningsstatus")
 
         ui.label("Finansiering").classes("col-span-5 text-lg font-bold underline mt-4")
 

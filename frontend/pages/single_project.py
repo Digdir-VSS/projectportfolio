@@ -323,6 +323,12 @@ def project_detail(prosjekt_id: str, email: str, project: ProjectData, brukere_l
             kontakt_list = ast.literal_eval(project.portfolioproject.kontaktpersoner)
             kontakt_list.append(project.portfolioproject.tiltakseier)
             kontakt_set = list(set(kontakt_list))
+            # People who have left the organisation are no longer in brukere_list
+            mangler_epost = sorted(navn for navn in kontakt_set if navn not in brukere_list)
+            if mangler_epost:
+                ui.notify(f"Fant ikke e-post for: {', '.join(mangler_epost)}. Fjern eller bytt personen før du lagrer",
+                          type="warning", position="top", close_button="OK")
+                return
             project.portfolioproject.epost_kontakt = str([brukere_list[i] for i in kontakt_set])
             await save_object()
         else:
