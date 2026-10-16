@@ -252,6 +252,7 @@ class Vurdering(SQLModel, table=True):
     er_gjeldende: bool = False
     mscw: str | None = None
     beslutningsstatus: str | None = None
+    vurdert_risiko: str | None = None
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  
     )
@@ -268,6 +269,7 @@ class Overview(SQLModel, table=True):
     fase: str | None = None
     planlagt_ferdig: datetime | None = None
     fremskritt_status: str | None = None
+    risikostatus: str | None = None
     beslutningsstatus: str | None = None
     estimert_budsjet_behov: float | None = None
     antall_mandsverk_intern: float | None = None
@@ -364,6 +366,8 @@ class Saldotabell(SQLModel, table = True):
     period: int
 
 class ProsjektList(SQLModel, table = True):
+    __tablename__ = "prosjekt_list"
+    __table_args__ = {"schema": "dbo"}
     prosjekt: str = Field(primary_key=True)
     prosjekt_beskrivelse: str | None = None
 

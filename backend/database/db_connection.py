@@ -110,6 +110,9 @@ def upload_data(engine, mod_proj, ui_models, sql_models, prosjekt_id, now, e_mai
                     )
 
                     sql_obj = ui_to_sqlmodel(ui_obj, sql_cls)
+                    # Every SCD2 version needs its own primary key, otherwise Vedtak can't tell versions apart
+                    primary_key = sql_cls.__table__.primary_key.columns.values()[0].name
+                    setattr(sql_obj, primary_key, uuid4())
                     sql_obj.prosjekt_id = str(prosjekt_id).lower()
                     sql_obj.er_gjeldende = True
                     sql_obj.sist_endret = now
@@ -608,14 +611,9 @@ class DBConnector:
         stop=stop_after_attempt(3),
         reraise=True,
     )
-    def get_prosjekt_list(self, assessed: bool = False):
-        if assessed:
-            stmt = stmt.where(ProsjektList.prosjekt.in_(
-                select(Vurdering.prosjekt_id).where(Vurdering.er_gjeldende == True)
-            ))
-        else:
-            stmt = select(ProsjektList)
-        
+    def get_prosjekt_list(self):
+        stmt = select(ProsjektList)
+
         with Session(self.engine) as session:
             results = session.exec(stmt).all()
         return [

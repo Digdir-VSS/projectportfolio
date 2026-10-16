@@ -37,14 +37,16 @@ FIELD_MAPPING = {
     "navn_tiltak": "Navn prosjekt",
     "kontaktperson": "Kontaktperson",
     "tiltakseier":"Tiltakseier",
-    "avdeling": "Hovedavdeling",
+    "avdeling": "Ansvarlig enhet",
     "fase_tiltak": "Fase",
     "date_modified": "Sist endret",
 }
-AVDELINGER = ['BOD','DSS' ,'KOM','FEL','STL' ,'TUU', 'VIS'] 
+# Organisational units (enheter): the current ones first, then the new ones from the reorganisation
+AVDELINGER = ['BOD', 'DSS', 'KOM', 'FEL', 'STL', 'TUU', 'VIS', 'KI Norge', 'KIN', 'SSR', 'PRT', 'TDU', 'VSU', 'TDI']
 ESTIMAT_LISTE= ["Relativt sikkert","Noe usikkert","Svært usikkert"]
 FREMDRIFT_STATUS = ["Ikke startet", "På plan",  "Noen forsinkelse, men håndterbar", "Forsinket"]
 RISIKO_CATEGORIES = ["Lav", "Medium", "Høy"]
 MSCW = ["M", "S", "C", "W"]
 BESLUTNINGSSTATUS = ["Ikke vedtatt", "Vedtatt", "Avsluttet"]
+GRUPPE = ["eID", "KI", "Tjenesteutvikling", "Intern styring", "Økonomi", "Kunnskap og innsikt"]
 FASE = ['Problem/ide', 'Konsept', 'Planlegging', 'Gjennomføring']

@@ -8,7 +8,7 @@ import os
 from dotenv import load_dotenv
 from msal import ConfidentialClientApplication
 
-from frontend.utils.backend_client import api_get_admins, api_get_projects, api_get_project, api_create_new_project, api_get_overview, api_get_rapporterings_data, api_get_vurderings_data, api_get_vedtak_data
+from frontend.utils.backend_client import api_get_admins, api_get_projects, api_get_project, api_create_new_project, api_get_overview, api_get_rapporterings_data, api_get_vurderings_data, api_get_vedtak_data, api_get_prosjekt_list
 from frontend.utils.authentorize import validate_access
 from frontend.pages.login_page import register_login_pages
 from frontend.pages.overview import overview_page
@@ -246,10 +246,14 @@ async def vurderingen(prosjekt_id):
     email = user["preferred_username"]
     vurdering = await api_get_vurderings_data(prosjekt_id=prosjekt_id)
     prosjekt_data = await api_get_project(prosjekt_id=prosjekt_id)
+    rapportering = await api_get_rapporterings_data(email=email, prosjekt_id=prosjekt_id)
+    rapportert_risiko = rapportering.delivery_risk.risiko_rapportert if rapportering.delivery_risk else None
+    prosjekter = await api_get_prosjekt_list()
     if not email:
         ui.notify('No email claim found in login!')
         return
-    show_vurdering(prosjekt_id=prosjekt_id, email=email, vurdering=vurdering, project_data=prosjekt_data)
+    show_vurdering(prosjekt_id=prosjekt_id, email=email, vurdering=vurdering, project_data=prosjekt_data,
+                   rapportert_risiko=rapportert_risiko, prosjekter=prosjekter)
 
 @ui.page("/vedtak")
 async def show_vedtakk():

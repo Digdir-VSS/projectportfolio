@@ -77,11 +77,8 @@ async def update_vurdering(vudering: VurderingData, prosjekt_id: str,  e_mail: s
     return db_connector.update_vurdering(vudering, prosjekt_id, e_mail)
 
 @router.get("/get_prosjekt_list")
-async def get_prosjekt_list(
-    assessed: bool | None = None,
-    access_key: str = Depends(verify_api_key)
-):
-    return db_connector.get_prosjekt_list(assessed=assessed)
+async def get_prosjekt_list(access_key: str = Depends(verify_api_key)):
+    return db_connector.get_prosjekt_list()
 
 @router.get("/get_open_overview", response_model=list[OpenOverview])
 async def get_overview(access_key: str = Depends(verify_api_key)):

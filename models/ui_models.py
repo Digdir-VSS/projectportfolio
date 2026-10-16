@@ -128,6 +128,7 @@ class VurderingUI(BaseModel):
     pulje: int | None = None
     mscw: str | None = None
     beslutningsstatus: str | None = None
+    vurdert_risiko: str | None = None
     begrunnelse: str | None = None
     sist_endret: datetime | None = None
     endret_av: str | None = None
@@ -190,6 +191,7 @@ class OverviewUI(BaseModel):
     fase: str | None = None
     planlagt_ferdig: datetime | None = None
     fremskritt_status: str | None = None
+    risikostatus: str | None = None
     beslutningsstatus: str | None = None
     estimert_budsjet_behov: int | None = None
     antall_mandsverk_intern: float | None = None

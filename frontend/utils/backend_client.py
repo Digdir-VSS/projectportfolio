@@ -128,16 +128,13 @@ async def api_update_vurdering(rapport: VurderingData, prosjekt_id: str, email: 
         )
         return r.json()
     
-async def api_get_prosjekt_list(assessed: bool = False):
+async def api_get_prosjekt_list():
     headers = {"x-api-key": API_KEY}
-    params = {"assessed": assessed}
 
     async with httpx.AsyncClient() as client:
         response = await client.get(
             f"{BACKEND_BASE_URL}/get_prosjekt_list",
             headers=headers,
-            params=params
-
         )
         response.raise_for_status()
         return [ProsjektListUI(**prosjekt) for prosjekt in response.json()]
