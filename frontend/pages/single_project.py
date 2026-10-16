@@ -6,9 +6,10 @@ import ast, asyncio
 
 from frontend.pages.utils import validate_send_schema
 from models.validators import to_json, to_list, to_date_str, convert_to_int, convert_to_float, add_thousand_split, convert_to_int_from_thousand_sign, sort_selected_values, to_datetime
-from frontend.static_variables import DIGITALISERINGS_STRATEGI, ESTIMAT_LISTE, FASE
-    
-avdelinger = ['BOD','DSS' ,'KOM','FEL','STL' ,'TUU', 'VIS', 'KI Norge']
+from frontend.static_variables import DIGITALISERINGS_STRATEGI, ESTIMAT_LISTE, FASE, AVDELINGER
+
+# Display names for the project list columns
+PROJECT_LIST_LABELS = {"avdeling": "Enhet"}
 
 
 def show_projects(projects, email: str, access_allowance: bool):
@@ -27,12 +28,11 @@ def show_projects(projects, email: str, access_allowance: bool):
                     "field": "prosjekt_id",
                     "sortable": False,
                     "align": "left",
-                    "headerClasses": "hidden",
                 })
         else:
             columns.append({
                     "name": key,
-                    "label": key.replace("_", " ").title(),
+                    "label": PROJECT_LIST_LABELS.get(key, key.replace("_", " ").title()),
                     "field": key,
                     "sortable": True,
                     "align": "left",
@@ -173,13 +173,13 @@ def project_detail(prosjekt_id: str, email: str, project: ProjectData, brukere_l
                 .props("outlined dense type=date clearable color=primary")
                 .classes("w-full"))
         with ui.element("div").classes('col-span-3 row-span-1 col-start-1 row-start-6'):
-            ui.label('Hovedavdeling').classes('text-lg font-bold')
-            lock(ui.radio(avdelinger)
+            ui.label('Ansvarlig enhet').classes('text-lg font-bold')
+            lock(ui.radio(AVDELINGER)
                 .props("inline")
                 .bind_value(project.portfolioproject, "avdeling"))
         with ui.element("div").classes('col-span-2 row-span-1 col-start-1 row-start-7'):
             ui.label('Samarbeid internt').classes('text-lg font-bold')
-            lock(ui.select(avdelinger, multiple=True, on_change=sort_selected_values)
+            lock(ui.select(AVDELINGER, multiple=True, on_change=sort_selected_values)
                 .props("use-chips")
                 .classes("w-full bg-white rounded-lg")
                 .bind_value(project.samarabeid, "samarbeid_intern", forward=to_json, backward=to_list))
@@ -323,6 +323,12 @@ def project_detail(prosjekt_id: str, email: str, project: ProjectData, brukere_l
             kontakt_list = ast.literal_eval(project.portfolioproject.kontaktpersoner)
             kontakt_list.append(project.portfolioproject.tiltakseier)
             kontakt_set = list(set(kontakt_list))
+            # People who have left the organisation are no longer in brukere_list
+            mangler_epost = sorted(navn for navn in kontakt_set if navn not in brukere_list)
+            if mangler_epost:
+                ui.notify(f"Fant ikke e-post for: {', '.join(mangler_epost)}. Fjern eller bytt personen før du lagrer",
+                          type="warning", position="top", close_button="OK")
+                return
             project.portfolioproject.epost_kontakt = str([brukere_list[i] for i in kontakt_set])
             await save_object()
         else:

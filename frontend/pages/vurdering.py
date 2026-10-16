@@ -1,11 +1,11 @@
 from nicegui import ui
 import asyncio
 
-from models.ui_models import VurderingData, ProjectData
+from models.ui_models import VurderingData, ProjectData, ProsjektListUI
 from models.validators import to_list
 from frontend.utils.backend_client import api_update_vurdering
 
-from frontend.static_variables import MSCW
+from frontend.static_variables import MSCW, BESLUTNINGSSTATUS, RISIKO_CATEGORIES, GRUPPE
 
 prosjekt_nummer_list = []
 def show_status_vurdering_overview(prosjekter):
@@ -81,7 +81,17 @@ def show_vurdering(
     email: str,
     vurdering: VurderingData,
     project_data: ProjectData = None,  # pass the full project data for the read-only section
+    rapportert_risiko: str | None = None,  # latest risk from status reporting, shown read-only
+    prosjekter: list[ProsjektListUI] | None = None,  # projects in the accounting system
 ):
+    # Options for the selects; keep a stored value even if it is no longer in the list
+    prosjekt_options = {p.prosjekt: f"{p.prosjekt} – {p.prosjekt_beskrivelse}" for p in prosjekter or []}
+    if vurdering.finansiering.prosjekt_nummer and vurdering.finansiering.prosjekt_nummer not in prosjekt_options:
+        prosjekt_options[vurdering.finansiering.prosjekt_nummer] = vurdering.finansiering.prosjekt_nummer
+    gruppe_options = list(GRUPPE)
+    if vurdering.vurdering.gruppe and vurdering.vurdering.gruppe not in gruppe_options:
+        gruppe_options.append(vurdering.vurdering.gruppe)
+
     # ── Section 1: Fakta om tiltaket (read-only) ─────────────────────────────
     with ui.grid(columns=5).classes("w-full gap-5 bg-white border border-gray-200 p-6 rounded-lg mb-6"):
 
@@ -186,12 +196,31 @@ def show_vurdering(
                 f"## *Porteføljekontorets anbefaling på:* **{vurdering.portfolioproject.navn}**"
             ).classes("text-xl font-bold")
 
+        ui.label("Risiko").classes("col-span-5 text-lg font-bold underline mt-4")
+        with ui.element("div").classes("col-span-2"):
+            ui.label("Risiko fra rapportering").classes("font-bold text-gray-600")
+            ui.input(value=rapportert_risiko or "—").classes(
+                "bg-gray-100 text-gray-600 rounded w-full"
+            ).props("readonly")
+
+        with ui.element("div").classes("col-span-2"):
+            ui.label("Vurdert risiko").classes("font-bold")
+            ui.select(RISIKO_CATEGORIES, clearable=True).classes(
+                "w-full bg-white rounded-lg border-2 border-green-600"
+            ).bind_value(vurdering.vurdering, "vurdert_risiko")
+
         ui.label("MSCW").classes("col-span-5 text-lg font-bold underline mt-4")
-        with ui.element("div").classes("col-span-5"):
+        with ui.element("div").classes("col-span-2"):
             ui.label("Vurdering").classes("font-bold")
             ui.select(MSCW).classes(
                 "w-full bg-white rounded-lg border-2 border-green-600"
             ).bind_value(vurdering.vurdering, "mscw")
+
+        with ui.element("div").classes("col-span-2"):
+            ui.label("Beslutningsstatus").classes("font-bold")
+            ui.select(BESLUTNINGSSTATUS).classes(
+                "w-full bg-white rounded-lg border-2 border-green-600"
+            ).bind_value(vurdering.vurdering, "beslutningsstatus")
 
         ui.label("Finansiering").classes("col-span-5 text-lg font-bold underline mt-4")
 
@@ -210,6 +239,18 @@ def show_vurdering(
             ui.textarea(placeholder="Beskriv hva tildelingen dekker...").classes(
                 "w-full bg-white rounded-lg border-2 border-green-600"
             ).bind_value(vurdering.finansiering, "tildelte_midler_dekker")
+
+        with ui.element("div").classes("col-span-2"):
+            ui.label("Gruppe").classes("font-bold")
+            ui.select(gruppe_options, clearable=True).classes(
+                "w-full bg-white rounded-lg border-2 border-green-600"
+            ).bind_value(vurdering.vurdering, "gruppe")
+
+        with ui.element("div").classes("col-span-3"):
+            ui.label("Prosjektnummer i økonomisystemet").classes("font-bold")
+            ui.select(prosjekt_options, with_input=True, clearable=True).classes(
+                "w-full bg-white rounded-lg border-2 border-green-600"
+            ).bind_value(vurdering.finansiering, "prosjekt_nummer")
 
         with ui.element("div").classes("col-span-5"):
             ui.label("Begrunnelse for anbefaling").classes("font-bold")
