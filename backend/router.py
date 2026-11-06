@@ -1,5 +1,6 @@
 from fastapi import Depends, HTTPException, status, Header, APIRouter
 import os
+from datetime import date
 from typing import Any
 from dotenv import load_dotenv
 from uuid import UUID
@@ -7,7 +8,7 @@ from pydantic import BaseModel
 from backend.database.db import db_connector
 from backend.database.db_connection import ProjectData
 from models.sql_models import Overview, OpenOverview
-from models.ui_models import ProjectData, RapporteringData, VurderingData, VedtakData
+from models.ui_models import HistorikkData, ProjectData, RapporteringData, VurderingData, VedtakData
 
 load_dotenv()
 
@@ -75,6 +76,17 @@ async def get_vurdering(prosjekt_id: str, access_key: str = Depends(verify_api_k
 @router.post("/update_vurdering")
 async def update_vurdering(vudering: VurderingData, prosjekt_id: str,  e_mail: str, access_key: str = Depends(verify_api_key)):
     return db_connector.update_vurdering(vudering, prosjekt_id, e_mail)
+
+@router.get("/historikk", response_model=list[HistorikkData])
+async def get_historikk(dato: date, access_key: str = Depends(verify_api_key)):
+    return db_connector.get_historikk(dato)
+
+@router.get("/historikk/{prosjekt_id}", response_model=HistorikkData)
+async def get_prosjekt_historikk(prosjekt_id: UUID, dato: date, access_key: str = Depends(verify_api_key)):
+    historikk = db_connector.get_historikk(dato, str(prosjekt_id))
+    if not historikk:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Prosjektet fantes ikke på denne datoen")
+    return historikk[0]
 
 @router.get("/get_prosjekt_list")
 async def get_prosjekt_list(access_key: str = Depends(verify_api_key)):

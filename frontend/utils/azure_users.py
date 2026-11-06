@@ -1,27 +1,13 @@
 import asyncio
 from msgraph import GraphServiceClient
-from azure.identity import ClientSecretCredential, DefaultAzureCredential
-from azure.keyvault.secrets import SecretClient
-import os
 from dotenv import load_dotenv
+
+from models.azure_auth import GRAPH_SCOPE, get_azure_credential
+
 load_dotenv()
 
 async def _fetch_all_users() -> dict:
-    credential = DefaultAzureCredential()
-    client = SecretClient(
-        vault_url=os.getenv("KEY_VAULT_URL"), credential=credential
-    )
-    # async def list_gr
-    CLIENT_SECRET = os.environ.get("FABRIC_SECRET")
-    CLIENT_ID = os.environ.get("FABRIC_CLIENT_ID")
-    TENANT_ID = os.environ.get("TENANT_ID")
-    credentials = ClientSecretCredential(
-        tenant_id=TENANT_ID,
-        client_id=CLIENT_ID,
-        client_secret=CLIENT_SECRET
-    )
-    scopes = ['https://graph.microsoft.com/.default']
-    client = GraphServiceClient(credentials=credentials, scopes=scopes)
+    client = GraphServiceClient(credentials=get_azure_credential(), scopes=[GRAPH_SCOPE])
 
     users = []
     page = await client.users.get()

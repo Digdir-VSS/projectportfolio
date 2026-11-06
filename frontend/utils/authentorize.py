@@ -1,3 +1,4 @@
+import ast
 import requests
 import jwt
 from jwt.algorithms import RSAAlgorithm
@@ -51,9 +52,20 @@ def validate_token(jwt_token, tenant_name):
         print(f"Token validation error: {e}")
         return None
 
+def contact_emails(epost_kontakt: str | None) -> set[str]:
+    """epost_kontakt is either a single email (new projects) or a stringified list."""
+    if not epost_kontakt:
+        return set()
+    try:
+        emails = ast.literal_eval(epost_kontakt)
+    except (ValueError, SyntaxError):
+        emails = epost_kontakt
+    if isinstance(emails, str):
+        emails = [emails]
+    return {email.strip().lower() for email in emails if isinstance(email, str)}
+
+
 def validate_access(prosjekt: ProjectData, email: str, admins: list[str]) -> bool:
     if email in admins:
-        return True 
-    if email in prosjekt.portfolioproject.epost_kontakt:
         return True
-    return False
+    return email.lower() in contact_emails(prosjekt.portfolioproject.epost_kontakt)

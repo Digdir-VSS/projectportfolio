@@ -284,3 +284,15 @@ class VedtakUI(BaseModel):
 class VedtakData(BaseModel):
     finansering: Optional[FinansieringUI]
     vedtak: Optional[VedtakUI]
+
+
+class HistorikkData(ProjectData):
+    """How a project looked at a date: the project page plus its vurdering and rapportering."""
+    prosjekt_id: uuid.UUID
+    slettet: datetime | None = None
+    vurdering: Optional[VurderingUI] = None
+    finansiering: Optional[FinansieringUI] = None
+    samfunnseffekt: Optional[SamfunnsEffektUI] = None
+    rapportering: Optional[RapporteringUI] = None
+    delivery_risk: Optional[DeliveryRiskUI] = None
+    avhengigheter: Optional[AvhengigheterUI] = None
