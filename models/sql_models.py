@@ -253,6 +253,7 @@ class Vurdering(SQLModel, table=True):
     mscw: str | None = None
     beslutningsstatus: str | None = None
     vurdert_risiko: str | None = None
+    begrunnelse: str | None = None
     prosjekt_id : uuid.UUID = Field(
         foreign_key=f"{schema_name}.PortfolioProject.prosjekt_id",  
     )

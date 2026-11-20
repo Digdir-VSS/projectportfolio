@@ -101,8 +101,9 @@ def get_menu_items_for_user(user: dict, super_user: list, STEPS_DICT: dict) -> d
     # start with a copy so we don’t mutate the original
     menu = copy.deepcopy(STEPS_DICT)
 
-    # hide "vurdering" for non-super users
+    # hide the admin pages for non-super users
     if email not in super_user:
         menu.pop("vedtak", None)
+        menu.pop("historikk", None)
 
     return menu

@@ -2,12 +2,12 @@ from typing import Any, Optional
 from uuid import UUID, uuid4
 import struct
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import date, datetime
 import urllib
 from sqlmodel import SQLModel, Session, select, update
 from sqlalchemy import create_engine, event, Engine, text
 from sqlalchemy.exc import OperationalError
-from azure.identity import ClientSecretCredential
+from azure.core.credentials import TokenCredential
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -18,6 +18,8 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 from typing import Dict
 
+from backend.database.historikk import deleted_projects, end_of_day_utc, latest_versions, project_key
+from models.azure_auth import CachedToken, SQL_SCOPE
 from models.ui_models import (
     PortfolioProjectUI,
     FremskrittUI,
@@ -32,6 +34,7 @@ from models.ui_models import (
     AvhengigheterUI,
     VurderingUI,
     ProjectData,
+    HistorikkData,
     VurderingData,
     DeliveryRiskUI,
     RapporteringData, 
@@ -164,13 +167,26 @@ def prune_unchanged_fields(original_obj, modified_obj):
 
 def delete_prosjekt(engine, project_id: str, sql_models: dict, change_time: datetime, epost: str):
     with Session(engine, autoflush=False) as session:
+        last_version = session.exec(
+            select(PortfolioProject).where(PortfolioProject.prosjekt_id == project_id, PortfolioProject.er_gjeldende == True)
+        ).first()
+        last_version_data = last_version.model_dump(exclude={"prosjekt_sk_id"}) if last_version else None
+
+        # sist_endret stays on these rows: Historikk needs to know when each version was saved
         for sql_model in sql_models:
             statement = update(sql_model).where(sql_model.prosjekt_id == project_id, sql_model.er_gjeldende == True).values(
-                    er_gjeldende=False,
-                    sist_endret=change_time,
-                    endret_av=epost)
+                    er_gjeldende=False)
             result = session.exec(statement)
             print(f"Updated {result.rowcount} rows in {sql_model.__name__}")
+
+        # The deletion itself is recorded as a final PortfolioProject version that isn't current
+        if last_version_data:
+            session.add(PortfolioProject(**{
+                **last_version_data,
+                "er_gjeldende": False,
+                "sist_endret": change_time,
+                "endret_av": epost,
+            }))
 
         session.commit()
 
@@ -241,6 +257,25 @@ def get_single_page(engine, project_id: str, sql_models: dict):
                     sql_model_dict[sql_model_name] = sql_models[sql_model_name](prosjekt_id=project_id)
     return sql_model_dict
 
+HISTORIKK_SECTIONS = {
+    "portfolioproject": (PortfolioProject, PortfolioProjectUI),
+    "fremskritt": (Fremskritt, FremskrittUI),
+    "samarabeid": (Samarabeid, SamarabeidUI),
+    "problemstilling": (Problemstilling, ProblemstillingUI),
+    "tiltak": (Tiltak, TiltakUI),
+    "risikovurdering": (Risikovurdering, RisikovurderingUI),
+    "malbilde": (Malbilde, MalbildeUI),
+    "resursbehov": (Resursbehov, ResursbehovUI),
+    "digitaliseringstrategi": (DigitaliseringStrategi, DigitaliseringStrategiUI),
+    "vurdering": (Vurdering, VurderingUI),
+    "finansiering": (Finansiering, FinansieringUI),
+    "samfunnseffekt": (SamfunnsEffekt, SamfunnsEffektUI),
+    "rapportering": (Rapportering, RapporteringUI),
+    "delivery_risk": (DeliveryRisk, DeliveryRiskUI),
+    "avhengigheter": (Avhengigheter, AvhengigheterUI),
+}
+
+
 class DBConnector:
     engine: Engine
     sql_models: dict
@@ -272,9 +307,7 @@ class DBConnector:
         driver_name: str,
         server_name: str,
         database_name: str,
-        fabric_client_id: str,
-        fabric_tenant_id: str,
-        fabric_client_secret: str,
+        credential: TokenCredential,
     ):
         # --- Connection string (NO auth here, token comes later) ---
         connection_string = (
@@ -289,18 +322,11 @@ class DBConnector:
             odbc_str, echo=False, pool_pre_ping=True, pool_recycle=3600, pool_timeout=30
         )
 
-        credential = ClientSecretCredential(
-            tenant_id=fabric_tenant_id,
-            client_id=fabric_client_id,
-            client_secret=fabric_client_secret,
-        )  # or ClientSecretCredential if you prefer
+        sql_token = CachedToken(credential, SQL_SCOPE)
 
         @event.listens_for(engine, "do_connect")
         def provide_token(dialect, conn_rec, cargs, cparams):
-            print("🔑 Requesting new Entra ID token for SQL Server...")
-            token_bytes = credential.get_token(
-                "https://database.windows.net/.default"
-            ).token.encode("utf-16-le")
+            token_bytes = sql_token.get().encode("utf-16-le")
             token_struct = struct.pack(
                 f"<I{len(token_bytes)}s", len(token_bytes), token_bytes
             )
@@ -643,6 +669,56 @@ class DBConnector:
             finansering=FinansieringUI(**sql_model_dict["finansering"].dict()),
             vedtak=VedtakUI(**sql_model_dict["vedtak"].dict()),
         )
+
+    @retry(
+        retry=retry_if_exception_type(OperationalError),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        stop=stop_after_attempt(3),
+        reraise=True,
+    )
+    def get_historikk(self, dato: date, prosjekt_id: str | None = None) -> list[HistorikkData]:
+        """How every project, or one project, looked at the end of a date."""
+        tidspunkt = end_of_day_utc(dato)
+
+        def only_requested_project(statement, sql_model):
+            return statement.where(sql_model.prosjekt_id == UUID(prosjekt_id)) if prosjekt_id else statement
+
+        def rows_at_date(session, sql_model):
+            statement = select(sql_model).where(sql_model.sist_endret < tidspunkt)
+            return session.exec(only_requested_project(statement, sql_model)).all()
+
+        with Session(self.engine) as session:
+            all_versions = session.exec(only_requested_project(
+                select(PortfolioProject.prosjekt_id, PortfolioProject.sist_endret, PortfolioProject.er_gjeldende),
+                PortfolioProject,
+            )).all()
+            sections = {
+                name: latest_versions(rows_at_date(session, sql_model))
+                for name, (sql_model, _) in HISTORIKK_SECTIONS.items()
+            }
+            yearly = latest_versions(
+                rows_at_date(session, Ressursbruk),
+                key=lambda row: (project_key(row), row.year),
+            )
+
+            deleted = deleted_projects(all_versions)
+            result = []
+            for project in sections["portfolioproject"]:
+                if project in deleted and deleted[project] < tidspunkt:
+                    continue
+                data = {
+                    name: ui_model(**row.model_dump()) if (row := sections[name].get(project)) else ui_model(prosjekt_id=project)
+                    for name, (_, ui_model) in HISTORIKK_SECTIONS.items()
+                }
+                ressursbruk = {
+                    year: RessursbrukUI(**row.model_dump())
+                    for (row_project, year), row in yearly.items()
+                    if row_project == project and year is not None
+                }
+                result.append(HistorikkData(
+                    prosjekt_id=project, slettet=deleted.get(project), ressursbruk=ressursbruk, **data,
+                ))
+        return result
 
     def get_admin_emails(self):
         stmt = select(Admin)

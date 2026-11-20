@@ -122,3 +122,20 @@ def test_validate_send_schema_fails_on_missing_kontaktperson_second():
 
     assert valid is False
     assert "kontaktperson" in msg
+
+def test_admin_pages_are_hidden_from_non_admins():
+    from frontend.pages.utils import get_menu_items_for_user
+    from frontend.static_variables import STEPS_DICT
+
+    menu = get_menu_items_for_user({"preferred_username": "bruker@digdir.no"}, ["admin@digdir.no"], STEPS_DICT)
+
+    assert list(menu) == ["home", "oppdater_prosjekt", "status_rapportering"]
+
+
+def test_admins_see_every_page():
+    from frontend.pages.utils import get_menu_items_for_user
+    from frontend.static_variables import STEPS_DICT
+
+    menu = get_menu_items_for_user({"preferred_username": "admin@digdir.no"}, ["admin@digdir.no"], STEPS_DICT)
+
+    assert list(menu) == list(STEPS_DICT)

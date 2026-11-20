@@ -7,37 +7,45 @@ import pandas as pd
 from models.ui_models import OverviewUI
 
 def download_excel_file(overview_data: List[OverviewUI]):
-     dataframe = pd.DataFrame([row.model_dump() for row in overview_data])
+     fields = [field for field in OVERVIEW_COLUMNS if field != "prosjekt_id"]
+     dataframe = pd.DataFrame([row.model_dump(include=set(fields)) for row in overview_data], columns=fields)
+     dataframe["planlagt_ferdig"] = pd.to_datetime(dataframe["planlagt_ferdig"]).dt.date
+     dataframe = dataframe.rename(columns=column_label)
 
      buffer = BytesIO()
      dataframe.to_excel(buffer, index=False)
      buffer.seek(0)
      ui.download.content(buffer.read(), "uttrekk.xlsx")
 
+# The columns in the overview table and its Excel download, in display order.
+# OverviewUI holds more fields, which are left out of both.
+OVERVIEW_COLUMNS = [
+    "prosjekt_id",
+    "navn",
+    "avdeling",
+    "fase",
+    "planlagt_ferdig",
+    "beslutningsstatus",
+    "fremskritt_status",
+    "risikostatus",
+    "antall_mandsverk_intern",
+    "antall_mandsverk_ekstern",
+    "estimert_bruk_2027",
+]
+
 # Display names for columns whose field name doesn't read well as a header
 COLUMN_LABELS = {
-    "avdeling": "Enhet",
-    "fremskritt_status": "Fremdrift",
-    "estimert_budsjet_behov": "Totale Budsjettbehov",
-    "risikostatus": "Risikostatus",
-    "antall_mandsverk_intern": "Månedsverk Intern",
-    "antall_mandsverk_ekstern": "Månedsverk Ekstern",
-    "brukt_2025": "Forbruk 2025",
-    "brukt_2026": "Forbruk 2026",
-    "estimert_bruk_2026": "Budsjettbehov 2026",
-    "estimert_bruk_2027": "Budsjettbehov 2027",
-    "estimert_bruk_2028": "Budsjettbehov 2028",
+    "avdeling": "Ansvarlig enhet",
+    "planlagt_ferdig": "Planlagt ferdig",
+    "fremskritt_status": "Status fremdrift",
+    "risikostatus": "Status risiko",
+    "antall_mandsverk_intern": "Månedsverk intern",
+    "antall_mandsverk_ekstern": "Månedsverk ekstern",
+    "estimert_bruk_2027": "Budsjett behov 2027",
 }
 
 # Amount columns shown with Norwegian thousand separators (1 234 567)
-NUMBER_FIELDS = {
-    "estimert_budsjet_behov",
-    "brukt_2025",
-    "brukt_2026",
-    "estimert_bruk_2026",
-    "estimert_bruk_2027",
-    "estimert_bruk_2028",
-}
+NUMBER_FIELDS = {"estimert_bruk_2027"}
 NUMBER_FORMAT = "value => value == null ? '' : Number(value).toLocaleString('nb-NO', {maximumFractionDigits: 0})"
 
 # Numeric columns are right-aligned so the digits line up
@@ -49,6 +57,16 @@ NAME_SORT = "(a, b) => (a || '').localeCompare(b || '', 'nb')"
 # Columns that get a filter menu in the header
 FILTER_FIELDS = {"avdeling", "fase", "fremskritt_status", "risikostatus", "beslutningsstatus"}
 EMPTY_FILTER_VALUE = "(tom)"
+
+# Ten columns have to fit beside the sidebar: use tighter cell padding than the default,
+# and let the sort arrow float instead of keeping an empty slot in every header.
+OVERVIEW_TABLE_CSS = """
+.overview-table .q-table thead th, .overview-table .q-table tbody td { padding-left: 8px; padding-right: 8px; }
+.overview-table .q-table tbody td { font-size: 14px; }
+.overview-table .q-table tbody td .q-badge { font-size: 13px; }
+.overview-table .q-table__sort-icon { position: absolute; }
+.overview-table th.text-right .q-table__sort-icon { margin-left: -18px; }
+"""
 
 def column_label(field_name: str) -> str:
     return COLUMN_LABELS.get(field_name, field_name.replace("_", " ").title())
@@ -76,8 +94,9 @@ def create_columns(overview_fields: List[str]):
                     "field": field_name,
                     "sortable": True,
                     "align": "left",
+                    # Project names are the longest values, so this column gets the most room
                     "classes": "break-words whitespace-normal",
-                    "headerClasses": "break-words whitespace-normal",
+                    "style": "width: 30%; min-width: 200px",
                     ":sort": NAME_SORT,
                 })
             else:
@@ -87,8 +106,7 @@ def create_columns(overview_fields: List[str]):
                     "field": field_name,
                     "sortable": True,
                     "align": "left",
-                    "classes": "break-words whitespace-normal",
-                    "headerClasses": "break-words whitespace-normal",
+                    "classes": "whitespace-normal",
                 }
                 if field_name in NUMBER_FIELDS:
                     column[":format"] = NUMBER_FORMAT
@@ -101,14 +119,11 @@ def create_columns(overview_fields: List[str]):
 
 
 def overview_page(overview: List[OverviewUI], access_allowance: bool):
+    ui.add_css(OVERVIEW_TABLE_CSS)
 
     with ui.column().classes("w-full gap-2"):
 
-        columns = [
-            {"name": "expand", "label": "", "field": "expand"},
-            *create_columns(OverviewUI.model_fields),
-        ]
-        # columns = create_columns(OverviewUI.model_fields)
+        columns = create_columns(OVERVIEW_COLUMNS)
 
         rows = sorted(
             [
@@ -130,22 +145,22 @@ def overview_page(overview: List[OverviewUI], access_allowance: bool):
             column_defaults={
                 "align": "left",
                 "headerClasses": "uppercase text-primary",
-                "headerStyle": "color: #0D2B5B; font-weight: bold;",
                 "sortable": True,
                 "filterable": True,
             },
-        ).classes("w-full table-fixed")
+        ).classes("w-full overview-table")
 
     table.add_slot(
         "header",
         r"""
-        <q-tr :props="props" class="bg-gray-200">
-            <q-th auto-width class="bg-gray-200"></q-th>
-            <q-th v-for="col in props.cols" :key="col.name" :props="props" class="bg-gray-200 text-lg font-semibold">
-                {{ col.label }}
+        <q-tr :props="props">
+            <q-th auto-width></q-th>
+            <q-th v-for="col in props.cols" :key="col.name" :props="props">
+                <div class="inline-flex items-center no-wrap align-middle text-left">
+                <span class="whitespace-normal">{{ col.label }}</span>
                 <q-btn
                     v-if="col.filterOptions"
-                    flat round dense size="sm"
+                    flat round dense size="xs"
                     icon="filter_list"
                     :color="col.filterSelected.length ? 'orange-9' : 'grey-7'"
                     @click.stop
@@ -178,6 +193,7 @@ def overview_page(overview: List[OverviewUI], access_allowance: bool):
                         </q-list>
                     </q-menu>
                 </q-btn>
+                </div>
             </q-th>
         </q-tr>
         """,
@@ -235,6 +251,7 @@ def overview_page(overview: List[OverviewUI], access_allowance: bool):
                 </q-item>
                 
                 <q-item 
+                    v-if='""" + str(access_allowance).lower() + r"""'
                     clickable 
                     v-close-popup
                     :href="'/status_rapportering/' + props.row.prosjekt_id"
@@ -335,6 +352,7 @@ def overview_page(overview: List[OverviewUI], access_allowance: bool):
         r"""
         <q-td :props="props">
             <q-badge
+                style="white-space: normal"
                 :color="
                     props.value === 'Ikke startet' ? 'green' :
                     props.value === 'På plan eller foran plan' ? 'green' :
@@ -348,55 +366,6 @@ def overview_page(overview: List[OverviewUI], access_allowance: bool):
                 {{ props.value }}
             </q-badge>
         </q-td>
-        """
-    )
-    table.add_slot(
-        "body-cell-expand",
-        r"""
-        <q-td auto-width>
-            <q-btn
-                size="sm"
-                flat
-                dense
-                icon="expand_more"
-                @click="props.expand = !props.expand"
-            />
-        </q-td>
-        """
-    )
-    table.add_slot(
-        "body-row",
-        r"""
-        <q-tr :props="props">
-            <q-td auto-width>
-                <q-btn
-                    size="sm"
-                    flat
-                    dense
-                    icon="expand_more"
-                    @click="props.expand = !props.expand"
-                />
-            </q-td>
-
-            <q-td v-for="col in props.cols" :key="col.name" :props="props">
-                {{ col.value }}
-            </q-td>
-        </q-tr>
-
-        <q-tr v-show="props.expand" :props="props">
-            <q-td colspan="100%">
-                <div class="q-pa-md">
-                    <div class="text-subtitle2 q-mb-sm">
-                        Detaljer for brukt 2025 / 2026 (TODO)
-                    </div>
-
-                    <!-- Here you will render another table or list -->
-                    <div>
-                        Klikk for å hente saldo-detaljer fra backend.
-                    </div>
-                </div>
-            </q-td>
-        </q-tr>
         """
     )
     ui.button('Last ned oversikt', on_click=lambda: download_excel_file(overview))
