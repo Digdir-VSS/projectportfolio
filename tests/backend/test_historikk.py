@@ -3,10 +3,13 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock
 from uuid import uuid4
 
+import re
+
 import pytest
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.dialects.mssql import UNIQUEIDENTIFIER
 from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.schema import CreateTable
 from sqlalchemy.sql.dml import Update
 from sqlmodel import Session, SQLModel
 
@@ -227,3 +230,26 @@ def test_begrunnelse_appears_in_history(connector):
          Vurdering(prosjekt_id=project, begrunnelse="Fordi", sist_endret=datetime(2026, 1, 2), er_gjeldende=True))
 
     assert connector.get_historikk(date(2026, 2, 1))[0].vurdering.begrunnelse == "Fordi"
+
+
+@pytest.fixture
+def connector_with_repeated_ids():
+    """Like prod: the primary keys aren't enforced, and older versions share one id."""
+    engine = create_engine("sqlite://").execution_options(schema_translate_map={schema_name: None})
+    with engine.begin() as connection:
+        for model in [model for model, _ in HISTORIKK_SECTIONS.values()] + [Ressursbruk]:
+            ddl = str(CreateTable(model.__table__, include_foreign_key_constraints=[]).compile(dialect=engine.dialect))
+            ddl = re.sub(r",\s*PRIMARY KEY \([^)]*\)", "", ddl)
+            ddl = re.sub(r'^CREATE TABLE "?[^"]*"?\."', 'CREATE TABLE "', ddl.strip())
+            connection.execute(text(ddl))
+    return DBConnector(engine, {})
+
+
+def test_versions_sharing_an_id_are_told_apart(connector_with_repeated_ids):
+    project, shared_id = uuid4(), uuid4()
+    for navn, saved, current in [("Versjon 1", datetime(2026, 1, 1), False), ("Versjon 2", datetime(2026, 5, 1), True)]:
+        save(connector_with_repeated_ids, PortfolioProject(
+            prosjekt_sk_id=shared_id, prosjekt_id=project, navn=navn, sist_endret=saved, er_gjeldende=current))
+
+    assert connector_with_repeated_ids.get_historikk(date(2026, 2, 1))[0].portfolioproject.navn == "Versjon 1"
+    assert connector_with_repeated_ids.get_historikk(date(2026, 6, 1))[0].portfolioproject.navn == "Versjon 2"

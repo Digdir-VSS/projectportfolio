@@ -684,7 +684,9 @@ class DBConnector:
             return statement.where(sql_model.prosjekt_id == UUID(prosjekt_id)) if prosjekt_id else statement
 
         def rows_at_date(session, sql_model):
-            statement = select(sql_model).where(sql_model.sist_endret < tidspunkt)
+            # Plain rows rather than model objects: older data has several versions sharing one
+            # primary key, and SQLAlchemy would hand back the first of them for all of them
+            statement = select(*sql_model.__table__.columns).where(sql_model.sist_endret < tidspunkt)
             return session.exec(only_requested_project(statement, sql_model)).all()
 
         with Session(self.engine) as session:
@@ -707,11 +709,11 @@ class DBConnector:
                 if project in deleted and deleted[project] < tidspunkt:
                     continue
                 data = {
-                    name: ui_model(**row.model_dump()) if (row := sections[name].get(project)) else ui_model(prosjekt_id=project)
+                    name: ui_model(**row._mapping) if (row := sections[name].get(project)) else ui_model(prosjekt_id=project)
                     for name, (_, ui_model) in HISTORIKK_SECTIONS.items()
                 }
                 ressursbruk = {
-                    year: RessursbrukUI(**row.model_dump())
+                    year: RessursbrukUI(**row._mapping)
                     for (row_project, year), row in yearly.items()
                     if row_project == project and year is not None
                 }

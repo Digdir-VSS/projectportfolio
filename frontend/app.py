@@ -3,8 +3,6 @@ from nicegui import app
 from functools import partial
 from typing import Any
 from cachetools import TTLCache
-from azure.identity import DefaultAzureCredential
-from azure.keyvault.secrets import SecretClient
 import os
 from dotenv import load_dotenv
 from msal import ConfidentialClientApplication
@@ -30,10 +28,6 @@ load_dotenv()
 bruker_list = load_users()
 
 # Client ID and secret correspond to your Entra Application registration
-credential = DefaultAzureCredential()
-client = SecretClient(
-    vault_url=os.getenv("KEY_VAULT_URL"), credential=credential
-)
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 CLIENT_ID = os.environ.get("CLIENT_ID")
 

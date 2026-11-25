@@ -28,10 +28,7 @@ env:
   STORAGE_SECRET: ${{ secrets.STORAGE_SECRET }}
   SUPER_USER: ${{ secrets.SUPER_USER }}
   SERVER: ${{ secrets.SERVER }}
-  CLIENT_SECRET_NAME: ${{ secrets.CLIENT_SECRET_NAME }}
-  KEY_VAULT_URL: ${{ secrets.KEY_VAULT_URL }} 
   FABRIC_CLIENT_ID: ${{ secrets.FABRIC_CLIENT_ID }} 
-  FABRIC_SECRET_NAME: ${{ secrets.FABRIC_SECRET_NAME }} 
 
 permissions:
   id-token: write
@@ -92,10 +89,7 @@ jobs:
                 SUPER_USER="${SUPER_USER}" \
                 SERVER="${SERVER}" \
                 CLIENT_ID="${CLIENT_ID}" \
-                CLIENT_SECRET_NAME="${CLIENT_SECRET_NAME}" \
-                KEY_VAULT_URL="${KEY_VAULT_URL}" \
                 FABRIC_CLIENT_ID="${FABRIC_CLIENT_ID}" \
-                FABRIC_SECRET_NAME="${FABRIC_SECRET_NAME}" \
                 API_KEY="${API_KEY}" \
                 TENANT_ID="${TENANT_ID}" \
                 UUID_RUN="${{ github.run_id }}" \
@@ -123,10 +117,7 @@ jobs:
                 SUPER_USER="${SUPER_USER}" \
                 SERVER="${SERVER}" \
                 CLIENT_ID="${CLIENT_ID}" \
-                CLIENT_SECRET_NAME="${CLIENT_SECRET_NAME}" \
-                KEY_VAULT_URL="${KEY_VAULT_URL}" \
                 FABRIC_CLIENT_ID="${FABRIC_CLIENT_ID}" \
-                FABRIC_SECRET_NAME="${FABRIC_SECRET_NAME}" \
                 TENANT_ID="${TENANT_ID}" \
                 UUID_RUN="${{ github.run_id }}" \
               --cpu 1 \
